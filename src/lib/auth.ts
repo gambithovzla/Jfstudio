@@ -6,10 +6,14 @@ import { prisma } from "@/lib/prisma";
 export async function requireAdmin() {
   if (!process.env.CLERK_SECRET_KEY) {
     if (process.env.NODE_ENV === "production") {
-      throw new Error("CLERK_SECRET_KEY is required to protect admin routes in production.");
+      return {
+        userId: null,
+        staffId: null,
+        needsClerkSetup: true
+      };
     }
 
-    return { userId: "local-dev", staffId: null };
+    return { userId: "local-dev", staffId: null, needsClerkSetup: false };
   }
 
   const { userId } = await auth();
@@ -23,5 +27,5 @@ export async function requireAdmin() {
     select: { id: true }
   });
 
-  return { userId, staffId: staff?.id ?? null };
+  return { userId, staffId: staff?.id ?? null, needsClerkSetup: false };
 }
