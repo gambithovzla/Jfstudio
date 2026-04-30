@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 
 import { createBooking } from "@/lib/data";
+import { prisma } from "@/lib/prisma";
+
+const CANCEL_WINDOW_HOURS = 4;
 
 const bookingSchema = z.object({
   client: z.object({
@@ -12,7 +15,8 @@ const bookingSchema = z.object({
   serviceIds: z.array(z.string()).min(1),
   staffId: z.string().min(1),
   startAt: z.string().datetime(),
-  notes: z.string().optional()
+  notes: z.string().optional(),
+  replaceToken: z.string().optional()
 });
 
 export async function POST(request: NextRequest) {
@@ -21,6 +25,28 @@ export async function POST(request: NextRequest) {
 
   if (!parsed.success) {
     return NextResponse.json({ error: "Datos de reserva invalidos." }, { status: 400 });
+  }
+
+  let cancelAppointmentId: string | null = null;
+
+  if (parsed.data.replaceToken) {
+    const existing = await prisma.appointment.findUnique({
+      where: { accessToken: parsed.data.replaceToken }
+    });
+
+    if (!existing || existing.status !== "CONFIRMED") {
+      return NextResponse.json({ error: "La cita original no puede ser modificada." }, { status: 409 });
+    }
+
+    const hoursUntil = (existing.startAt.getTime() - Date.now()) / (1000 * 60 * 60);
+    if (hoursUntil < CANCEL_WINDOW_HOURS) {
+      return NextResponse.json(
+        { error: `Solo puedes reagendar con al menos ${CANCEL_WINDOW_HOURS} horas de anticipacion.` },
+        { status: 409 }
+      );
+    }
+
+    cancelAppointmentId = existing.id;
   }
 
   try {
@@ -32,9 +58,17 @@ export async function POST(request: NextRequest) {
       notes: parsed.data.notes
     });
 
+    if (cancelAppointmentId) {
+      await prisma.appointment.update({
+        where: { id: cancelAppointmentId },
+        data: { status: "CANCELED" }
+      });
+    }
+
     return NextResponse.json({
       appointment: {
         id: appointment.id,
+        accessToken: appointment.accessToken,
         startAt: appointment.startAt,
         endAt: appointment.endAt,
         clientName: appointment.client.name,

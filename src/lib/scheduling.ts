@@ -33,16 +33,24 @@ export function overlaps(aStart: Date, aEnd: Date, bStart: Date, bEnd: Date) {
   return aStart < bEnd && aEnd > bStart;
 }
 
+export type TimeBlockEntry = {
+  staffId: string | null;
+  startAt: Date;
+  endAt: Date;
+};
+
 export function buildAvailabilitySlots(input: {
   date: string;
   timeZone: string;
   durationMinutes: number;
   intervalMinutes: number;
   staff: StaffSchedule[];
+  timeBlocks?: TimeBlockEntry[];
   now?: Date;
 }) {
   const dayOfWeek = dayOfWeekForDate(input.date);
   const now = input.now ?? new Date();
+  const blocks = input.timeBlocks ?? [];
   const slots: AvailabilitySlot[] = [];
 
   for (const staffMember of input.staff) {
@@ -53,6 +61,8 @@ export function buildAvailabilitySlots(input: {
     if (!workingHour) {
       continue;
     }
+
+    const staffBlocks = blocks.filter((b) => b.staffId === null || b.staffId === staffMember.id);
 
     const workStart = zonedTimeToUtc(input.date, workingHour.startTime, input.timeZone);
     const workEnd = zonedTimeToUtc(input.date, workingHour.endTime, input.timeZone);
@@ -76,8 +86,11 @@ export function buildAvailabilitySlots(input: {
       const hitsAppointment = staffMember.appointments.some((appointment) =>
         overlaps(candidate, candidateEnd, appointment.startAt, appointment.endAt)
       );
+      const hitsBlock = staffBlocks.some((block) =>
+        overlaps(candidate, candidateEnd, block.startAt, block.endAt)
+      );
 
-      if (candidate <= now || hitsBreak || hitsAppointment) {
+      if (candidate <= now || hitsBreak || hitsAppointment || hitsBlock) {
         continue;
       }
 

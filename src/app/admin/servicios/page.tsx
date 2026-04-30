@@ -1,4 +1,5 @@
-import { Power, Scissors } from "lucide-react";
+import Link from "next/link";
+import { Pencil, Power, Scissors } from "lucide-react";
 
 import { createServiceAction, toggleServiceAction } from "@/lib/actions";
 import { getServicesAdmin, getSalonSettings } from "@/lib/data";
@@ -15,7 +16,7 @@ export default async function ServicesPage() {
         <div>
           <p className="eyebrow">Servicios</p>
           <h1 className="title">Menu del salon</h1>
-          <p className="subtitle">Duracion, precio base, adelantos futuros y recetas de producto.</p>
+          <p className="subtitle">Duracion, precio base, adelantos y recetas de producto por servicio.</p>
         </div>
       </div>
 
@@ -36,7 +37,7 @@ export default async function ServicesPage() {
             </div>
             <div className="grid two">
               <div className="field">
-                <label htmlFor="durationMinutes">Duracion</label>
+                <label htmlFor="durationMinutes">Duracion (min)</label>
                 <input className="input" id="durationMinutes" name="durationMinutes" type="number" min="15" step="15" required />
               </div>
               <div className="field">
@@ -52,9 +53,7 @@ export default async function ServicesPage() {
               <label htmlFor="depositAmount">Monto de adelanto</label>
               <input className="input" id="depositAmount" name="depositAmount" type="number" min="0" step="0.01" defaultValue="0" />
             </div>
-            <button className="btn" type="submit">
-              Crear servicio
-            </button>
+            <button className="btn" type="submit">Crear servicio</button>
           </form>
         </section>
 
@@ -66,7 +65,7 @@ export default async function ServicesPage() {
                   <h2 className="card-title">{service.name}</h2>
                   <p className="small muted">
                     {service.durationMinutes} min · {formatCurrency(Number(service.price), settings.currency)}
-                    {service.requiresDeposit ? " · adelanto preparado" : ""}
+                    {service.requiresDeposit ? " · requiere adelanto" : ""}
                   </p>
                 </div>
                 <span className="badge">{service.isActive ? "Activo" : "Inactivo"}</span>
@@ -74,23 +73,26 @@ export default async function ServicesPage() {
               {service.products.length ? (
                 <div className="small muted">
                   {service.products
-                    .map(
-                      (row) =>
-                        `${row.product.name}: ${Number(row.quantity)} ${row.product.unit}${row.isVariable ? " variable" : ""}`
-                    )
+                    .map((row) => `${row.product.name}: ${Number(row.quantity)} ${row.product.unit}${row.isVariable ? " variable" : ""}`)
                     .join(" · ")}
                 </div>
               ) : (
                 <p className="small muted">Sin productos asociados.</p>
               )}
-              <form action={toggleServiceAction} style={{ marginTop: 12 }}>
-                <input type="hidden" name="serviceId" value={service.id} />
-                <input type="hidden" name="nextState" value={String(!service.isActive)} />
-                <button className="btn secondary" type="submit">
-                  <Power size={17} aria-hidden />
-                  {service.isActive ? "Desactivar" : "Activar"}
-                </button>
-              </form>
+              <div className="button-row" style={{ marginTop: 12 }}>
+                <Link className="btn secondary" href={`/admin/servicios/${service.id}`}>
+                  <Pencil size={15} aria-hidden />
+                  Editar
+                </Link>
+                <form action={toggleServiceAction}>
+                  <input type="hidden" name="serviceId" value={service.id} />
+                  <input type="hidden" name="nextState" value={String(!service.isActive)} />
+                  <button className="btn secondary" type="submit">
+                    <Power size={15} aria-hidden />
+                    {service.isActive ? "Desactivar" : "Activar"}
+                  </button>
+                </form>
+              </div>
             </article>
           ))}
         </section>

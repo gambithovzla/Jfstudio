@@ -1,21 +1,50 @@
 import Link from "next/link";
 import { CalendarPlus, Eye, XCircle } from "lucide-react";
 
+import { AgendaCalendar } from "@/components/agenda-calendar";
 import { StatusBadge } from "@/components/status-badge";
 import { cancelAppointmentAction, createAdminAppointmentAction, markNoShowAction } from "@/lib/actions";
-import { getAgenda } from "@/lib/data";
+import { getAgenda, getAgendaRange } from "@/lib/data";
 import { formatTimeInZone } from "@/lib/time";
 import { formatCurrency } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
 type PageProps = {
-  searchParams?: Promise<{ date?: string }>;
+  searchParams?: Promise<{ date?: string; view?: string }>;
 };
 
 export default async function AgendaPage({ searchParams }: PageProps) {
   const params = searchParams ? await searchParams : {};
+  const isCalendarView = params.view === "calendar";
   const { settings, selectedDate, appointments, staff, services } = await getAgenda(params.date);
+
+  let calendarAppointments: {
+    id: string; clientName: string; staffName: string; staffColor: string;
+    services: string[]; startAt: string; endAt: string; status: string;
+  }[] = [];
+
+  if (isCalendarView) {
+    const now = new Date();
+    const weekStart = new Date(now);
+    weekStart.setDate(now.getDate() - now.getDay());
+    weekStart.setHours(0, 0, 0, 0);
+    const weekEnd = new Date(weekStart);
+    weekEnd.setDate(weekStart.getDate() + 14);
+
+    const { appointments: rangeAppts, settings: rs } = await getAgendaRange(weekStart, weekEnd);
+    void rs;
+    calendarAppointments = rangeAppts.map((a) => ({
+      id: a.id,
+      clientName: a.client.name,
+      staffName: a.staff.name,
+      staffColor: a.staff.color,
+      services: a.services.map((s) => s.serviceNameSnapshot),
+      startAt: a.startAt.toISOString(),
+      endAt: a.endAt.toISOString(),
+      status: a.status
+    }));
+  }
 
   return (
     <>
@@ -25,13 +54,25 @@ export default async function AgendaPage({ searchParams }: PageProps) {
           <h1 className="title">Citas del dia</h1>
           <p className="subtitle">Vista operativa por staff con bloqueo por duracion total de servicios.</p>
         </div>
-        <form className="button-row">
-          <input className="input" name="date" type="date" defaultValue={selectedDate} />
-          <button className="btn secondary" type="submit">
-            Ver fecha
-          </button>
-        </form>
+        <div className="button-row">
+          <form className="button-row">
+            <input className="input" name="date" type="date" defaultValue={selectedDate} />
+            <button className="btn secondary" type="submit">
+              Ver fecha
+            </button>
+          </form>
+          <div className="button-row">
+            <Link className={`btn ${!isCalendarView ? "" : "secondary"}`} href="/admin/agenda">Lista</Link>
+            <Link className={`btn ${isCalendarView ? "" : "secondary"}`} href="/admin/agenda?view=calendar">Semana</Link>
+          </div>
+        </div>
       </div>
+
+      {isCalendarView ? (
+        <section className="card" style={{ marginBottom: 24 }}>
+          <AgendaCalendar appointments={calendarAppointments} defaultDate={new Date()} />
+        </section>
+      ) : null}
 
       <div className="grid two">
         <section className="card">

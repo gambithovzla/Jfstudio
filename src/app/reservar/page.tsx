@@ -1,10 +1,14 @@
-import Link from "next/link";
-
 import { BookingForm } from "@/components/booking-form";
 import { SetupNotice } from "@/components/setup-notice";
+import { SiteFooter } from "@/components/landing/site-footer";
+import { SiteHeader } from "@/components/landing/site-header";
 import { getBookingBootstrap } from "@/lib/data";
 
 export const dynamic = "force-dynamic";
+
+export const metadata = {
+  title: "Reserva tu cita"
+};
 
 export default async function BookingPage() {
   try {
@@ -12,23 +16,19 @@ export default async function BookingPage() {
 
     return (
       <>
-        <header className="topbar">
-          <div className="topbar-inner">
-            <Link className="brand-mark" href="/reservar">
-              <span className="brand-dot">JF</span>
-              <span>{settings.name}</span>
-            </Link>
-            <Link className="btn secondary" href="/admin">
-              Admin
-            </Link>
-          </div>
-        </header>
+        <SiteHeader />
         <main className="booking-page">
           <BookingForm services={services} staff={staff} currency={settings.currency} />
         </main>
+        <SiteFooter />
       </>
     );
   } catch (error) {
-    return <SetupNotice message={error instanceof Error ? error.message : undefined} />;
+    return (
+      <>
+        <SiteHeader />
+        <SetupNotice message={error instanceof Error ? error.message : undefined} />
+      </>
+    );
   }
 }

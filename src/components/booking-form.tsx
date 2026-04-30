@@ -30,6 +30,7 @@ type Slot = {
 
 type BookingResult = {
   id: string;
+  accessToken?: string;
   startAt: string;
   endAt: string;
   clientName: string;
@@ -40,13 +41,17 @@ type BookingResult = {
 export function BookingForm({
   services,
   staff,
-  currency
+  currency,
+  initialServiceIds,
+  replaceToken
 }: {
   services: Service[];
   staff: Staff[];
   currency: string;
+  initialServiceIds?: string[];
+  replaceToken?: string;
 }) {
-  const [selectedServices, setSelectedServices] = useState<string[]>([]);
+  const [selectedServices, setSelectedServices] = useState<string[]>(initialServiceIds ?? []);
   const [staffId, setStaffId] = useState("any");
   const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [slots, setSlots] = useState<Slot[]>([]);
@@ -64,6 +69,7 @@ export function BookingForm({
   const total = selectedServiceRows.reduce((sum, service) => sum + service.price, 0);
   const duration = selectedServiceRows.reduce((sum, service) => sum + service.durationMinutes, 0);
   const selectedSlot = slots.find((slot) => `${slot.staffId}:${slot.startAt}` === selectedSlotKey);
+  const requiresDeposit = selectedServiceRows.some((s) => s.requiresDeposit);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -142,7 +148,8 @@ export function BookingForm({
           serviceIds: selectedServices,
           staffId: selectedSlot.staffId,
           startAt: selectedSlot.startAt,
-          notes: String(formData.get("notes") ?? "")
+          notes: String(formData.get("notes") ?? ""),
+          ...(replaceToken ? { replaceToken } : {})
         })
       });
       const data = await response.json();
@@ -167,7 +174,7 @@ export function BookingForm({
       <div className="card">
         <div className="card-header">
           <div>
-            <p className="eyebrow">Reserva confirmada</p>
+            <p className="eyebrow">{replaceToken ? "Cita reagendada" : "Reserva confirmada"}</p>
             <h1 className="title">Lista, {result.clientName}</h1>
             <p className="subtitle">
               {result.services.join(", ")} con {result.staffName}
@@ -176,9 +183,15 @@ export function BookingForm({
           <CheckCircle2 color="#0f766e" size={34} aria-hidden />
         </div>
         <div className="button-row">
-          <button className="btn" type="button" onClick={() => setResult(null)}>
-            Nueva reserva
-          </button>
+          {result.accessToken ? (
+            <a className="btn" href={`/reserva/${result.accessToken}`}>
+              Ver mi reserva
+            </a>
+          ) : (
+            <button className="btn" type="button" onClick={() => setResult(null)}>
+              Nueva reserva
+            </button>
+          )}
         </div>
       </div>
     );
@@ -287,6 +300,12 @@ export function BookingForm({
           <label htmlFor="notes">Notas</label>
           <textarea className="textarea" id="notes" name="notes" />
         </div>
+
+        {requiresDeposit ? (
+          <div style={{ background: "#fefce8", border: "1px solid #fde047", borderRadius: 8, padding: "10px 14px", fontSize: "0.88rem" }}>
+            <strong>Esta cita requiere un adelanto.</strong> Te contactaremos por WhatsApp para coordinar el pago antes de confirmar tu reserva.
+          </div>
+        ) : null}
 
         {error ? <p className="small" style={{ color: "var(--danger)" }}>{error}</p> : null}
 

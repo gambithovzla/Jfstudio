@@ -1,11 +1,24 @@
-import { Plus, Settings } from "lucide-react";
+import Link from "next/link";
+import { Pencil, Plus, Settings, Trash2 } from "lucide-react";
 
-import { createPaymentMethodAction, createStaffAction, updateSalonSettingsAction } from "@/lib/actions";
+import {
+  createPaymentMethodAction,
+  createStaffAction,
+  deletePaymentMethodAction,
+  updatePaymentMethodAction,
+  updateSalonSettingsAction
+} from "@/lib/actions";
 import { getConfigurationAdmin } from "@/lib/data";
 
 export const dynamic = "force-dynamic";
 
 const dayLabels = ["Dom", "Lun", "Mar", "Mie", "Jue", "Vie", "Sab"];
+
+const ROLES: Record<string, string> = {
+  ADMIN: "Admin",
+  STYLIST: "Estilista",
+  RECEPTIONIST: "Recepcion"
+};
 
 export default async function ConfigurationPage() {
   const { settings, staff, methods } = await getConfigurationAdmin();
@@ -21,6 +34,7 @@ export default async function ConfigurationPage() {
       </div>
 
       <div className="grid two">
+        {/* Salon settings */}
         <section className="card">
           <div className="card-header">
             <h2 className="card-title">Salon</h2>
@@ -43,7 +57,7 @@ export default async function ConfigurationPage() {
             </div>
             <div className="grid two">
               <div className="field">
-                <label htmlFor="appointmentIntervalMinutes">Intervalo</label>
+                <label htmlFor="appointmentIntervalMinutes">Intervalo (min)</label>
                 <input
                   className="input"
                   id="appointmentIntervalMinutes"
@@ -68,12 +82,11 @@ export default async function ConfigurationPage() {
                 />
               </div>
             </div>
-            <button className="btn" type="submit">
-              Guardar
-            </button>
+            <button className="btn" type="submit">Guardar</button>
           </form>
         </section>
 
+        {/* Nuevo staff */}
         <section className="card">
           <h2 className="card-title">Nuevo staff</h2>
           <form className="form-grid" action={createStaffAction} style={{ marginTop: 14 }}>
@@ -112,42 +125,74 @@ export default async function ConfigurationPage() {
           </form>
         </section>
 
+        {/* Lista de staff */}
         <section className="card">
-          <h2 className="card-title">Staff</h2>
-          <div className="grid" style={{ marginTop: 14 }}>
-            {staff.map((staffMember) => (
-              <article className="card" key={staffMember.id} style={{ boxShadow: "none" }}>
+          <h2 className="card-title" style={{ marginBottom: 14 }}>Staff</h2>
+          <div className="grid">
+            {staff.map((member) => (
+              <article className="card" key={member.id} style={{ boxShadow: "none" }}>
                 <div className="card-header">
                   <div>
-                    <h3 className="card-title">{staffMember.name}</h3>
-                    <p className="small muted">{staffMember.role}</p>
+                    <h3 className="card-title">{member.name}</h3>
+                    <p className="small muted">
+                      {ROLES[member.role] ?? member.role}
+                      {member.email ? ` · ${member.email}` : ""}
+                    </p>
+                    <p className="small muted">
+                      {member.workingHours
+                        .filter((h) => h.isActive)
+                        .map((h) => `${dayLabels[h.dayOfWeek]} ${h.startTime}-${h.endTime}`)
+                        .join(" · ")}
+                    </p>
                   </div>
-                  <span className="badge">{staffMember.isActive ? "Activo" : "Inactivo"}</span>
+                  <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 8 }}>
+                    <span className="badge">{member.isActive ? "Activo" : "Inactivo"}</span>
+                    <Link className="btn secondary" href={`/admin/configuracion/staff/${member.id}`} style={{ minHeight: 34, padding: "0 10px" }}>
+                      <Pencil size={14} aria-hidden />
+                      Editar
+                    </Link>
+                  </div>
                 </div>
-                <p className="small muted">
-                  {staffMember.workingHours
-                    .filter((hour) => hour.isActive)
-                    .map((hour) => `${dayLabels[hour.dayOfWeek]} ${hour.startTime}-${hour.endTime}`)
-                    .join(" · ")}
-                </p>
               </article>
             ))}
           </div>
         </section>
 
+        {/* Métodos de pago */}
         <section className="card">
-          <h2 className="card-title">Metodos de pago</h2>
-          <div className="button-row" style={{ marginTop: 12 }}>
+          <h2 className="card-title" style={{ marginBottom: 14 }}>Metodos de pago</h2>
+          <div className="form-grid">
             {methods.map((method) => (
-              <span className="badge" key={method.id}>
-                {method.name}
-              </span>
+              <div key={method.id} className="card" style={{ boxShadow: "none", padding: "10px 14px" }}>
+                <form className="button-row" action={updatePaymentMethodAction} style={{ justifyContent: "space-between" }}>
+                  <input type="hidden" name="methodId" value={method.id} />
+                  <div className="button-row">
+                    <input className="input" name="name" defaultValue={method.name} style={{ width: 140 }} required />
+                    <input className="input" name="sortOrder" type="number" defaultValue={method.sortOrder} style={{ width: 64 }} />
+                    <label className="choice" style={{ minHeight: 36, padding: "0 10px" }}>
+                      <input name="isActive" type="checkbox" defaultChecked={method.isActive} />
+                      <span className="small">Activo</span>
+                    </label>
+                  </div>
+                  <div className="button-row">
+                    <button className="btn secondary" type="submit" style={{ minHeight: 36, padding: "0 10px" }}>
+                      Guardar
+                    </button>
+                    <form action={deletePaymentMethodAction}>
+                      <input type="hidden" name="methodId" value={method.id} />
+                      <button className="btn danger" type="submit" style={{ minHeight: 36, padding: "0 10px" }}>
+                        <Trash2 size={15} aria-hidden />
+                      </button>
+                    </form>
+                  </div>
+                </form>
+              </div>
             ))}
           </div>
-          <form className="form-grid" action={createPaymentMethodAction} style={{ marginTop: 18 }}>
+          <form className="form-grid" action={createPaymentMethodAction} style={{ marginTop: 16 }}>
             <div className="grid two">
               <div className="field">
-                <label htmlFor="method-name">Nombre</label>
+                <label htmlFor="method-name">Nuevo metodo</label>
                 <input className="input" id="method-name" name="name" required />
               </div>
               <div className="field">
@@ -156,6 +201,7 @@ export default async function ConfigurationPage() {
               </div>
             </div>
             <button className="btn secondary" type="submit">
+              <Plus size={16} aria-hidden />
               Crear metodo
             </button>
           </form>

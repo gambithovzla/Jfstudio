@@ -1,11 +1,14 @@
 import { AppointmentStatus, Prisma } from "@prisma/client";
 
 import { summarizePayments } from "@/lib/cash";
+import { sendBookingConfirmation } from "@/lib/email";
 import { prisma } from "@/lib/prisma";
 import { buildAvailabilitySlots } from "@/lib/scheduling";
 import {
   addMinutes,
   endOfSalonDayUtc,
+  formatDateInZone,
+  formatTimeInZone,
   localDateTimeToUtc,
   startOfSalonDayUtc,
   todayInTimeZone
@@ -66,6 +69,7 @@ export async function getAvailabilityForServices(input: {
   serviceIds: string[];
   date: string;
   staffId?: string | null;
+  excludeAppointmentId?: string | null;
 }) {
   const settings = await getSalonSettings();
   const serviceIds = Array.from(new Set(input.serviceIds.filter(Boolean)));
@@ -87,30 +91,41 @@ export async function getAvailabilityForServices(input: {
   const dayStart = startOfSalonDayUtc(input.date, settings.timezone);
   const dayEnd = endOfSalonDayUtc(input.date, settings.timezone);
 
-  const staff = await prisma.staff.findMany({
-    where: {
-      isActive: true,
-      ...(input.staffId ? { id: input.staffId } : {})
-    },
-    orderBy: { name: "asc" },
-    include: {
-      workingHours: true,
-      appointments: {
-        where: {
-          status: { in: [AppointmentStatus.CONFIRMED, AppointmentStatus.COMPLETED] },
-          startAt: { lt: dayEnd },
-          endAt: { gt: dayStart }
-        },
-        select: { startAt: true, endAt: true }
+  const [staff, timeBlocks] = await Promise.all([
+    prisma.staff.findMany({
+      where: {
+        isActive: true,
+        ...(input.staffId ? { id: input.staffId } : {})
+      },
+      orderBy: { name: "asc" },
+      include: {
+        workingHours: true,
+        appointments: {
+          where: {
+            status: { in: [AppointmentStatus.CONFIRMED, AppointmentStatus.COMPLETED] },
+            startAt: { lt: dayEnd },
+            endAt: { gt: dayStart },
+            ...(input.excludeAppointmentId ? { id: { not: input.excludeAppointmentId } } : {})
+          },
+          select: { startAt: true, endAt: true }
+        }
       }
-    }
-  });
+    }),
+    prisma.timeBlock.findMany({
+      where: {
+        startAt: { lt: dayEnd },
+        endAt: { gt: dayStart }
+      },
+      select: { staffId: true, startAt: true, endAt: true }
+    })
+  ]);
 
   return buildAvailabilitySlots({
     date: input.date,
     timeZone: settings.timezone,
     durationMinutes,
     intervalMinutes: settings.appointmentIntervalMinutes,
+    timeBlocks,
     staff: staff.map((staffMember) => ({
       id: staffMember.id,
       name: staffMember.name,
@@ -135,7 +150,7 @@ export async function createBooking(input: {
     throw new Error("Faltan datos para crear la reserva.");
   }
 
-  return prisma.$transaction(
+  const appointment = await prisma.$transaction(
     async (tx) => {
       const services = await tx.service.findMany({
         where: { id: { in: serviceIds }, isActive: true },
@@ -245,6 +260,21 @@ export async function createBooking(input: {
     },
     { isolationLevel: Prisma.TransactionIsolationLevel.Serializable }
   );
+
+  if (appointment.client.email) {
+    const serviceNames = appointment.services.map((s) => s.serviceNameSnapshot).join(", ");
+    sendBookingConfirmation({
+      to: appointment.client.email,
+      clientName: appointment.client.name,
+      serviceName: serviceNames,
+      staffName: appointment.staff.name,
+      dateLabel: formatDateInZone(appointment.startAt, settings.timezone),
+      timeLabel: formatTimeInZone(appointment.startAt, settings.timezone),
+      accessToken: appointment.accessToken
+    }).catch((err) => console.error("[email] confirmacion fallo:", err));
+  }
+
+  return appointment;
 }
 
 export async function createBookingFromLocalTime(input: {
@@ -296,6 +326,25 @@ export async function getAgenda(date?: string) {
   };
 }
 
+export async function getAgendaRange(from: Date, to: Date) {
+  const settings = await getSalonSettings();
+
+  const appointments = await prisma.appointment.findMany({
+    where: {
+      startAt: { gte: from, lt: to }
+    },
+    orderBy: { startAt: "asc" },
+    include: {
+      client: true,
+      staff: true,
+      services: true,
+      payments: true
+    }
+  });
+
+  return { settings, appointments };
+}
+
 export async function getAppointmentForCheckout(id: string) {
   const [appointment, methods] = await Promise.all([
     prisma.appointment.findUnique({
@@ -325,8 +374,39 @@ export async function getAppointmentForCheckout(id: string) {
   return { appointment, methods };
 }
 
-export async function getClientsWithHistory() {
+export async function getAppointmentForEdit(id: string) {
+  const [appointment, settings] = await Promise.all([
+    prisma.appointment.findUnique({
+      where: { id },
+      include: {
+        client: true,
+        staff: true,
+        services: {
+          include: { service: true }
+        }
+      }
+    }),
+    getSalonSettings()
+  ]);
+
+  const [allStaff, allServices] = await Promise.all([
+    prisma.staff.findMany({ where: { isActive: true }, orderBy: { name: "asc" } }),
+    prisma.service.findMany({ where: { isActive: true }, orderBy: { name: "asc" } })
+  ]);
+
+  return { appointment, settings, allStaff, allServices };
+}
+
+export async function getClientsWithHistory(search?: string) {
   return prisma.client.findMany({
+    where: search
+      ? {
+          OR: [
+            { name: { contains: search, mode: "insensitive" } },
+            { phone: { contains: search.replace(/[^0-9+]/g, "") } }
+          ]
+        }
+      : undefined,
     orderBy: { updatedAt: "desc" },
     include: {
       appointments: {
@@ -342,6 +422,27 @@ export async function getClientsWithHistory() {
   });
 }
 
+export async function getClientById(id: string) {
+  const [client, settings] = await Promise.all([
+    prisma.client.findUnique({
+      where: { id },
+      include: {
+        appointments: {
+          orderBy: { startAt: "desc" },
+          include: {
+            services: true,
+            staff: true,
+            payments: true
+          }
+        }
+      }
+    }),
+    getSalonSettings()
+  ]);
+
+  return { client, settings };
+}
+
 export async function getServicesAdmin() {
   return prisma.service.findMany({
     orderBy: { name: "asc" },
@@ -354,28 +455,71 @@ export async function getServicesAdmin() {
   });
 }
 
+export async function getServiceById(id: string) {
+  const [service, allProducts] = await Promise.all([
+    prisma.service.findUnique({
+      where: { id },
+      include: {
+        products: {
+          include: { product: true },
+          orderBy: { product: { name: "asc" } }
+        }
+      }
+    }),
+    prisma.product.findMany({ where: { isActive: true }, orderBy: { name: "asc" } })
+  ]);
+
+  return { service, allProducts };
+}
+
 export async function getProductsAdmin() {
   return prisma.product.findMany({
     orderBy: { name: "asc" },
     include: {
       movements: {
         orderBy: { createdAt: "desc" },
-        take: 5
+        take: 20,
+        include: { createdByStaff: { select: { name: true } } }
       }
     }
   });
 }
 
-export async function getCashReport(date?: string) {
-  const settings = await getSalonSettings();
-  const selectedDate = date || todayInTimeZone(settings.timezone);
-  const payments = await prisma.payment.findMany({
-    where: {
-      paidAt: {
-        gte: startOfSalonDayUtc(selectedDate, settings.timezone),
-        lt: endOfSalonDayUtc(selectedDate, settings.timezone)
+export async function getProductById(id: string) {
+  return prisma.product.findUnique({
+    where: { id },
+    include: {
+      movements: {
+        orderBy: { createdAt: "desc" },
+        take: 50,
+        include: { createdByStaff: { select: { name: true } } }
       }
-    },
+    }
+  });
+}
+
+export async function getCashReport(options?: { date?: string; from?: string; to?: string }) {
+  const settings = await getSalonSettings();
+
+  let dateRange: { gte: Date; lt: Date };
+
+  if (options?.from && options?.to) {
+    dateRange = {
+      gte: startOfSalonDayUtc(options.from, settings.timezone),
+      lt: endOfSalonDayUtc(options.to, settings.timezone)
+    };
+  } else {
+    const selectedDate = options?.date || todayInTimeZone(settings.timezone);
+    dateRange = {
+      gte: startOfSalonDayUtc(selectedDate, settings.timezone),
+      lt: endOfSalonDayUtc(selectedDate, settings.timezone)
+    };
+  }
+
+  const selectedDate = options?.date || options?.from || todayInTimeZone(settings.timezone);
+
+  const payments = await prisma.payment.findMany({
+    where: { paidAt: dateRange },
     orderBy: { paidAt: "desc" },
     include: {
       appointment: {
@@ -408,4 +552,23 @@ export async function getConfigurationAdmin() {
   ]);
 
   return { settings, staff, methods };
+}
+
+export async function getStaffById(id: string) {
+  return prisma.staff.findUnique({
+    where: { id },
+    include: { workingHours: { orderBy: { dayOfWeek: "asc" } } }
+  });
+}
+
+export async function getAppointmentByToken(token: string) {
+  return prisma.appointment.findUnique({
+    where: { accessToken: token },
+    include: {
+      client: true,
+      staff: true,
+      services: { select: { id: true, serviceId: true, serviceNameSnapshot: true, durationMinutesSnapshot: true, priceSnapshot: true } },
+      payments: { select: { id: true, amount: true, method: true } }
+    }
+  });
 }

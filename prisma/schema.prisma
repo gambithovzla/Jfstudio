@@ -50,6 +50,7 @@ model Staff {
   updatedAt          DateTime            @updatedAt
   appointments       Appointment[]
   workingHours       WorkingHour[]
+  timeBlocks         TimeBlock[]
   collectedPayments  Payment[]           @relation("PaymentCollector")
   inventoryMovements InventoryMovement[] @relation("InventoryMovementCreator")
 }
@@ -130,6 +131,9 @@ model Appointment {
   notes              String?
   totalPrice         Decimal?             @db.Decimal(10, 2)
   completedAt        DateTime?
+  accessToken        String               @unique @default(cuid())
+  reminderSentAt     DateTime?
+  depositPaid        Boolean              @default(false)
   createdAt          DateTime             @default(now())
   updatedAt          DateTime             @updatedAt
   client             Client               @relation(fields: [clientId], references: [id], onDelete: Restrict)
@@ -194,4 +198,17 @@ model PaymentMethodConfig {
   sortOrder Int      @default(0)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model TimeBlock {
+  id        String   @id @default(cuid())
+  staffId   String?
+  startAt   DateTime
+  endAt     DateTime
+  reason    String?
+  createdAt DateTime @default(now())
+  staff     Staff?   @relation(fields: [staffId], references: [id], onDelete: Cascade)
+
+  @@index([startAt, endAt])
+  @@index([staffId])
 }

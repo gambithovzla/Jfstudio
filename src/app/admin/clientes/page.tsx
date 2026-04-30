@@ -1,70 +1,119 @@
+import Link from "next/link";
+import { Plus, Search } from "lucide-react";
+
 import { getClientsWithHistory, getSalonSettings } from "@/lib/data";
-import { formatDateInZone } from "@/lib/time";
+import { formatDateInZone, formatTimeInZone } from "@/lib/time";
 import { formatCurrency } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
-export default async function ClientsPage() {
-  const [clients, settings] = await Promise.all([getClientsWithHistory(), getSalonSettings()]);
+type PageProps = {
+  searchParams?: Promise<{ q?: string }>;
+};
+
+export default async function ClientsPage({ searchParams }: PageProps) {
+  const params = searchParams ? await searchParams : {};
+  const [clients, settings] = await Promise.all([
+    getClientsWithHistory(params.q),
+    getSalonSettings()
+  ]);
 
   return (
     <>
       <div className="page-header">
         <div>
           <p className="eyebrow">Clientes</p>
-          <h1 className="title">Historial</h1>
-          <p className="subtitle">Servicios realizados, staff y precios cobrados por clienta.</p>
+          <h1 className="title">Historial de clientas</h1>
+          <p className="subtitle">Busca por nombre o telefono. Haz clic en una clienta para ver su historial completo.</p>
+        </div>
+        <div className="button-row">
+          <form className="button-row">
+            <input className="input" name="q" type="search" placeholder="Buscar..." defaultValue={params.q} />
+            <button className="btn secondary" type="submit">
+              <Search size={16} aria-hidden />
+              Buscar
+            </button>
+          </form>
+          <Link className="btn" href="/admin/clientes/nuevo">
+            <Plus size={17} aria-hidden />
+            Nueva clienta
+          </Link>
         </div>
       </div>
 
-      <div className="grid">
-        {clients.length === 0 ? <div className="empty">Aun no hay clientas registradas.</div> : null}
-        {clients.map((client) => (
-          <article className="card" key={client.id}>
-            <div className="card-header">
-              <div>
-                <h2 className="card-title">{client.name}</h2>
-                <p className="small muted">
-                  {client.phone}
-                  {client.email ? ` · ${client.email}` : ""}
-                </p>
-              </div>
-              <span className="badge">{client.appointments.length} ultimas</span>
-            </div>
-            {client.appointments.length === 0 ? (
-              <p className="small muted">Sin citas todavia.</p>
-            ) : (
-              <table className="table">
-                <thead>
-                  <tr>
-                    <th>Fecha</th>
-                    <th>Servicios</th>
-                    <th>Staff</th>
-                    <th>Cobrado</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {client.appointments.map((appointment) => (
-                    <tr key={appointment.id}>
-                      <td>{formatDateInZone(appointment.startAt, settings.timezone)}</td>
-                      <td>{appointment.services.map((service) => service.serviceNameSnapshot).join(", ")}</td>
-                      <td>{appointment.staff.name}</td>
-                      <td>
-                        {appointment.payments.length
-                          ? formatCurrency(
-                              appointment.payments.reduce((sum, payment) => sum + Number(payment.amount), 0),
-                              settings.currency
-                            )
-                          : "Pendiente"}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
-          </article>
-        ))}
-      </div>
+      {clients.length === 0 ? (
+        <div className="empty">No se encontraron clientas.</div>
+      ) : (
+        <div className="grid">
+          {clients.map((client) => {
+            const totalSpent = client.appointments.reduce(
+              (sum, apt) => sum + apt.payments.reduce((s, p) => s + Number(p.amount), 0),
+              0
+            );
+
+            return (
+              <article className="card" key={client.id}>
+                <div className="card-header">
+                  <div>
+                    <h2 className="card-title">{client.name}</h2>
+                    <p className="small muted">
+                      {client.phone}
+                      {client.email ? ` · ${client.email}` : ""}
+                    </p>
+                  </div>
+                  <div className="button-row">
+                    <Link className="btn secondary" href={`/admin/clientes/${client.id}`}>
+                      Ver historial
+                    </Link>
+                    <Link className="btn secondary" href={`/admin/clientes/${client.id}/edit`}>
+                      Editar
+                    </Link>
+                  </div>
+                </div>
+
+                {client.appointments.length === 0 ? (
+                  <p className="small muted">Sin citas registradas.</p>
+                ) : (
+                  <table className="table">
+                    <thead>
+                      <tr>
+                        <th>Fecha</th>
+                        <th>Servicios</th>
+                        <th>Estilista</th>
+                        <th>Total</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {client.appointments.map((apt) => {
+                        const paid = apt.payments.reduce((s, p) => s + Number(p.amount), 0);
+                        return (
+                          <tr key={apt.id}>
+                            <td className="small">
+                              {formatDateInZone(apt.startAt, settings.timezone)}{" "}
+                              {formatTimeInZone(apt.startAt, settings.timezone)}
+                            </td>
+                            <td className="small">{apt.services.map((s) => s.serviceNameSnapshot).join(", ")}</td>
+                            <td className="small">{apt.staff.name}</td>
+                            <td className="small">
+                              {paid > 0 ? formatCurrency(paid, settings.currency) : <span className="muted">Pendiente</span>}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                )}
+
+                {totalSpent > 0 ? (
+                  <p className="small muted" style={{ marginTop: 8 }}>
+                    Total acumulado (ultimas 5 citas): <strong>{formatCurrency(totalSpent, settings.currency)}</strong>
+                  </p>
+                ) : null}
+              </article>
+            );
+          })}
+        </div>
+      )}
     </>
   );
 }
