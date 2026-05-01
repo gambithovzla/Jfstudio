@@ -48,13 +48,17 @@ export default async function AppointmentDetailPage({ params }: PageProps) {
     }
   }
 
-  const phone = normalizePhone(appointment.client.phone).replace(/^\+/, "");
-  const message = encodeURIComponent(
-    `Hola ${appointment.client.name}, te confirmamos tu cita en ${settings.name} para el ${formatDateInZone(
-      appointment.startAt,
-      settings.timezone
-    )} a las ${formatTimeInZone(appointment.startAt, settings.timezone)}.`
-  );
+  const phone = appointment.client.phone
+    ? normalizePhone(appointment.client.phone).replace(/^\+/, "")
+    : null;
+  const message = phone
+    ? encodeURIComponent(
+        `Hola ${appointment.client.name}, te confirmamos tu cita en ${settings.name} para el ${formatDateInZone(
+          appointment.startAt,
+          settings.timezone
+        )} a las ${formatTimeInZone(appointment.startAt, settings.timezone)}.`
+      )
+    : "";
 
   return (
     <>
@@ -98,12 +102,14 @@ export default async function AppointmentDetailPage({ params }: PageProps) {
           <div className="card-header">
             <div>
               <h2 className="card-title">Detalle</h2>
-              <p className="small muted">{appointment.client.phone}</p>
+              <p className="small muted">{appointment.client.phone ?? "Sin telefono"}</p>
             </div>
-            <Link className="btn secondary" href={`https://wa.me/${phone}?text=${message}`} target="_blank">
-              <MessageCircle size={17} aria-hidden />
-              WhatsApp
-            </Link>
+            {phone ? (
+              <Link className="btn secondary" href={`https://wa.me/${phone}?text=${message}`} target="_blank">
+                <MessageCircle size={17} aria-hidden />
+                WhatsApp
+              </Link>
+            ) : null}
           </div>
           <table className="table">
             <thead>
