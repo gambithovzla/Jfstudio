@@ -1,12 +1,14 @@
 import { Clock, MapPin } from "lucide-react";
 
 import { landingContent } from "@/content/landing";
+import { ScrollReveal } from "./scroll-reveal";
 
 export function Location() {
   const { location } = landingContent;
 
   return (
     <section className="landing-section landing-location" id="ubicacion">
+      <ScrollReveal>
       <div className="landing-location-info">
         <p className="eyebrow">Donde encontrarnos</p>
         <h2 className="section-title">{location.title}</h2>
@@ -27,6 +29,8 @@ export function Location() {
           {location.notes ? <p className="small muted">{location.notes}</p> : null}
         </div>
       </div>
+      </ScrollReveal>
+      <ScrollReveal delay={1}>
       <div className="landing-location-map">
         {location.mapsEmbedUrl ? (
           <iframe
@@ -43,6 +47,7 @@ export function Location() {
           </div>
         )}
       </div>
+      </ScrollReveal>
     </section>
   );
 }
