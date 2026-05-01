@@ -33,7 +33,7 @@ export default async function ClientDetailPage({ params }: PageProps) {
           <p className="eyebrow">Cliente</p>
           <h1 className="title">{client.name}</h1>
           <p className="subtitle">
-            {client.phone}
+            {client.phone ?? "Sin telefono"}
             {client.email ? ` · ${client.email}` : ""}
           </p>
         </div>
@@ -61,12 +61,24 @@ export default async function ClientDetailPage({ params }: PageProps) {
           <div className="form-grid">
             <div>
               <p className="field-label">Telefono</p>
-              <p>{client.phone}</p>
+              <p>{client.phone ?? "—"}</p>
             </div>
             {client.email ? (
               <div>
                 <p className="field-label">Correo</p>
                 <p>{client.email}</p>
+              </div>
+            ) : null}
+            {client.dni ? (
+              <div>
+                <p className="field-label">DNI</p>
+                <p>{client.dni}</p>
+              </div>
+            ) : null}
+            {client.source ? (
+              <div>
+                <p className="field-label">Referencia</p>
+                <p>{client.source}</p>
               </div>
             ) : null}
             {client.notes ? (
@@ -79,6 +91,12 @@ export default async function ClientDetailPage({ params }: PageProps) {
               <p className="field-label">Registrada</p>
               <p className="small">{new Date(client.createdAt).toLocaleDateString("es-PE")}</p>
             </div>
+            {client.firstVisitAt ? (
+              <div>
+                <p className="field-label">Primera visita</p>
+                <p className="small">{new Date(client.firstVisitAt).toLocaleDateString("es-PE")}</p>
+              </div>
+            ) : null}
             {totalSpent > 0 ? (
               <div>
                 <p className="field-label">Total acumulado</p>

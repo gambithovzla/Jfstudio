@@ -424,13 +424,16 @@ export async function adjustProductStockAction(formData: FormData) {
 export async function createClientAction(formData: FormData) {
   await requireRole(UserRole.ADMIN, UserRole.RECEPTIONIST);
 
-  const phone = normalizePhone(requiredString(formData, "phone"));
+  const rawPhone = optionalString(formData, "phone");
+  const phone = rawPhone ? normalizePhone(rawPhone) : null;
 
   await prisma.client.create({
     data: {
       name: requiredString(formData, "name"),
       phone,
       email: optionalString(formData, "email"),
+      dni: optionalString(formData, "dni"),
+      source: optionalString(formData, "source"),
       notes: optionalString(formData, "notes")
     }
   });
@@ -443,7 +446,8 @@ export async function updateClientAction(formData: FormData) {
   await requireRole(UserRole.ADMIN, UserRole.RECEPTIONIST);
 
   const clientId = requiredString(formData, "clientId");
-  const phone = normalizePhone(requiredString(formData, "phone"));
+  const rawPhone = optionalString(formData, "phone");
+  const phone = rawPhone ? normalizePhone(rawPhone) : null;
 
   await prisma.client.update({
     where: { id: clientId },
@@ -451,6 +455,8 @@ export async function updateClientAction(formData: FormData) {
       name: requiredString(formData, "name"),
       phone,
       email: optionalString(formData, "email"),
+      dni: optionalString(formData, "dni"),
+      source: optionalString(formData, "source"),
       notes: optionalString(formData, "notes")
     }
   });

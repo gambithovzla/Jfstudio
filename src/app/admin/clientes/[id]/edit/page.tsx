@@ -44,12 +44,22 @@ export default async function EditClientPage({ params }: PageProps) {
             </div>
             <div className="field">
               <label htmlFor="phone">Telefono</label>
-              <input className="input" id="phone" name="phone" defaultValue={client.phone} required />
+              <input className="input" id="phone" name="phone" defaultValue={client.phone ?? ""} />
+            </div>
+          </div>
+          <div className="grid two">
+            <div className="field">
+              <label htmlFor="email">Correo</label>
+              <input className="input" id="email" name="email" type="email" defaultValue={client.email ?? ""} />
+            </div>
+            <div className="field">
+              <label htmlFor="dni">DNI</label>
+              <input className="input" id="dni" name="dni" defaultValue={client.dni ?? ""} />
             </div>
           </div>
           <div className="field">
-            <label htmlFor="email">Correo</label>
-            <input className="input" id="email" name="email" type="email" defaultValue={client.email ?? ""} />
+            <label htmlFor="source">Referencia</label>
+            <input className="input" id="source" name="source" defaultValue={client.source ?? ""} placeholder="Ej: Recomendada, Instagram, Redes sociales" />
           </div>
           <div className="field">
             <label htmlFor="notes">Notas internas</label>
