@@ -73,9 +73,12 @@ model WorkingHour {
 model Client {
   id           String        @id @default(cuid())
   name         String
-  phone        String        @unique
+  phone        String?       @unique
   email        String?
+  dni          String?
+  source       String?
   notes        String?
+  firstVisitAt DateTime?
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
   appointments Appointment[]

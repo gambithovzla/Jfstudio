@@ -57,7 +57,7 @@ export default async function ClientsPage({ searchParams }: PageProps) {
                   <div>
                     <h2 className="card-title">{client.name}</h2>
                     <p className="small muted">
-                      {client.phone}
+                      {client.phone ?? "Sin telefono"}
                       {client.email ? ` · ${client.email}` : ""}
                     </p>
                   </div>

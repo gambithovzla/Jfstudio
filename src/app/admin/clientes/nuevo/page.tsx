@@ -28,16 +28,26 @@ export default function NewClientPage() {
             </div>
             <div className="field">
               <label htmlFor="phone">Telefono</label>
-              <input className="input" id="phone" name="phone" required />
+              <input className="input" id="phone" name="phone" />
+            </div>
+          </div>
+          <div className="grid two">
+            <div className="field">
+              <label htmlFor="email">Correo</label>
+              <input className="input" id="email" name="email" type="email" />
+            </div>
+            <div className="field">
+              <label htmlFor="dni">DNI</label>
+              <input className="input" id="dni" name="dni" />
             </div>
           </div>
           <div className="field">
-            <label htmlFor="email">Correo</label>
-            <input className="input" id="email" name="email" type="email" />
+            <label htmlFor="source">Referencia</label>
+            <input className="input" id="source" name="source" placeholder="Ej: Recomendada, Instagram, Redes sociales" />
           </div>
           <div className="field">
             <label htmlFor="notes">Notas internas</label>
-            <textarea className="textarea" id="notes" name="notes" placeholder="Alergias, preferencias, referencias..." />
+            <textarea className="textarea" id="notes" name="notes" placeholder="Alergias, preferencias..." />
           </div>
           <div className="button-row">
             <button className="btn" type="submit">Crear clienta</button>
