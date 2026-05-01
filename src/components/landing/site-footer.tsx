@@ -1,4 +1,6 @@
 import Link from "next/link";
+import Image from "next/image";
+import { Camera } from "lucide-react";
 
 import { landingContent } from "@/content/landing";
 
@@ -11,10 +13,20 @@ export function SiteFooter() {
       <div className="site-footer-inner">
         <div>
           <span className="brand-mark" aria-label={brand.name}>
-            <span className="brand-dot">{brand.initials}</span>
+            {brand.logoUrl ? (
+              <Image
+                src={brand.logoUrl}
+                alt={brand.name}
+                width={32}
+                height={32}
+                style={{ borderRadius: 6 }}
+              />
+            ) : (
+              <span className="brand-dot">{brand.initials}</span>
+            )}
             <span>{brand.name}</span>
           </span>
-          <p className="small muted" style={{ marginTop: 8 }}>
+          <p className="small" style={{ marginTop: 8, opacity: 0.7 }}>
             {brand.tagline}
           </p>
         </div>
@@ -25,13 +37,25 @@ export function SiteFooter() {
           <Link href="/reservar">Reservar</Link>
         </nav>
         <div>
-          <p className="small muted">
+          <p className="small" style={{ opacity: 0.7, marginBottom: 12 }}>
             {contact.phone} · {contact.email}
           </p>
+          {contact.instagram ? (
+            <div className="site-footer-social">
+              <a
+                href={contact.instagram}
+                target="_blank"
+                rel="noreferrer"
+                aria-label="Instagram"
+              >
+                <Camera size={18} />
+              </a>
+            </div>
+          ) : null}
         </div>
       </div>
-      <div className="site-footer-bottom small muted">
-        © {year} {brand.name}. Todos los derechos reservados.
+      <div className="site-footer-bottom small">
+        &copy; {year} {brand.name}. Todos los derechos reservados.
       </div>
     </footer>
   );

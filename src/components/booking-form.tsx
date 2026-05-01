@@ -180,7 +180,7 @@ export function BookingForm({
               {result.services.join(", ")} con {result.staffName}
             </p>
           </div>
-          <CheckCircle2 color="#0f766e" size={34} aria-hidden />
+          <CheckCircle2 color="var(--brand)" size={34} aria-hidden />
         </div>
         <div className="button-row">
           {result.accessToken ? (

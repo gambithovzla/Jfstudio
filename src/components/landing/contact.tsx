@@ -2,6 +2,7 @@ import Link from "next/link";
 import { AtSign, Mail, MessageCircle, Phone } from "lucide-react";
 
 import { landingContent } from "@/content/landing";
+import { ScrollReveal } from "./scroll-reveal";
 
 export function Contact() {
   const { contact } = landingContent;
@@ -9,10 +10,12 @@ export function Contact() {
 
   return (
     <section className="landing-section landing-contact" id="contacto">
-      <div className="section-header">
-        <p className="eyebrow">{contact.title}</p>
-        <h2 className="section-title">{contact.description}</h2>
-      </div>
+      <ScrollReveal>
+        <div className="section-header">
+          <p className="eyebrow">{contact.title}</p>
+          <h2 className="section-title">{contact.description}</h2>
+        </div>
+      </ScrollReveal>
       <div className="grid two landing-contact-grid">
         <div className="card contact-card">
           <div className="contact-row">

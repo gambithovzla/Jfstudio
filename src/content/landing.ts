@@ -78,7 +78,7 @@ export const landingContent: LandingContent = {
     name: "JF Studio",
     tagline: "Estilismo y belleza por Johanna Figueredo",
     initials: "JF",
-    logoUrl: null
+    logoUrl: "/images/logo-jf.png"
   },
   hero: {
     eyebrow: "Salon de belleza",
@@ -87,8 +87,8 @@ export const landingContent: LandingContent = {
       "Cortes, color, tratamientos y peinados con productos profesionales. Reserva en linea en menos de un minuto.",
     primaryCta: { label: "Reservar cita", href: "/reservar" },
     secondaryCta: { label: "Ver servicios", href: "#servicios" },
-    imageUrl: null,
-    imageAlt: "Salon JF Studio"
+    imageUrl: "/images/johanna-hero.webp",
+    imageAlt: "Johanna Figueredo trabajando en el estudio"
   },
   about: {
     title: "Sobre Johanna",
@@ -96,7 +96,7 @@ export const landingContent: LandingContent = {
       "Soy Johanna Figueredo, estilista profesional con mas de una decada acompanando a mis clientas en sus momentos mas importantes.",
       "En JF Studio encontraras un espacio calido donde cada servicio se piensa para resaltar tu personalidad. Trabajamos con marcas premium y tecnicas actualizadas para cuidar tu cabello y tu tiempo."
     ],
-    portraitUrl: null,
+    portraitUrl: "/images/johanna-portrait.webp",
     portraitAlt: "Johanna Figueredo"
   },
   services: {
@@ -127,7 +127,13 @@ export const landingContent: LandingContent = {
   gallery: {
     title: "Trabajos recientes",
     description: "Inspirate con algunos de los looks creados en el estudio.",
-    images: []
+    images: [
+      { src: "/images/johanna-hero.webp", alt: "Johanna trabajando en el estudio" },
+      { src: "/images/johanna-portrait.webp", alt: "Johanna Figueredo" },
+      { src: "/images/johanna-portrait-alt.webp", alt: "Retrato profesional" },
+      { src: "/images/johanna-seated.webp", alt: "Johanna en el estudio" },
+      { src: "/images/johanna-conferencia.webp", alt: "Johanna en conferencia" },
+    ]
   },
   testimonials: {
     title: "Lo que dicen nuestras clientas",
