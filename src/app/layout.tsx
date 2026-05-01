@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import { ClerkProvider } from "@clerk/nextjs";
 import { Inter, Playfair_Display } from "next/font/google";
 
 import { landingContent } from "@/content/landing";
@@ -51,13 +50,13 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const hasClerk = Boolean(process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY);
   const className = `${inter.variable} ${playfair.variable}`;
-  const content = <div className="app-shell">{children}</div>;
 
   return (
     <html lang="es" className={className}>
-      <body>{hasClerk ? <ClerkProvider>{content}</ClerkProvider> : content}</body>
+      <body>
+        <div className="app-shell">{children}</div>
+      </body>
     </html>
   );
 }
