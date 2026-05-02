@@ -266,20 +266,24 @@ export function BookingForm({
           {!loadingSlots && slots.length === 0 ? (
             <div className="empty">Sin horarios para la seleccion actual.</div>
           ) : null}
-          {slots.map((slot) => {
-            const slotKey = `${slot.staffId}:${slot.startAt}`;
-            return (
-              <button
-                type="button"
-                key={slotKey}
-                className={`slot-button ${selectedSlotKey === slotKey ? "active" : ""}`}
-                onClick={() => setSelectedSlotKey(slotKey)}
-              >
-                <strong>{slot.label}</strong>
-                <div className="small muted">{slot.staffName}</div>
-              </button>
-            );
-          })}
+          {(() => {
+            const morningSlots = slots.filter((s) => parseInt(s.label.split(":")[0], 10) < 13);
+            const visibleSlots = morningSlots.length > 0 ? morningSlots : slots;
+            return visibleSlots.map((slot) => {
+              const slotKey = `${slot.staffId}:${slot.startAt}`;
+              return (
+                <button
+                  type="button"
+                  key={slotKey}
+                  className={`slot-button ${selectedSlotKey === slotKey ? "active" : ""}`}
+                  onClick={() => setSelectedSlotKey(slotKey)}
+                >
+                  <strong>{slot.label}</strong>
+                  <div className="small muted">{slot.staffName}</div>
+                </button>
+              );
+            });
+          })()}
         </div>
 
         <div className="grid two">

@@ -26,6 +26,14 @@ export default async function ClientDetailPage({ params }: PageProps) {
     0
   );
 
+  const lastAppointment = client.appointments[0] ?? null;
+  const lastPaid = lastAppointment
+    ? lastAppointment.payments.reduce((s, p) => s + Number(p.amount), 0)
+    : 0;
+  const lastServices = lastAppointment
+    ? lastAppointment.services.map((s) => s.serviceNameSnapshot).join(", ")
+    : null;
+
   return (
     <>
       <div className="page-header">
@@ -97,12 +105,40 @@ export default async function ClientDetailPage({ params }: PageProps) {
                 <p className="small">{new Date(client.firstVisitAt).toLocaleDateString("es-PE")}</p>
               </div>
             ) : null}
-            {totalSpent > 0 ? (
+
+            {lastAppointment ? (
+              <>
+                <hr style={{ gridColumn: "1/-1", border: "none", borderTop: "1px solid var(--border)" }} />
+                <div>
+                  <p className="field-label">Ultima visita</p>
+                  <p className="small">
+                    {formatDateInZone(lastAppointment.startAt, settings.timezone)}{" "}
+                    {formatTimeInZone(lastAppointment.startAt, settings.timezone)}
+                  </p>
+                </div>
+                {lastServices ? (
+                  <div>
+                    <p className="field-label">Ultimo servicio</p>
+                    <p className="small">{lastServices}</p>
+                  </div>
+                ) : null}
+                {lastPaid > 0 ? (
+                  <div>
+                    <p className="field-label">Ultimo pago</p>
+                    <p className="small">{formatCurrency(lastPaid, settings.currency)}</p>
+                  </div>
+                ) : null}
+                {totalSpent > 0 ? (
+                  <div>
+                    <p className="field-label">Total acumulado</p>
+                    <p><strong>{formatCurrency(totalSpent, settings.currency)}</strong></p>
+                  </div>
+                ) : null}
+              </>
+            ) : totalSpent > 0 ? (
               <div>
                 <p className="field-label">Total acumulado</p>
-                <p>
-                  <strong>{formatCurrency(totalSpent, settings.currency)}</strong>
-                </p>
+                <p><strong>{formatCurrency(totalSpent, settings.currency)}</strong></p>
               </div>
             ) : null}
           </div>
