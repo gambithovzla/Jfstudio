@@ -4,13 +4,20 @@ import Link from "next/link";
 import { useState } from "react";
 
 export default function ImportPage() {
+  const [file, setFile] = useState<File | null>(null);
   const [status, setStatus] = useState<"idle" | "loading" | "done" | "error">("idle");
   const [result, setResult] = useState<{ imported: number; skipped: number; errors: string[] } | null>(null);
 
-  async function handleImport() {
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!file) return;
+
     setStatus("loading");
+    const formData = new FormData();
+    formData.append("file", file);
+
     try {
-      const res = await fetch("/api/admin/import-clients", { method: "POST" });
+      const res = await fetch("/api/admin/import-clients", { method: "POST", body: formData });
       const data = await res.json();
       if (!res.ok) {
         setStatus("error");
@@ -30,33 +37,42 @@ export default function ImportPage() {
       <div className="page-header">
         <div>
           <p className="eyebrow">Clientes</p>
-          <h1 className="title">Importar base de clientas</h1>
+          <h1 className="title">Importar clientas desde Excel</h1>
           <p className="subtitle">
-            Importa las clientas desde el archivo Excel <strong>Base de Clientes JF.xlsx</strong>.
-            Las clientas que ya existen (mismo teléfono) se omiten automáticamente.
+            Sube el archivo <strong>.xlsx</strong> con la base de clientas. Las clientas que ya existen
+            (mismo teléfono) se omiten automáticamente.
           </p>
         </div>
       </div>
 
       <div className="card" style={{ maxWidth: 560 }}>
-        {status === "idle" && (
-          <>
-            <p className="small muted" style={{ marginBottom: 16 }}>
-              Este proceso es seguro de ejecutar varias veces — no crea duplicados.
-            </p>
-            <button className="btn" onClick={handleImport}>
-              Importar clientas del Excel
-            </button>
-          </>
-        )}
-
-        {status === "loading" && (
-          <p className="subtitle">Importando... puede tardar unos segundos.</p>
+        {status !== "done" && (
+          <form onSubmit={handleSubmit} style={{ display: "grid", gap: 16 }}>
+            <div className="field">
+              <label htmlFor="file">Archivo Excel (.xlsx)</label>
+              <input
+                className="input"
+                id="file"
+                type="file"
+                accept=".xlsx,.xls"
+                required
+                onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+              />
+            </div>
+            <div className="button-row">
+              <button className="btn" type="submit" disabled={!file || status === "loading"}>
+                {status === "loading" ? "Importando..." : "Importar clientas"}
+              </button>
+            </div>
+            {status === "loading" && (
+              <p className="small muted">Procesando el archivo, puede tardar unos segundos...</p>
+            )}
+          </form>
         )}
 
         {(status === "done" || status === "error") && result && (
-          <div style={{ display: "grid", gap: 12 }}>
-            <div style={{ display: "flex", gap: 24 }}>
+          <div style={{ display: "grid", gap: 16 }}>
+            <div style={{ display: "flex", gap: 32 }}>
               <div>
                 <p className="eyebrow">Importadas</p>
                 <p className="title" style={{ color: "var(--brand)" }}>{result.imported}</p>
@@ -75,8 +91,8 @@ export default function ImportPage() {
 
             {result.errors.length > 0 && (
               <div>
-                <p className="small muted" style={{ marginBottom: 4 }}>Errores:</p>
-                <ul style={{ paddingLeft: 16 }}>
+                <p className="small muted" style={{ marginBottom: 4 }}>Detalles de errores:</p>
+                <ul style={{ paddingLeft: 16, display: "grid", gap: 4 }}>
                   {result.errors.map((e, i) => (
                     <li key={i} className="small" style={{ color: "var(--accent)" }}>{e}</li>
                   ))}
@@ -84,16 +100,14 @@ export default function ImportPage() {
               </div>
             )}
 
-            {status === "done" && (
-              <Link className="btn" href="/admin/clientes">
-                Ver historial de clientas
-              </Link>
-            )}
-            {status === "error" && (
-              <button className="btn secondary" onClick={() => setStatus("idle")}>
-                Reintentar
+            <div className="button-row">
+              {status === "done" && (
+                <Link className="btn" href="/admin/clientes">Ver historial de clientas</Link>
+              )}
+              <button className="btn secondary" onClick={() => { setStatus("idle"); setFile(null); setResult(null); }}>
+                Importar otro archivo
               </button>
-            )}
+            </div>
           </div>
         )}
       </div>

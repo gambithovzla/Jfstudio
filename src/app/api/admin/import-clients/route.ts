@@ -1,5 +1,4 @@
-import { resolve } from "path";
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import * as XLSX from "xlsx";
 
 import { requireAdmin } from "@/lib/auth";
@@ -38,19 +37,20 @@ function nullIfEmpty(val: unknown): string | null {
 
 type Row = Record<string, unknown>;
 
-export async function POST() {
+export async function POST(request: NextRequest) {
   await requireAdmin();
 
-  const excelPath = resolve(process.cwd(), "public/Base de Clientes JF.xlsx");
+  const formData = await request.formData();
+  const file = formData.get("file") as File | null;
 
-  let rows: Row[];
-  try {
-    const wb = XLSX.readFile(excelPath);
-    const ws = wb.Sheets[wb.SheetNames[0]];
-    rows = XLSX.utils.sheet_to_json<Row>(ws);
-  } catch {
-    return NextResponse.json({ error: "No se pudo leer el archivo Excel" }, { status: 500 });
+  if (!file) {
+    return NextResponse.json({ error: "No se recibió ningún archivo" }, { status: 400 });
   }
+
+  const buffer = Buffer.from(await file.arrayBuffer());
+  const wb = XLSX.read(buffer, { type: "buffer" });
+  const ws = wb.Sheets[wb.SheetNames[0]];
+  const rows = XLSX.utils.sheet_to_json<Row>(ws);
 
   let imported = 0;
   let skipped = 0;
