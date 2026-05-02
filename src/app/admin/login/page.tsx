@@ -1,10 +1,8 @@
+import { PasswordInput } from "./password-input";
+
 export const metadata = { title: "Acceso admin" };
 
-export default function LoginPage({
-  searchParams
-}: {
-  searchParams?: Promise<{ error?: string }>;
-}) {
+export default function LoginPage() {
   return (
     <main className="booking-page">
       <section className="card" style={{ maxWidth: 400, margin: "0 auto" }}>
@@ -13,14 +11,7 @@ export default function LoginPage({
         <form className="form-grid" action="/api/auth/login" method="POST">
           <div className="field">
             <label htmlFor="password">Contraseña</label>
-            <input
-              className="input"
-              id="password"
-              name="password"
-              type="password"
-              required
-              autoFocus
-            />
+            <PasswordInput />
           </div>
           <button className="btn" type="submit">
             Entrar
