@@ -1,6 +1,6 @@
 import { resolve } from "path";
 import { NextResponse } from "next/server";
-import XLSX from "xlsx";
+import * as XLSX from "xlsx";
 
 import { requireAdmin } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";

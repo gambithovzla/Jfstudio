@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 
 export default function ImportPage() {
@@ -84,9 +85,9 @@ export default function ImportPage() {
             )}
 
             {status === "done" && (
-              <a className="btn" href="/admin/clientes">
+              <Link className="btn" href="/admin/clientes">
                 Ver historial de clientas
-              </a>
+              </Link>
             )}
             {status === "error" && (
               <button className="btn secondary" onClick={() => setStatus("idle")}>
