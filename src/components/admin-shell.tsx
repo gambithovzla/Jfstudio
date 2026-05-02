@@ -7,6 +7,7 @@ import {
   Package,
   Scissors,
   Settings,
+  Upload,
   Users
 } from "lucide-react";
 import Link from "next/link";
@@ -20,7 +21,8 @@ const navLinks: NavLink[] = [
   { href: "/admin/productos", label: "Productos", icon: Package },
   { href: "/admin/caja", label: "Caja", icon: CreditCard },
   { href: "/admin/configuracion", label: "Configuracion", icon: Settings },
-  { href: "/admin/configuracion/bloqueos", label: "Bloqueos", icon: Ban }
+  { href: "/admin/configuracion/bloqueos", label: "Bloqueos", icon: Ban },
+  { href: "/admin/importar", label: "Importar Excel", icon: Upload }
 ];
 
 export function AdminShell({ children }: { children: React.ReactNode }) {

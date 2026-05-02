@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "prisma generate && next build && node scripts/prepare-standalone.mjs",
+    "build": "prisma migrate deploy && prisma generate && next build && node scripts/prepare-standalone.mjs",
     "start": "node scripts/start-standalone.mjs",
     "lint": "eslint .",
     "test": "vitest run --pool=threads",
@@ -31,6 +31,7 @@
     "tailwindcss": "latest",
     "tsx": "latest",
     "typescript": "latest",
+    "xlsx": "^0.18.5",
     "zod": "latest"
   },
   "devDependencies": {
@@ -41,7 +42,6 @@
     "eslint-config-next": "^15.5.0",
     "heic-convert": "^2.1.0",
     "sharp": "^0.34.5",
-    "vitest": "latest",
-    "xlsx": "^0.18.5"
+    "vitest": "latest"
   }
 }
