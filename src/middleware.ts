@@ -1,16 +1,32 @@
-import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
+import { NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
+import { createHash } from "crypto";
 
-const isProtectedRoute = createRouteMatcher(["/admin(.*)"]);
+export function middleware(request: NextRequest) {
+  const pathname = request.nextUrl.pathname;
 
-export default clerkMiddleware(async (auth, request) => {
-  if (isProtectedRoute(request)) {
-    await auth.protect();
+  if (!pathname.startsWith("/admin") || pathname === "/admin/login") {
+    return NextResponse.next();
   }
-});
+
+  const password = process.env.ADMIN_PASSWORD;
+
+  if (!password) {
+    // No password set — allow in dev, block in prod
+    if (process.env.NODE_ENV !== "production") return NextResponse.next();
+    return NextResponse.redirect(new URL("/admin/login", request.url));
+  }
+
+  const expected = createHash("sha256").update(`${password}:jfstudio-admin`).digest("hex");
+  const session = request.cookies.get("admin_session")?.value;
+
+  if (session !== expected) {
+    return NextResponse.redirect(new URL("/admin/login", request.url));
+  }
+
+  return NextResponse.next();
+}
 
 export const config = {
-  matcher: [
-    "/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)",
-    "/(api)(.*)"
-  ]
+  matcher: ["/admin/:path*"]
 };

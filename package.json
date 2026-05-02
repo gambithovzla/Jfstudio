@@ -14,7 +14,6 @@
     "db:seed": "tsx prisma/seed.ts"
   },
   "dependencies": {
-    "@clerk/nextjs": "latest",
     "@prisma/client": "^6.19.3",
     "@tailwindcss/postcss": "latest",
     "@types/react-big-calendar": "^1.16.3",
@@ -28,7 +27,6 @@
     "react-big-calendar": "^1.19.4",
     "react-dom": "^19.1.0",
     "resend": "^6.12.2",
-    "svix": "^1.92.2",
     "tailwind-merge": "latest",
     "tailwindcss": "latest",
     "tsx": "latest",

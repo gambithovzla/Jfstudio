@@ -4,7 +4,7 @@ import { AppointmentStatus, InventoryMovementType, Prisma, UserRole } from "@pri
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
-import { requireAdmin, requireRole, requireStaff } from "@/lib/auth";
+import { requireAdmin } from "@/lib/auth";
 import { createBookingFromLocalTime, getSalonSettings } from "@/lib/data";
 import { sendBookingCancellation } from "@/lib/email";
 import { prisma } from "@/lib/prisma";
@@ -41,7 +41,7 @@ function decimalFromForm(formData: FormData, key: string, fallback = "0") {
 // ─── Agenda / Citas ──────────────────────────────────────────────────────────
 
 export async function createAdminAppointmentAction(formData: FormData) {
-  await requireRole(UserRole.ADMIN, UserRole.RECEPTIONIST);
+  await requireAdmin();
 
   const date = requiredString(formData, "date");
   const time = requiredString(formData, "time");
@@ -64,7 +64,7 @@ export async function createAdminAppointmentAction(formData: FormData) {
 }
 
 export async function updateAppointmentAction(formData: FormData) {
-  await requireRole(UserRole.ADMIN, UserRole.RECEPTIONIST);
+  await requireAdmin();
 
   const appointmentId = requiredString(formData, "appointmentId");
   const date = requiredString(formData, "date");
@@ -156,7 +156,7 @@ export async function updateAppointmentAction(formData: FormData) {
 }
 
 export async function cancelAppointmentAction(formData: FormData) {
-  await requireRole(UserRole.ADMIN, UserRole.RECEPTIONIST);
+  await requireAdmin();
   const appointmentId = requiredString(formData, "appointmentId");
 
   const appointment = await prisma.appointment.update({
@@ -181,7 +181,7 @@ export async function cancelAppointmentAction(formData: FormData) {
 }
 
 export async function markNoShowAction(formData: FormData) {
-  await requireRole(UserRole.ADMIN, UserRole.RECEPTIONIST);
+  await requireAdmin();
   const appointmentId = requiredString(formData, "appointmentId");
 
   await prisma.appointment.update({
@@ -193,7 +193,7 @@ export async function markNoShowAction(formData: FormData) {
 }
 
 export async function completeAppointmentAction(formData: FormData) {
-  const { staffId } = await requireStaff();
+  await requireAdmin();
   const appointmentId = requiredString(formData, "appointmentId");
   const amount = decimalFromForm(formData, "amount");
   const method = requiredString(formData, "method");
@@ -222,8 +222,7 @@ export async function completeAppointmentAction(formData: FormData) {
         appointmentId,
         amount,
         method,
-        note,
-        collectedByStaffId: staffId
+        note
       }
     });
 
@@ -239,8 +238,7 @@ export async function completeAppointmentAction(formData: FormData) {
           appointmentId,
           type: InventoryMovementType.SERVICE_USAGE,
           quantity: new Prisma.Decimal(usage.quantity).negated(),
-          note: "Consumo por servicio",
-          createdByStaffId: staffId
+          note: "Consumo por servicio"
         }
       });
     }
@@ -393,7 +391,7 @@ export async function updateProductAction(formData: FormData) {
 }
 
 export async function adjustProductStockAction(formData: FormData) {
-  const { staffId } = await requireAdmin();
+  await requireAdmin();
   const productId = requiredString(formData, "productId");
   const quantity = decimalFromForm(formData, "quantity");
   const note = optionalString(formData, "note") ?? "Ajuste manual";
@@ -409,8 +407,7 @@ export async function adjustProductStockAction(formData: FormData) {
         productId,
         type: InventoryMovementType.ADJUSTMENT,
         quantity,
-        note,
-        createdByStaffId: staffId
+        note
       }
     });
   });
@@ -422,7 +419,7 @@ export async function adjustProductStockAction(formData: FormData) {
 // ─── Clientes ────────────────────────────────────────────────────────────────
 
 export async function createClientAction(formData: FormData) {
-  await requireRole(UserRole.ADMIN, UserRole.RECEPTIONIST);
+  await requireAdmin();
 
   const rawPhone = optionalString(formData, "phone");
   const phone = rawPhone ? normalizePhone(rawPhone) : null;
@@ -443,7 +440,7 @@ export async function createClientAction(formData: FormData) {
 }
 
 export async function updateClientAction(formData: FormData) {
-  await requireRole(UserRole.ADMIN, UserRole.RECEPTIONIST);
+  await requireAdmin();
 
   const clientId = requiredString(formData, "clientId");
   const rawPhone = optionalString(formData, "phone");
@@ -685,7 +682,7 @@ export async function deleteTimeBlockAction(formData: FormData) {
 // ─── Depositos ────────────────────────────────────────────────────────────────
 
 export async function markDepositPaidAction(formData: FormData) {
-  await requireRole(UserRole.ADMIN, UserRole.RECEPTIONIST);
+  await requireAdmin();
   const appointmentId = requiredString(formData, "appointmentId");
   const note = optionalString(formData, "note");
 
@@ -699,7 +696,7 @@ export async function markDepositPaidAction(formData: FormData) {
 }
 
 export async function refundPaymentAction(formData: FormData) {
-  const { staffId } = await requireAdmin();
+  await requireAdmin();
   const appointmentId = requiredString(formData, "appointmentId");
   const amount = decimalFromForm(formData, "amount");
   const method = requiredString(formData, "method");
@@ -723,8 +720,7 @@ export async function refundPaymentAction(formData: FormData) {
       appointmentId,
       amount: -amount,
       method,
-      note: note ?? "Reembolso",
-      collectedByStaffId: staffId
+      note: note ?? "Reembolso"
     }
   });
 
