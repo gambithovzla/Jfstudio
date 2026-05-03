@@ -79,7 +79,7 @@ export const landingContent: LandingContent = {
     name: "JF Studio",
     tagline: "Estilismo y belleza por Johanna Figueredo",
     initials: "JF",
-    logoUrl: "/images/logo-jf.png"
+    logoUrl: null
   },
   hero: {
     eyebrow: "Salón de belleza",
