@@ -13,7 +13,7 @@ export function Hero() {
       <ScrollReveal>
         <div className="landing-hero-text">
           <p className="eyebrow">{hero.eyebrow}</p>
-          <p className="hero-tagline">Transformacion de Lujo</p>
+          <p className="hero-tagline">Transformación de Lujo</p>
           <h1 className="display-title">{hero.title}</h1>
           <p className="lead">{hero.description}</p>
           <div className="button-row" style={{ marginTop: 22 }}>
@@ -36,7 +36,7 @@ export function Hero() {
               fill
               sizes="(max-width: 960px) 100vw, 55vw"
               priority
-              style={{ objectFit: "cover" }}
+              style={{ objectFit: "cover", objectPosition: "center 15%" }}
             />
           ) : (
             <div className="hero-placeholder">
