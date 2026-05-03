@@ -27,7 +27,7 @@ export function Gallery() {
                     alt={image.alt}
                     fill
                     sizes={i === 0 ? "(max-width: 960px) 100vw, 66vw" : "(max-width: 960px) 50vw, 33vw"}
-                    style={{ objectFit: "cover" }}
+                    style={{ objectFit: "cover", objectPosition: "center 20%" }}
                   />
                 </figure>
               ))
