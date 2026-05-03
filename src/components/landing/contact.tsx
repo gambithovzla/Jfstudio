@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { AtSign, Mail, MessageCircle, Phone } from "lucide-react";
+import { AtSign, Mail, MessageCircle, Music, Phone } from "lucide-react";
 
 import { landingContent } from "@/content/landing";
 import { ScrollReveal } from "./scroll-reveal";
@@ -7,6 +7,10 @@ import { ScrollReveal } from "./scroll-reveal";
 export function Contact() {
   const { contact } = landingContent;
   const whatsappLink = `https://wa.me/${contact.whatsapp.replace(/[^0-9]/g, "")}`;
+  const socialHandle = (url: string) => {
+    const last = url.replace(/\/$/, "").split("/").pop() ?? url;
+    return last.startsWith("@") ? last : `@${last}`;
+  };
 
   return (
     <section className="landing-section landing-contact" id="contacto">
@@ -51,14 +55,25 @@ export function Contact() {
               <div>
                 <strong>Instagram</strong>
                 <a href={contact.instagram} target="_blank" rel="noreferrer" className="small">
-                  {contact.instagram.replace(/^https?:\/\//, "")}
+                  {socialHandle(contact.instagram)}
+                </a>
+              </div>
+            </div>
+          ) : null}
+          {contact.tiktok ? (
+            <div className="contact-row">
+              <Music size={20} aria-hidden />
+              <div>
+                <strong>TikTok</strong>
+                <a href={contact.tiktok} target="_blank" rel="noreferrer" className="small">
+                  {socialHandle(contact.tiktok)}
                 </a>
               </div>
             </div>
           ) : null}
         </div>
         <div className="card contact-cta">
-          <h3 className="card-title">Reserva en linea</h3>
+          <h3 className="card-title">Reserva en línea</h3>
           <p className="small muted">
             Elige servicio, estilista y horario. Confirmamos al instante por correo.
           </p>
