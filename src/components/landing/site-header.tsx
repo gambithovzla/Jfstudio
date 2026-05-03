@@ -25,7 +25,7 @@ export function SiteHeader() {
               width={36}
               height={36}
               priority
-              style={{ borderRadius: 6 }}
+              style={{ borderRadius: 6, mixBlendMode: "multiply" }}
             />
           ) : (
             <span className="brand-dot">{brand.initials}</span>

@@ -890,6 +890,56 @@ textarea {
   height: 100%;
 }
 
+.taxi-section {
+  margin-top: 8px;
+  display: grid;
+  gap: 10px;
+}
+
+.taxi-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.taxi-btn {
+  display: inline-flex;
+  align-items: center;
+  padding: 5px 14px;
+  border-radius: 100px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  border: 1.5px solid var(--line);
+  color: var(--text);
+  background: var(--surface);
+  text-decoration: none;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.taxi-btn:hover {
+  background: var(--surface-soft);
+  border-color: var(--brand);
+  color: var(--brand-strong);
+}
+
+.taxi-btn--maps {
+  background: var(--brand-light);
+  border-color: var(--brand);
+  color: var(--brand-strong);
+}
+
+.taxi-btn--uber {
+  background: #000;
+  border-color: #000;
+  color: #fff;
+}
+
+.taxi-btn--uber:hover {
+  background: #222;
+  border-color: #222;
+  color: #fff;
+}
+
 /* ─── Contact ─── */
 .landing-contact-grid {
   align-items: stretch;
