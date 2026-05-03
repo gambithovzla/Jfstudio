@@ -1144,6 +1144,11 @@ textarea {
   color: var(--brand-strong);
 }
 
+/* ─── Bottom navigation (hidden on desktop) ─── */
+.bottom-nav {
+  display: none;
+}
+
 /* ─── Responsive ─── */
 @media (max-width: 960px) {
   .landing-hero,
@@ -1154,17 +1159,21 @@ textarea {
 
   .landing-hero {
     min-height: auto;
-    gap: 32px;
-    padding-top: 24px;
+    gap: 24px;
+    padding-top: 20px;
   }
 
+  /* Portrait aspect on mobile preserves Johanna's face */
   .landing-hero-media {
-    aspect-ratio: 4 / 3;
+    aspect-ratio: 3 / 4;
+    max-height: 480px;
     order: -1;
+    border-radius: 20px;
   }
 
   .landing-about-portrait {
-    aspect-ratio: 4 / 3;
+    aspect-ratio: 3 / 4;
+    max-height: 440px;
   }
 
   .landing-about-portrait::before {
@@ -1198,11 +1207,76 @@ textarea {
     display: grid;
     place-items: center;
   }
+
+  /* Hide header Reservar btn — bottom nav replaces it */
+  .topbar .btn {
+    display: none;
+  }
+
+  /* Bottom navigation bar */
+  .bottom-nav {
+    display: flex;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 40;
+    background: rgba(255, 255, 255, 0.97);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-top: 1px solid var(--line);
+    padding: 6px 0 max(env(safe-area-inset-bottom), 10px);
+  }
+
+  .bottom-nav-item {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    padding: 6px 4px;
+    color: #9ca3af;
+    font-size: 0.6rem;
+    font-weight: 600;
+    text-decoration: none;
+    letter-spacing: 0.02em;
+    transition: color 0.2s;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .bottom-nav-item:active {
+    opacity: 0.7;
+  }
+
+  .bottom-nav-item.active,
+  .bottom-nav-item:hover {
+    color: var(--brand-strong);
+  }
+
+  .bottom-nav-item--primary {
+    color: var(--brand);
+  }
+
+  .bottom-nav-item--primary.active,
+  .bottom-nav-item--primary:hover {
+    color: var(--brand-strong);
+  }
+
+  /* Push page content above bottom nav */
+  body:not(:has(.admin-layout)) .app-shell {
+    padding-bottom: calc(68px + env(safe-area-inset-bottom, 0px));
+  }
+
+  /* Hide bottom nav on admin pages */
+  body:has(.admin-layout) .bottom-nav {
+    display: none;
+  }
 }
 
 @media (max-width: 560px) {
   .landing {
-    gap: 64px;
+    gap: 56px;
   }
 
   .landing-testimonials {
@@ -1224,6 +1298,10 @@ textarea {
 
   .service-card {
     padding: 18px;
+  }
+
+  .display-title {
+    font-size: clamp(2rem, 8vw, 2.6rem);
   }
 }
 
@@ -1264,11 +1342,14 @@ textarea {
     grid-template-columns: 1fr;
   }
 
-  .button-row {
+  /* Only stretch buttons inside forms/pages, not topbar */
+  .page .button-row,
+  .booking-page .button-row {
     align-items: stretch;
   }
 
-  .btn {
+  .page .btn,
+  .booking-page .btn {
     width: 100%;
   }
 

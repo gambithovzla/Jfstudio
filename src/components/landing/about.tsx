@@ -17,7 +17,7 @@ export function About() {
               alt={about.portraitAlt}
               fill
               sizes="(max-width: 960px) 100vw, 45vw"
-              style={{ objectFit: "cover" }}
+              style={{ objectFit: "cover", objectPosition: "center 10%" }}
             />
           ) : (
             <div className="hero-placeholder">
@@ -25,12 +25,12 @@ export function About() {
               <span className="small muted">Foto de Johanna</span>
             </div>
           )}
-          <div className="about-experience-badge">10+ anos de experiencia</div>
+          <div className="about-experience-badge">10+ años de experiencia</div>
         </div>
       </ScrollReveal>
       <ScrollReveal delay={1}>
         <div className="landing-about-text">
-          <p className="eyebrow">Quien soy</p>
+          <p className="eyebrow">Quién soy</p>
           <h2 className="section-title">{about.title}</h2>
           {about.paragraphs.map((paragraph, index) => (
             <p key={index} className="lead lead-soft">

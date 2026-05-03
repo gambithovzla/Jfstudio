@@ -1,7 +1,8 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Inter, Playfair_Display } from "next/font/google";
 
 import { landingContent } from "@/content/landing";
+import { BottomNav } from "@/components/landing/bottom-nav";
 
 import "./globals.css";
 
@@ -39,7 +40,20 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: landingContent.brand.name,
     description: landingContent.brand.tagline
-  }
+  },
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: landingContent.brand.name,
+  },
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 5,
+  themeColor: "#c4587a",
+  viewportFit: "cover",
 };
 
 export default function RootLayout({
@@ -53,6 +67,7 @@ export default function RootLayout({
     <html lang="es" className={className}>
       <body>
         <div className="app-shell">{children}</div>
+        <BottomNav />
       </body>
     </html>
   );
