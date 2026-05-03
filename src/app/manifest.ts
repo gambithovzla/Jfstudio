@@ -14,7 +14,8 @@ export default function manifest(): MetadataRoute.Manifest {
     categories: ["beauty", "lifestyle"],
     icons: [
       { src: "/apple-icon", sizes: "180x180", type: "image/png" },
-      { src: "/pwa-icon", sizes: "512x512", type: "image/png", purpose: "maskable any" },
+      { src: "/pwa-icon", sizes: "512x512", type: "image/png", purpose: "maskable" },
+      { src: "/pwa-icon", sizes: "512x512", type: "image/png", purpose: "any" },
     ],
   };
 }
