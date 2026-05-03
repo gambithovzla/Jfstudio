@@ -2,15 +2,22 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { CalendarHeart, Camera, Home, MessageCircle, Scissors } from "lucide-react";
+import { CalendarHeart, Camera, Home, MessageCircle, Scissors, type LucideIcon } from "lucide-react";
 
-const NAV_ITEMS = [
-  { label: "Inicio",    href: "/",           icon: Home },
+type NavItem = {
+  label: string;
+  href: string;
+  icon: LucideIcon;
+  primary?: boolean;
+};
+
+const NAV_ITEMS: NavItem[] = [
+  { label: "Inicio",    href: "/",            icon: Home },
   { label: "Servicios", href: "/#servicios",  icon: Scissors },
   { label: "Galería",   href: "/#galeria",    icon: Camera },
   { label: "Contacto",  href: "/#contacto",   icon: MessageCircle },
   { label: "Reservar",  href: "/reservar",    icon: CalendarHeart, primary: true },
-] as const;
+];
 
 export function BottomNav() {
   const pathname = usePathname();
