@@ -1,5 +1,4 @@
 import Link from "next/link";
-import Image from "next/image";
 import { Camera, Music } from "lucide-react";
 
 import { landingContent } from "@/content/landing";
@@ -13,17 +12,7 @@ export function SiteFooter() {
       <div className="site-footer-inner">
         <div>
           <span className="brand-mark" aria-label={brand.name}>
-            {brand.logoUrl ? (
-              <Image
-                src={brand.logoUrl}
-                alt={brand.name}
-                width={32}
-                height={32}
-                style={{ borderRadius: 6 }}
-              />
-            ) : (
-              <span className="brand-dot">{brand.initials}</span>
-            )}
+            <span className="brand-dot">{brand.initials}</span>
             <span>{brand.name}</span>
           </span>
           <p className="small" style={{ marginTop: 8, opacity: 0.7 }}>

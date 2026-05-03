@@ -55,6 +55,7 @@ export type LandingContent = {
     title: string;
     address: string;
     mapsEmbedUrl: string | null;
+    coordinates?: { lat: number; lon: number };
     hours: string[];
     notes?: string;
   };
@@ -160,8 +161,10 @@ export const landingContent: LandingContent = {
   location: {
     title: "Visítanos",
     address: "Av. José Larco 345, Miraflores, Lima",
-    mapsEmbedUrl: null,
-    hours: ["Lunes a sábado: 8:00 - 18:00", "Domingo: cerrado"],
+    mapsEmbedUrl:
+      "https://maps.google.com/maps?q=Av+Jose+Larco+345+Miraflores+Lima+Peru&hl=es&output=embed",
+    coordinates: { lat: -12.1259, lon: -77.0291 },
+    hours: ["Lunes a domingo: 8:00 - 18:00"],
     notes: "Atención solo con reserva previa."
   },
   contact: {

@@ -26,10 +26,10 @@ export const metadata: Metadata = {
     template: `%s · ${landingContent.brand.name}`
   },
   description:
-    "Salon de belleza con reservas en linea, atencion personalizada y productos profesionales. Cortes, color y tratamientos capilares.",
+    "Salón de belleza con reservas en línea, atención personalizada y productos profesionales. Cortes, color y tratamientos capilares.",
   openGraph: {
     title: `${landingContent.brand.name} · ${landingContent.brand.tagline}`,
-    description: "Reserva tu cita en linea y vive la experiencia del estudio.",
+    description: "Reserva tu cita en línea y vive la experiencia del estudio.",
     url: appUrl,
     siteName: landingContent.brand.name,
     locale: "es_PE",
@@ -39,9 +39,6 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: landingContent.brand.name,
     description: landingContent.brand.tagline
-  },
-  icons: {
-    icon: "/favicon.ico"
   }
 };
 
