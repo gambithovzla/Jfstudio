@@ -19,7 +19,7 @@ export function Location() {
         <div className="hours-list">
           <p className="field-label">
             <Clock size={16} aria-hidden style={{ verticalAlign: "-3px", marginRight: 6 }} />
-            Horario de atencion
+            Horario de atención
           </p>
           <ul>
             {location.hours.map((hour) => (
@@ -34,7 +34,7 @@ export function Location() {
       <div className="landing-location-map">
         {location.mapsEmbedUrl ? (
           <iframe
-            title="Ubicacion del estudio"
+            title="Ubicación del estudio"
             src={location.mapsEmbedUrl}
             loading="lazy"
             allowFullScreen

@@ -1,6 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
-import { Camera } from "lucide-react";
+import { Camera, Music } from "lucide-react";
 
 import { landingContent } from "@/content/landing";
 
@@ -30,7 +30,7 @@ export function SiteFooter() {
             {brand.tagline}
           </p>
         </div>
-        <nav className="site-footer-nav" aria-label="Pie de pagina">
+        <nav className="site-footer-nav" aria-label="Pie de página">
           <Link href="/#servicios">Servicios</Link>
           <Link href="/#sobre">Sobre</Link>
           <Link href="/#contacto">Contacto</Link>
@@ -40,8 +40,8 @@ export function SiteFooter() {
           <p className="small" style={{ opacity: 0.7, marginBottom: 12 }}>
             {contact.phone} · {contact.email}
           </p>
-          {contact.instagram ? (
-            <div className="site-footer-social">
+          <div className="site-footer-social">
+            {contact.instagram ? (
               <a
                 href={contact.instagram}
                 target="_blank"
@@ -50,8 +50,18 @@ export function SiteFooter() {
               >
                 <Camera size={18} />
               </a>
-            </div>
-          ) : null}
+            ) : null}
+            {contact.tiktok ? (
+              <a
+                href={contact.tiktok}
+                target="_blank"
+                rel="noreferrer"
+                aria-label="TikTok"
+              >
+                <Music size={18} />
+              </a>
+            ) : null}
+          </div>
         </div>
       </div>
       <div className="site-footer-bottom small">
