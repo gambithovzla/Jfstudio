@@ -4,7 +4,16 @@ import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Menu, X, LogOut, type LucideIcon } from "lucide-react";
+import {
+  Ban, CalendarDays, Cake, ClipboardList, CreditCard,
+  Menu, Package, Scissors, Settings, Upload, Users,
+  X, LogOut, type LucideIcon
+} from "lucide-react";
+
+const iconMap: Record<string, LucideIcon> = {
+  CalendarDays, Users, Cake, Scissors, Package,
+  CreditCard, Settings, Ban, Upload, ClipboardList
+};
 
 export type AdminNavLink = {
   href: string;
@@ -14,10 +23,9 @@ export type AdminNavLink = {
 
 type Props = {
   links: AdminNavLink[];
-  iconMap: Record<string, LucideIcon>;
 };
 
-export function AdminMobileNav({ links, iconMap }: Props) {
+export function AdminMobileNav({ links }: Props) {
   const [open, setOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
   const pathname = usePathname();

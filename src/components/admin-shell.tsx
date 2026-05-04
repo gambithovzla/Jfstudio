@@ -44,7 +44,7 @@ const navLinks: AdminNavLink[] = [
 export function AdminShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="admin-layout">
-      <AdminMobileNav links={navLinks} iconMap={iconMap} />
+      <AdminMobileNav links={navLinks} />
       <aside className="sidebar">
         <Link className="brand-mark" href="/admin/agenda">
           <span className="brand-dot">JF</span>
