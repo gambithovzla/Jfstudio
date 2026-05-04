@@ -41,9 +41,15 @@ export default function NewClientPage() {
               <input className="input" id="dni" name="dni" />
             </div>
           </div>
-          <div className="field">
-            <label htmlFor="source">Referencia</label>
-            <input className="input" id="source" name="source" placeholder="Ej: Recomendada, Instagram, Redes sociales" />
+          <div className="grid two">
+            <div className="field">
+              <label htmlFor="birthday">Cumpleaños</label>
+              <input className="input" id="birthday" name="birthday" type="date" />
+            </div>
+            <div className="field">
+              <label htmlFor="source">Referencia</label>
+              <input className="input" id="source" name="source" placeholder="Ej: Recomendada, Instagram" />
+            </div>
           </div>
           <div className="field">
             <label htmlFor="notes">Notas internas</label>

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Pencil, Plus, Settings, Trash2 } from "lucide-react";
+import { Cake, Pencil, Plus, Settings, Trash2 } from "lucide-react";
 
 import {
   createPaymentMethodAction,
@@ -30,6 +30,12 @@ export default async function ConfigurationPage() {
           <p className="eyebrow">Configuracion</p>
           <h1 className="title">{settings.name}</h1>
           <p className="subtitle">Datos del salon, staff, horarios y metodos de pago.</p>
+        </div>
+        <div className="button-row">
+          <Link className="btn secondary" href="/admin/configuracion/cumpleanos">
+            <Cake size={16} aria-hidden />
+            Bono de cumpleaños
+          </Link>
         </div>
       </div>
 

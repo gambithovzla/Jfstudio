@@ -6,6 +6,7 @@ import { Location } from "@/components/landing/location";
 import { ServicesShowcase } from "@/components/landing/services-showcase";
 import { SiteFooter } from "@/components/landing/site-footer";
 import { SiteHeader } from "@/components/landing/site-header";
+import { StudioSpace } from "@/components/landing/studio-space";
 import { Testimonials } from "@/components/landing/testimonials";
 import { getBookingBootstrap } from "@/lib/data";
 
@@ -31,6 +32,7 @@ export default async function HomePage() {
         <ServicesShowcase services={services} currency={currency} />
         <About />
         <Gallery />
+        <StudioSpace />
         <Testimonials />
         <Location />
         <Contact />

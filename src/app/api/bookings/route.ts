@@ -16,7 +16,8 @@ const bookingSchema = z.object({
   staffId: z.string().min(1),
   startAt: z.string().datetime(),
   notes: z.string().optional(),
-  replaceToken: z.string().optional()
+  replaceToken: z.string().optional(),
+  bonusCode: z.string().optional()
 });
 
 export async function POST(request: NextRequest) {
@@ -55,7 +56,8 @@ export async function POST(request: NextRequest) {
       serviceIds: parsed.data.serviceIds,
       staffId: parsed.data.staffId,
       startAt: new Date(parsed.data.startAt),
-      notes: parsed.data.notes
+      notes: parsed.data.notes,
+      bonusCode: parsed.data.bonusCode || null
     });
 
     if (cancelAppointmentId) {

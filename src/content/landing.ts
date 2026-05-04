@@ -47,6 +47,11 @@ export type LandingContent = {
     description: string;
     images: GalleryImage[];
   };
+  studio: {
+    title: string;
+    description: string;
+    images: GalleryImage[];
+  };
   testimonials: {
     title: string;
     items: LandingTestimonial[];
@@ -88,8 +93,8 @@ export const landingContent: LandingContent = {
       "Cortes, color, tratamientos y peinados con productos profesionales. Reserva en línea en menos de un minuto.",
     primaryCta: { label: "Reservar cita", href: "/reservar" },
     secondaryCta: { label: "Ver servicios", href: "#servicios" },
-    imageUrl: "/images/johanna-hero.webp",
-    imageAlt: "Johanna Figueredo trabajando en el estudio"
+    imageUrl: "/images/johanna-portrait-alt.webp",
+    imageAlt: "Johanna Figueredo"
   },
   about: {
     title: "Sobre Johanna",
@@ -129,11 +134,25 @@ export const landingContent: LandingContent = {
     title: "Trabajos recientes",
     description: "Inspírate con algunos de los looks creados en el estudio.",
     images: [
-      { src: "/images/johanna-hero.webp", alt: "Johanna trabajando en el estudio" },
-      { src: "/images/johanna-portrait.webp", alt: "Johanna Figueredo" },
-      { src: "/images/johanna-portrait-alt.webp", alt: "Retrato profesional" },
-      { src: "/images/johanna-seated.webp", alt: "Johanna en el estudio" },
-      { src: "/images/johanna-conferencia.webp", alt: "Johanna en conferencia" },
+      { src: "/images/gallery-01.webp", alt: "Trabajo realizado en JF Studio" },
+      { src: "/images/gallery-02.webp", alt: "Trabajo realizado en JF Studio" },
+      { src: "/images/gallery-04.webp", alt: "Trabajo realizado en JF Studio" },
+      { src: "/images/gallery-05.webp", alt: "Trabajo realizado en JF Studio" },
+      { src: "/images/gallery-06.webp", alt: "Trabajo realizado en JF Studio" },
+      { src: "/images/gallery-07.webp", alt: "Trabajo realizado en JF Studio" },
+      { src: "/images/gallery-12.webp", alt: "Trabajo realizado en JF Studio" },
+      { src: "/images/gallery-13.webp", alt: "Trabajo realizado en JF Studio" },
+      { src: "/images/gallery-16.webp", alt: "Trabajo realizado en JF Studio" },
+      { src: "/images/gallery-17.webp", alt: "Trabajo realizado en JF Studio" }
+    ]
+  },
+  studio: {
+    title: "Nuestro estudio",
+    description: "Un espacio cálido y cuidado, pensado para que te sientas como en casa.",
+    images: [
+      { src: "/images/gallery-09.webp", alt: "Interior de JF Studio" },
+      { src: "/images/gallery-10.webp", alt: "Espacio de trabajo en JF Studio" },
+      { src: "/images/gallery-11.webp", alt: "Detalle del estudio JF Studio" }
     ]
   },
   testimonials: {

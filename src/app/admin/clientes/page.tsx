@@ -88,13 +88,13 @@ export default async function ClientsPage({ searchParams }: PageProps) {
                         const paid = apt.payments.reduce((s, p) => s + Number(p.amount), 0);
                         return (
                           <tr key={apt.id}>
-                            <td className="small">
+                            <td className="small" data-label="Fecha">
                               {formatDateInZone(apt.startAt, settings.timezone)}{" "}
                               {formatTimeInZone(apt.startAt, settings.timezone)}
                             </td>
-                            <td className="small">{apt.services.map((s) => s.serviceNameSnapshot).join(", ")}</td>
-                            <td className="small">{apt.staff.name}</td>
-                            <td className="small">
+                            <td className="small" data-label="Servicios">{apt.services.map((s) => s.serviceNameSnapshot).join(", ")}</td>
+                            <td className="small" data-label="Estilista">{apt.staff.name}</td>
+                            <td className="small" data-label="Total">
                               {paid > 0 ? formatCurrency(paid, settings.currency) : <span className="muted">Pendiente</span>}
                             </td>
                           </tr>

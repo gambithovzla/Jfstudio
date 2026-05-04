@@ -71,17 +71,21 @@ model WorkingHour {
 }
 
 model Client {
-  id           String        @id @default(cuid())
-  name         String
-  phone        String?       @unique
-  email        String?
-  dni          String?
-  source       String?
-  notes        String?
-  firstVisitAt DateTime?
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
-  appointments Appointment[]
+  id              String          @id @default(cuid())
+  name            String
+  phone           String?         @unique
+  email           String?
+  dni             String?
+  source          String?
+  notes           String?
+  birthday        DateTime?       @db.Date
+  firstVisitAt    DateTime?
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  appointments    Appointment[]
+  birthdayBonuses BirthdayBonus[]
+
+  @@index([birthday])
 }
 
 model Service {
@@ -137,6 +141,8 @@ model Appointment {
   accessToken        String               @unique @default(cuid())
   reminderSentAt     DateTime?
   depositPaid        Boolean              @default(false)
+  birthdayBonusId    String?              @unique
+  birthdayBonus      BirthdayBonus?       @relation("AppointmentBonus", fields: [birthdayBonusId], references: [id], onDelete: SetNull)
   createdAt          DateTime             @default(now())
   updatedAt          DateTime             @updatedAt
   client             Client               @relation(fields: [clientId], references: [id], onDelete: Restrict)
@@ -201,6 +207,33 @@ model PaymentMethodConfig {
   sortOrder Int      @default(0)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model BirthdayBonusSettings {
+  id              String   @id @default("default")
+  enabled         Boolean  @default(true)
+  discountPercent Int      @default(15)
+  validityDays    Int      @default(30)
+  messageTemplate String   @default("Feliz cumpleanos, {nombre}! En JF Studio queremos celebrarte con un {descuento}% de descuento en tu proximo servicio. Tu codigo: {codigo}. Valido hasta {vence}.")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model BirthdayBonus {
+  id              String       @id @default(cuid())
+  clientId        String
+  code            String       @unique
+  discountPercent Int
+  expiresAt       DateTime
+  generatedAt     DateTime     @default(now())
+  emailSentAt     DateTime?
+  whatsappSentAt  DateTime?
+  redeemedAt      DateTime?
+  client          Client       @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  appointment     Appointment? @relation("AppointmentBonus")
+
+  @@index([clientId, generatedAt])
+  @@index([expiresAt])
 }
 
 model TimeBlock {

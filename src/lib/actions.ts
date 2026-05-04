@@ -418,6 +418,16 @@ export async function adjustProductStockAction(formData: FormData) {
 
 // ─── Clientes ────────────────────────────────────────────────────────────────
 
+function birthdayFromForm(formData: FormData): Date | null {
+  const value = formData.get("birthday");
+  if (typeof value !== "string" || !value.trim()) return null;
+  const match = value.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!match) return null;
+  const [, y, m, d] = match;
+  const date = new Date(Date.UTC(Number(y), Number(m) - 1, Number(d)));
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
 export async function createClientAction(formData: FormData) {
   await requireAdmin();
 
@@ -431,7 +441,8 @@ export async function createClientAction(formData: FormData) {
       email: optionalString(formData, "email"),
       dni: optionalString(formData, "dni"),
       source: optionalString(formData, "source"),
-      notes: optionalString(formData, "notes")
+      notes: optionalString(formData, "notes"),
+      birthday: birthdayFromForm(formData)
     }
   });
 
@@ -454,7 +465,8 @@ export async function updateClientAction(formData: FormData) {
       email: optionalString(formData, "email"),
       dni: optionalString(formData, "dni"),
       source: optionalString(formData, "source"),
-      notes: optionalString(formData, "notes")
+      notes: optionalString(formData, "notes"),
+      birthday: birthdayFromForm(formData)
     }
   });
 
@@ -477,6 +489,51 @@ export async function deleteClientAction(formData: FormData) {
 
   revalidatePath("/admin/clientes");
   redirect("/admin/clientes");
+}
+
+// ─── Cumpleaños / Bono ────────────────────────────────────────────────────────
+
+const DEFAULT_BIRTHDAY_TEMPLATE =
+  "🎉 ¡Feliz cumpleaños, {nombre}! En JF Studio queremos celebrarte con un {descuento}% de descuento en tu próximo servicio. Tu código: {codigo} (válido hasta {vence}). ✨";
+
+export async function updateBirthdayBonusSettingsAction(formData: FormData) {
+  await requireAdmin();
+
+  const enabled = formData.get("enabled") === "on";
+  const discountPercentRaw = Number(requiredString(formData, "discountPercent"));
+  const validityDaysRaw = Number(requiredString(formData, "validityDays"));
+  const messageTemplate = optionalString(formData, "messageTemplate") ?? DEFAULT_BIRTHDAY_TEMPLATE;
+
+  const discountPercent = Math.min(100, Math.max(1, Math.round(discountPercentRaw)));
+  const validityDays = Math.min(365, Math.max(1, Math.round(validityDaysRaw)));
+
+  await prisma.birthdayBonusSettings.upsert({
+    where: { id: "default" },
+    update: { enabled, discountPercent, validityDays, messageTemplate },
+    create: {
+      id: "default",
+      enabled,
+      discountPercent,
+      validityDays,
+      messageTemplate
+    }
+  });
+
+  revalidatePath("/admin/configuracion/cumpleanos");
+  revalidatePath("/admin/cumpleanos");
+}
+
+export async function markBirthdayBonusWhatsappSentAction(formData: FormData) {
+  await requireAdmin();
+
+  const bonusId = requiredString(formData, "bonusId");
+
+  await prisma.birthdayBonus.update({
+    where: { id: bonusId },
+    data: { whatsappSentAt: new Date() }
+  });
+
+  revalidatePath("/admin/cumpleanos");
 }
 
 // ─── Staff & Horarios ─────────────────────────────────────────────────────────

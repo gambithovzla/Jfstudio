@@ -29,6 +29,14 @@ type CancellationEmailData = {
   timeLabel: string;
 };
 
+type BirthdayBonusEmailData = {
+  to: string;
+  clientName: string;
+  discountPercent: number;
+  code: string;
+  expiresLabel: string;
+};
+
 function bookingHtml({
   clientName,
   serviceName,
@@ -172,5 +180,48 @@ export async function sendBookingCancellation(data: CancellationEmailData) {
     to: data.to,
     subject: `Cita cancelada · JF Studio`,
     html: cancellationHtml(data)
+  });
+}
+
+function birthdayHtml({ clientName, discountPercent, code, expiresLabel }: BirthdayBonusEmailData) {
+  return `<!DOCTYPE html>
+<html lang="es">
+<head><meta charset="utf-8"><title>Feliz cumpleanos</title></head>
+<body style="margin:0;padding:0;background:#fbfaf7;font-family:Georgia,'Playfair Display',serif;color:#1f2933;">
+  <table width="100%" cellpadding="0" cellspacing="0">
+    <tr><td align="center" style="padding:32px 16px;">
+      <table width="560" style="max-width:100%;background:#fff;border-radius:14px;border:1px solid #e5e7eb;padding:36px 32px;">
+        <tr><td>
+          <p style="margin:0 0 8px;font-size:0.78rem;font-weight:800;text-transform:uppercase;color:#c4587a;letter-spacing:0.08em;font-family:Inter,Arial,sans-serif;">JF Studio</p>
+          <h1 style="margin:0 0 14px;font-size:2rem;line-height:1.15;color:#1a1a1a;">Feliz cumpleanos, ${clientName} 🎉</h1>
+          <p style="margin:0 0 20px;font-size:1rem;line-height:1.55;color:#374151;font-family:Inter,Arial,sans-serif;">
+            Queremos celebrarte con un regalo especial: <strong>${discountPercent}% de descuento</strong> en tu proximo servicio.
+          </p>
+          <table width="100%" style="margin:18px 0 22px;background:linear-gradient(135deg,#f5edd6,#f9e8ee);border-radius:14px;padding:20px;text-align:center;">
+            <tr><td>
+              <p style="margin:0 0 6px;font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:0.12em;color:#a83e5e;font-family:Inter,Arial,sans-serif;">Tu codigo</p>
+              <p style="margin:0;font-size:1.7rem;font-weight:800;letter-spacing:0.18em;color:#1a1a1a;font-family:'Courier New',monospace;">${code}</p>
+              <p style="margin:8px 0 0;font-size:0.85rem;color:#6b7280;font-family:Inter,Arial,sans-serif;">Valido hasta el ${expiresLabel}</p>
+            </td></tr>
+          </table>
+          <p style="margin:0 0 18px;font-size:0.95rem;color:#374151;font-family:Inter,Arial,sans-serif;">
+            Cuando reserves, indicanos tu codigo y aplicaremos el descuento al total.
+          </p>
+          <a href="${APP_URL}/reservar" style="display:inline-block;background:#c4587a;color:#fff;text-decoration:none;border-radius:10px;padding:14px 26px;font-weight:700;font-size:0.95rem;font-family:Inter,Arial,sans-serif;">Reservar ahora</a>
+          <p style="margin:28px 0 0;font-size:0.82rem;color:#9ca3af;font-family:Inter,Arial,sans-serif;">Con carino, el equipo de JF Studio.</p>
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`;
+}
+
+export async function sendBirthdayBonus(data: BirthdayBonusEmailData) {
+  await safeSend({
+    from: FROM,
+    to: data.to,
+    subject: `Feliz cumpleanos ${data.clientName} · Tu regalo de JF Studio 🎉`,
+    html: birthdayHtml(data)
   });
 }

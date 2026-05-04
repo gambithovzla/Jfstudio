@@ -6,7 +6,7 @@ import { useState } from "react";
 export default function ImportPage() {
   const [file, setFile] = useState<File | null>(null);
   const [status, setStatus] = useState<"idle" | "loading" | "done" | "error">("idle");
-  const [result, setResult] = useState<{ imported: number; skipped: number; errors: string[] } | null>(null);
+  const [result, setResult] = useState<{ imported: number; updated?: number; skipped: number; errors: string[] } | null>(null);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -21,14 +21,14 @@ export default function ImportPage() {
       const data = await res.json();
       if (!res.ok) {
         setStatus("error");
-        setResult({ imported: 0, skipped: 0, errors: [data.error ?? "Error desconocido"] });
+        setResult({ imported: 0, updated: 0, skipped: 0, errors: [data.error ?? "Error desconocido"] });
       } else {
         setResult(data);
         setStatus("done");
       }
     } catch {
       setStatus("error");
-      setResult({ imported: 0, skipped: 0, errors: ["No se pudo conectar con el servidor"] });
+      setResult({ imported: 0, updated: 0, skipped: 0, errors: ["No se pudo conectar con el servidor"] });
     }
   }
 
@@ -40,7 +40,8 @@ export default function ImportPage() {
           <h1 className="title">Importar clientas desde Excel</h1>
           <p className="subtitle">
             Sube el archivo <strong>.xlsx</strong> con la base de clientas. Las clientas que ya existen
-            (mismo teléfono) se omiten automáticamente.
+            (mismo teléfono) se omiten automáticamente. Si agregas una columna <strong>Cumpleaños</strong>
+            (o <em>Fecha de nacimiento</em>), las clientas existentes sin esa fecha se actualizarán.
           </p>
         </div>
       </div>
@@ -72,10 +73,14 @@ export default function ImportPage() {
 
         {(status === "done" || status === "error") && result && (
           <div style={{ display: "grid", gap: 16 }}>
-            <div style={{ display: "flex", gap: 32 }}>
+            <div style={{ display: "flex", gap: 32, flexWrap: "wrap" }}>
               <div>
                 <p className="eyebrow">Importadas</p>
                 <p className="title" style={{ color: "var(--brand)" }}>{result.imported}</p>
+              </div>
+              <div>
+                <p className="eyebrow">Actualizadas</p>
+                <p className="title">{result.updated ?? 0}</p>
               </div>
               <div>
                 <p className="eyebrow">Omitidas</p>

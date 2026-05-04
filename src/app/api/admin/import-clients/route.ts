@@ -53,6 +53,7 @@ export async function POST(request: NextRequest) {
   const rows = XLSX.utils.sheet_to_json<Row>(ws);
 
   let imported = 0;
+  let updated = 0;
   let skipped = 0;
   const errors: string[] = [];
 
@@ -69,6 +70,11 @@ export async function POST(request: NextRequest) {
     const rawSource = nullIfEmpty(row["Empresa"]);
     const source = rawSource ? titleCase(rawSource) : null;
     const firstVisitAt = excelDateToJS(row["Primera vez que nos visito"]);
+    const birthday =
+      excelDateToJS(row["Cumpleaños"] as unknown) ??
+      excelDateToJS(row["Cumpleanos"] as unknown) ??
+      excelDateToJS(row["Fecha de nacimiento"] as unknown) ??
+      excelDateToJS(row["Birthday"] as unknown);
 
     const servicio = nullIfEmpty(row["Servicio "]);
     const costo = row["Costo"];
@@ -85,11 +91,23 @@ export async function POST(request: NextRequest) {
     try {
       if (phone) {
         const existing = await prisma.client.findUnique({ where: { phone } });
-        if (existing) { skipped++; continue; }
+        if (existing) {
+          // Si ya existe pero le falta cumpleaños y el Excel lo trae, lo enriquecemos.
+          if (!existing.birthday && birthday) {
+            await prisma.client.update({
+              where: { id: existing.id },
+              data: { birthday }
+            });
+            updated++;
+          } else {
+            skipped++;
+          }
+          continue;
+        }
       }
 
       await prisma.client.create({
-        data: { name: fullName, phone, email, dni, source, notes, firstVisitAt }
+        data: { name: fullName, phone, email, dni, source, notes, firstVisitAt, birthday }
       });
       imported++;
     } catch (err) {
@@ -97,5 +115,5 @@ export async function POST(request: NextRequest) {
     }
   }
 
-  return NextResponse.json({ imported, skipped, errors });
+  return NextResponse.json({ imported, updated, skipped, errors });
 }

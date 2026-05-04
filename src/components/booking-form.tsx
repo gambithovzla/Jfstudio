@@ -136,6 +136,7 @@ export function BookingForm({
     setSubmitting(true);
 
     try {
+      const bonusCodeRaw = String(formData.get("bonusCode") ?? "").trim();
       const response = await fetch("/api/bookings", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -149,6 +150,7 @@ export function BookingForm({
           staffId: selectedSlot.staffId,
           startAt: selectedSlot.startAt,
           notes: String(formData.get("notes") ?? ""),
+          ...(bonusCodeRaw ? { bonusCode: bonusCodeRaw } : {}),
           ...(replaceToken ? { replaceToken } : {})
         })
       });
@@ -299,6 +301,19 @@ export function BookingForm({
         <div className="field">
           <label htmlFor="email">Correo</label>
           <input className="input" id="email" name="email" type="email" />
+        </div>
+        <div className="field">
+          <label htmlFor="bonusCode">Código de cumpleaños (opcional)</label>
+          <input
+            className="input"
+            id="bonusCode"
+            name="bonusCode"
+            placeholder="Ej: JF-2026-AB12CD"
+            style={{ textTransform: "uppercase" }}
+          />
+          <p className="small muted" style={{ marginTop: 4 }}>
+            Si recibiste un bono de cumpleaños, ingresa tu código para aplicar el descuento.
+          </p>
         </div>
         <div className="field">
           <label htmlFor="notes">Notas</label>

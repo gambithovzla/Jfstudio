@@ -266,6 +266,7 @@ textarea {
   color: var(--foreground);
   padding: 9px 11px;
   outline: none;
+  font-size: 16px;
 }
 
 .textarea {
@@ -779,6 +780,41 @@ textarea {
   color: var(--muted);
   border: 1px dashed #cfd8e3;
   aspect-ratio: 1 / 1;
+}
+
+/* ─── Studio space ─── */
+.studio-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.studio-item {
+  margin: 0;
+  position: relative;
+  aspect-ratio: 4 / 5;
+  border-radius: 18px;
+  overflow: hidden;
+  background: var(--surface-soft);
+}
+
+.studio-item img {
+  transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.studio-item:hover img {
+  transform: scale(1.04);
+}
+
+@media (max-width: 960px) {
+  .studio-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .studio-item {
+    aspect-ratio: 16 / 10;
+  }
 }
 
 /* ─── Testimonials (dark section) ─── */
@@ -1319,20 +1355,75 @@ textarea {
   }
 }
 
+/* ─── Admin mobile topbar (hidden on desktop) ─── */
+.admin-topbar-mobile {
+  display: none;
+}
+
+.admin-topbar-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  color: var(--foreground);
+  text-decoration: none;
+}
+
+.admin-topbar-menu-btn {
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  background: none;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  color: var(--foreground);
+  cursor: pointer;
+}
+
+.admin-mobile-nav-link {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 12px;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--foreground);
+  border-radius: 10px;
+  text-decoration: none;
+}
+
+.admin-mobile-nav-link.active {
+  background: var(--brand-light);
+  color: var(--brand-strong);
+}
+
 @media (max-width: 860px) {
   .admin-layout {
     display: block;
   }
 
-  .sidebar {
-    position: static;
-    height: auto;
-    border-right: 0;
-    border-bottom: 1px solid var(--line);
+  /* Sidebar lateral oculto en móvil; reemplazado por topbar + hamburguesa */
+  .admin-layout .sidebar {
+    display: none;
   }
 
-  .sidebar-nav {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+  .admin-topbar-mobile {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 30;
+    background: rgba(255, 255, 255, 0.97);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-bottom: 1px solid var(--line);
+    padding: max(env(safe-area-inset-top, 0px), 8px) 16px 8px;
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    min-height: 56px;
   }
 
   .grid.two,
@@ -1342,6 +1433,75 @@ textarea {
 
   .page-header {
     display: grid;
+    gap: 10px;
+  }
+
+  .page-header .button-row {
+    flex-wrap: wrap;
+  }
+
+  .page-header form.button-row {
+    width: 100%;
+  }
+
+  .page-header form.button-row .input {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  /* Tablas → cards apiladas */
+  .page .table,
+  .booking-page .table {
+    display: block;
+    width: 100%;
+    border: 0;
+    background: transparent;
+  }
+
+  .page .table thead,
+  .booking-page .table thead {
+    display: none;
+  }
+
+  .page .table tbody,
+  .booking-page .table tbody {
+    display: block;
+  }
+
+  .page .table tr,
+  .booking-page .table tr {
+    display: block;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 12px 14px;
+    margin-bottom: 10px;
+  }
+
+  .page .table td,
+  .booking-page .table td {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 6px 0;
+    border: 0;
+    text-align: right;
+    white-space: normal;
+  }
+
+  .page .table td::before,
+  .booking-page .table td::before {
+    content: attr(data-label);
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--muted);
+    text-align: left;
+  }
+
+  .page .table td:not([data-label])::before {
+    content: "";
   }
 }
 
@@ -1352,11 +1512,7 @@ textarea {
     width: min(100% - 22px, 1180px);
   }
 
-  .sidebar-nav {
-    grid-template-columns: 1fr;
-  }
-
-  /* Only stretch buttons inside forms/pages, not topbar */
+  /* Stretch buttons inside forms/pages, not topbar */
   .page .button-row,
   .booking-page .button-row {
     align-items: stretch;
@@ -1367,9 +1523,7 @@ textarea {
     width: 100%;
   }
 
-  .table {
-    display: block;
-    overflow-x: auto;
-    white-space: nowrap;
+  .page-header .button-row .btn {
+    width: 100%;
   }
 }
