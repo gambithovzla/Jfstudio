@@ -3,15 +3,20 @@ import { History, PackagePlus, PlusCircle } from "lucide-react";
 
 import { adjustProductStockAction, createProductAction } from "@/lib/actions";
 import { getProductsAdmin } from "@/lib/data";
+import { FlashMessage } from "@/components/flash-message";
 
 export const dynamic = "force-dynamic";
 
-export default async function ProductsPage() {
+type PageProps = { searchParams?: Promise<{ msg?: string }> };
+
+export default async function ProductsPage({ searchParams }: PageProps) {
+  const params = searchParams ? await searchParams : {};
   const products = await getProductsAdmin();
   const lowStock = products.filter((product) => Number(product.stock) <= Number(product.lowStockThreshold));
 
   return (
     <>
+      <FlashMessage msg={params.msg} />
       <div className="page-header">
         <div>
           <p className="eyebrow">Inventario</p>

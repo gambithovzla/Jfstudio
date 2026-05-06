@@ -326,6 +326,7 @@ export async function createServiceAction(formData: FormData) {
   });
 
   revalidatePath("/admin/servicios");
+  redirect("/admin/servicios?msg=creado");
 }
 
 export async function updateServiceAction(formData: FormData) {
@@ -348,6 +349,7 @@ export async function updateServiceAction(formData: FormData) {
 
   revalidatePath("/admin/servicios");
   revalidatePath(`/admin/servicios/${serviceId}`);
+  redirect(`/admin/servicios/${serviceId}?msg=guardado`);
 }
 
 export async function toggleServiceAction(formData: FormData) {
@@ -420,6 +422,7 @@ export async function createProductAction(formData: FormData) {
   });
 
   revalidatePath("/admin/productos");
+  redirect("/admin/productos?msg=creado");
 }
 
 export async function updateProductAction(formData: FormData) {
@@ -468,6 +471,7 @@ export async function adjustProductStockAction(formData: FormData) {
   revalidatePath(`/admin/productos/${productId}`);
 
   checkAndAlertLowStock().catch((err) => console.error("[stock-alert]", err));
+  redirect("/admin/productos?msg=guardado");
 }
 
 // ─── Clientes ────────────────────────────────────────────────────────────────
@@ -543,7 +547,21 @@ export async function deleteClientAction(formData: FormData) {
   await prisma.client.delete({ where: { id: clientId } });
 
   revalidatePath("/admin/clientes");
-  redirect("/admin/clientes");
+  redirect("/admin/clientes?msg=eliminado");
+}
+
+export async function forceDeleteClientAction(formData: FormData) {
+  await requireAdmin();
+
+  const clientId = requiredString(formData, "clientId");
+
+  // Delete appointments first (cascades to Payment and AppointmentService, sets InventoryMovement.appointmentId = null)
+  await prisma.appointment.deleteMany({ where: { clientId } });
+  // Delete the client (cascades to BirthdayBonus)
+  await prisma.client.delete({ where: { id: clientId } });
+
+  revalidatePath("/admin/clientes");
+  redirect("/admin/clientes?msg=eliminado");
 }
 
 // ─── Cumpleaños / Bono ────────────────────────────────────────────────────────
@@ -617,6 +635,7 @@ export async function updateSalonSettingsAction(formData: FormData) {
 
   revalidatePath("/admin/configuracion");
   revalidatePath("/reservar");
+  redirect("/admin/configuracion?msg=guardado");
 }
 
 export async function createStaffAction(formData: FormData) {
@@ -648,6 +667,7 @@ export async function createStaffAction(formData: FormData) {
 
   revalidatePath("/admin/configuracion");
   revalidatePath("/reservar");
+  redirect("/admin/configuracion?msg=creado");
 }
 
 export async function updateStaffAction(formData: FormData) {
@@ -669,6 +689,7 @@ export async function updateStaffAction(formData: FormData) {
   revalidatePath("/admin/configuracion");
   revalidatePath(`/admin/configuracion/staff/${staffId}`);
   revalidatePath("/reservar");
+  redirect(`/admin/configuracion/staff/${staffId}?msg=guardado`);
 }
 
 export async function deactivateStaffAction(formData: FormData) {
@@ -714,6 +735,7 @@ export async function createWorkingHourAction(formData: FormData) {
   revalidatePath("/admin/configuracion");
   revalidatePath(`/admin/configuracion/staff/${staffId}`);
   revalidatePath("/reservar");
+  redirect(`/admin/configuracion/staff/${staffId}?msg=creado`);
 }
 
 export async function updateWorkingHourAction(formData: FormData) {
@@ -733,9 +755,11 @@ export async function updateWorkingHourAction(formData: FormData) {
     }
   });
 
+  const staffIdForRedirect = formData.get("staffId") as string;
   revalidatePath("/admin/configuracion");
-  revalidatePath(`/admin/configuracion/staff/${formData.get("staffId")}`);
+  revalidatePath(`/admin/configuracion/staff/${staffIdForRedirect}`);
   revalidatePath("/reservar");
+  redirect(`/admin/configuracion/staff/${staffIdForRedirect}?msg=guardado`);
 }
 
 // ─── Métodos de pago ─────────────────────────────────────────────────────────
@@ -879,6 +903,48 @@ export async function deleteAppointmentAction(formData: FormData) {
   revalidatePath("/admin/agenda");
   revalidatePath("/admin/caja");
   revalidatePath("/admin/clientes");
-  redirect("/admin/agenda");
+  redirect("/admin/agenda?msg=eliminado");
+}
+
+// ─── Cambio de contraseña admin ──────────────────────────────────────────────
+
+export async function changeAdminPasswordAction(formData: FormData) {
+  await requireAdmin();
+
+  const { hashPassword, checkPassword } = await import("@/lib/auth");
+
+  const currentPassword = requiredString(formData, "currentPassword");
+  const newPassword = requiredString(formData, "newPassword");
+  const confirmPassword = requiredString(formData, "confirmPassword");
+
+  if (newPassword !== confirmPassword) {
+    redirect("/admin/configuracion?msg=error_mismatch");
+  }
+
+  const isValid = await checkPassword(currentPassword);
+  if (!isValid) {
+    redirect("/admin/configuracion?msg=error_password");
+  }
+
+  const newHash = hashPassword(newPassword);
+
+  await prisma.salonSettings.update({
+    where: { id: "default" },
+    data: { adminPasswordHash: newHash }
+  });
+
+  const { cookies } = await import("next/headers");
+  const cookieStore = await cookies();
+  const { COOKIE_NAME } = await import("@/lib/auth");
+  cookieStore.set(COOKIE_NAME, newHash, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    path: "/",
+    maxAge: 60 * 60 * 24 * 30
+  });
+
+  revalidatePath("/admin/configuracion");
+  redirect("/admin/configuracion?msg=guardado");
 }
 

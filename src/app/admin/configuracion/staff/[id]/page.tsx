@@ -4,11 +4,13 @@ import { ArrowLeft } from "lucide-react";
 
 import { createWorkingHourAction, deactivateStaffAction, updateStaffAction, updateWorkingHourAction } from "@/lib/actions";
 import { getStaffById } from "@/lib/data";
+import { FlashMessage } from "@/components/flash-message";
 
 export const dynamic = "force-dynamic";
 
 type PageProps = {
   params: Promise<{ id: string }>;
+  searchParams?: Promise<{ msg?: string }>;
 };
 
 const DAY_NAMES = ["Dom", "Lun", "Mar", "Mie", "Jue", "Vie", "Sab"];
@@ -19,8 +21,9 @@ const ROLES = [
   { value: "RECEPTIONIST", label: "Recepcionista" }
 ];
 
-export default async function EditStaffPage({ params }: PageProps) {
+export default async function EditStaffPage({ params, searchParams }: PageProps) {
   const { id } = await params;
+  const sp = searchParams ? await searchParams : {};
   const staff = await getStaffById(id);
 
   if (!staff) {
@@ -29,6 +32,7 @@ export default async function EditStaffPage({ params }: PageProps) {
 
   return (
     <>
+      <FlashMessage msg={sp.msg} />
       <div className="page-header">
         <div>
           <p className="eyebrow">Staff</p>

@@ -626,6 +626,83 @@ textarea {
   }
 }
 
+/* ─── Flash messages ─────────────────────────────── */
+.flash-message {
+  position: fixed;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 9999;
+  min-width: 280px;
+  max-width: min(480px, calc(100vw - 32px));
+  padding: 14px 20px;
+  border-radius: 10px;
+  font-size: 0.93rem;
+  font-weight: 600;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.13);
+  animation: flash-in 0.3s cubic-bezier(0.16,1,0.3,1);
+  text-align: center;
+}
+
+.flash-success {
+  background: #dcfce7;
+  color: #166534;
+  border: 1px solid #86efac;
+}
+
+.flash-error {
+  background: #fee2e2;
+  color: #991b1b;
+  border: 1px solid #fca5a5;
+}
+
+@keyframes flash-in {
+  from { opacity: 0; transform: translateX(-50%) translateY(-12px); }
+  to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+
+/* ─── Confirm dialog ──────────────────────────────── */
+.confirm-dialog {
+  border: none;
+  border-radius: 14px;
+  padding: 0;
+  box-shadow: 0 8px 40px rgba(0,0,0,0.22);
+  max-width: min(440px, calc(100vw - 32px));
+  width: 100%;
+}
+
+.confirm-dialog::backdrop {
+  background: rgba(15, 20, 30, 0.55);
+  backdrop-filter: blur(4px);
+}
+
+.confirm-dialog-inner {
+  padding: 28px 24px 24px;
+  display: grid;
+  gap: 8px;
+}
+
+.confirm-dialog-title {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: var(--danger);
+  margin: 0 0 4px;
+}
+
+/* ─── Admin card accent ───────────────────────────── */
+.admin-layout .card {
+  border-top: 3px solid transparent;
+  transition: border-top-color 0.2s;
+}
+
+.admin-layout section.card {
+  border-top-color: var(--brand-light);
+}
+
+.admin-layout section.card:hover {
+  border-top-color: var(--brand);
+}
+
 /* Scroll reveal animations */
 .reveal {
   opacity: 0;
@@ -2335,5 +2412,137 @@ details[open] .faq-icon {
   .static-cta .btn {
     width: 100%;
     text-align: center;
+  }
+}
+
+/* ═══════════════════════════════════════
+   REACT-BIG-CALENDAR — Admin / PWA
+   ═══════════════════════════════════════ */
+
+.rbc-calendar {
+  font-family: var(--font-sans, Inter, sans-serif);
+  font-size: 0.85rem;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.rbc-toolbar {
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 12px 16px;
+  background: var(--surface-soft);
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 0;
+}
+
+.rbc-toolbar button {
+  min-height: 38px;
+  padding: 0 14px;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--foreground);
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.rbc-toolbar button:hover,
+.rbc-toolbar button.rbc-active {
+  background: var(--brand-light);
+  border-color: var(--brand);
+  color: var(--brand-strong);
+}
+
+.rbc-toolbar-label {
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: var(--foreground);
+  font-family: var(--font-display, "Cormorant Garamond", Georgia, serif);
+}
+
+.rbc-header {
+  padding: 10px 6px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+  background: var(--surface-soft);
+  border-bottom: 2px solid var(--line);
+}
+
+.rbc-time-header-content {
+  border-left: 1px solid var(--line);
+}
+
+.rbc-time-slot {
+  font-size: 0.72rem;
+  color: var(--muted);
+}
+
+.rbc-current-time-indicator {
+  background: var(--brand);
+  height: 2px;
+}
+
+.rbc-event {
+  border-radius: 6px !important;
+  font-size: 0.78rem !important;
+  font-weight: 600 !important;
+  padding: 3px 7px !important;
+  border: none !important;
+}
+
+.rbc-agenda-view table.rbc-agenda-table {
+  border-collapse: collapse;
+  font-size: 0.88rem;
+}
+
+.rbc-agenda-view table.rbc-agenda-table tbody > tr > td {
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--line);
+  vertical-align: middle;
+}
+
+.rbc-agenda-view table.rbc-agenda-table thead > tr > th {
+  padding: 10px 14px;
+  background: var(--surface-soft);
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+}
+
+.rbc-agenda-empty {
+  padding: 40px;
+  text-align: center;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+/* Mobile calendar — agenda view by default is more readable */
+@media (max-width: 860px) {
+  .rbc-toolbar {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .rbc-toolbar .rbc-btn-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+
+  .rbc-toolbar button {
+    min-height: 42px;
+    font-size: 0.88rem;
+    touch-action: manipulation;
+  }
+
+  .rbc-calendar {
+    font-size: 0.82rem;
   }
 }

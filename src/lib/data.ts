@@ -177,7 +177,7 @@ export async function getAvailabilityForServices(input: {
     })
   ]);
 
-  return buildAvailabilitySlots({
+  const allSlots = buildAvailabilitySlots({
     date: input.date,
     timeZone: settings.timezone,
     durationMinutes,
@@ -190,6 +190,12 @@ export async function getAvailabilityForServices(input: {
       workingHours: staffMember.workingHours
     }))
   });
+
+  // Morning-first rule: if any slot starts before 13:00 local time, only show those.
+  // Once morning is fully booked, all slots are shown.
+  const fmt = new Intl.DateTimeFormat("es", { timeZone: settings.timezone, hour: "numeric", hour12: false });
+  const morningSlots = allSlots.filter((s) => parseInt(fmt.format(new Date(s.startAt)), 10) < 13);
+  return morningSlots.length > 0 ? morningSlots : allSlots;
 }
 
 export async function createBooking(input: {

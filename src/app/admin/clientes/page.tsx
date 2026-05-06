@@ -1,14 +1,17 @@
 import Link from "next/link";
 import { Plus, Search } from "lucide-react";
 
+import { forceDeleteClientAction } from "@/lib/actions";
 import { getClientsWithHistory, getSalonSettings } from "@/lib/data";
 import { formatDateInZone, formatTimeInZone } from "@/lib/time";
 import { formatCurrency } from "@/lib/utils";
+import { DeleteClientDialog } from "@/components/delete-client-dialog";
+import { FlashMessage } from "@/components/flash-message";
 
 export const dynamic = "force-dynamic";
 
 type PageProps = {
-  searchParams?: Promise<{ q?: string }>;
+  searchParams?: Promise<{ q?: string; msg?: string }>;
 };
 
 export default async function ClientsPage({ searchParams }: PageProps) {
@@ -20,6 +23,7 @@ export default async function ClientsPage({ searchParams }: PageProps) {
 
   return (
     <>
+      <FlashMessage msg={params.msg} />
       <div className="page-header">
         <div>
           <p className="eyebrow">Clientes</p>
@@ -68,6 +72,11 @@ export default async function ClientsPage({ searchParams }: PageProps) {
                     <Link className="btn secondary" href={`/admin/clientes/${client.id}/edit`}>
                       Editar
                     </Link>
+                    <DeleteClientDialog
+                      clientId={client.id}
+                      clientName={client.name}
+                      action={forceDeleteClientAction}
+                    />
                   </div>
                 </div>
 
