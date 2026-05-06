@@ -106,7 +106,7 @@ export default async function ProductDetailPage({ params }: PageProps) {
                   <th>Fecha</th>
                   <th>Tipo</th>
                   <th>Cantidad</th>
-                  <th>Nota</th>
+                  <th>Clienta / Nota</th>
                 </tr>
               </thead>
               <tbody>
@@ -114,10 +114,18 @@ export default async function ProductDetailPage({ params }: PageProps) {
                   <tr key={mv.id}>
                     <td className="small">{new Date(mv.createdAt).toLocaleDateString("es-PE")}</td>
                     <td className="small">{movementTypeLabel[mv.type] ?? mv.type}</td>
-                    <td className="small" style={{ color: Number(mv.quantity) < 0 ? "var(--danger)" : "inherit" }}>
+                    <td className="small" style={{ color: Number(mv.quantity) < 0 ? "var(--danger)" : "var(--brand)" }}>
                       {Number(mv.quantity) > 0 ? "+" : ""}{Number(mv.quantity)} {product.unit}
                     </td>
-                    <td className="small muted">{mv.note ?? "-"}</td>
+                    <td className="small muted">
+                      {mv.type === "SERVICE_USAGE" && mv.appointment?.client ? (
+                        <Link href={`/admin/clientes/${mv.appointment.client.id}`} style={{ color: "var(--brand)", textDecoration: "none" }}>
+                          {mv.appointment.client.name}
+                        </Link>
+                      ) : (
+                        mv.note ?? "-"
+                      )}
+                    </td>
                   </tr>
                 ))}
               </tbody>

@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 
+import { prisma } from "@/lib/prisma";
 import { AdminMobileNav, type AdminNavLink } from "./admin-mobile-nav";
 
 const iconMap: Record<string, LucideIcon> = {
@@ -41,7 +42,15 @@ const navLinks: AdminNavLink[] = [
   { href: "/admin/importar", label: "Importar Excel", iconName: "Upload" }
 ];
 
-export function AdminShell({ children }: { children: React.ReactNode }) {
+export async function AdminShell({ children }: { children: React.ReactNode }) {
+  const allProducts = await prisma.product.findMany({
+    where: { isActive: true },
+    select: { stock: true, lowStockThreshold: true }
+  });
+  const lowStockCount = allProducts.filter(
+    (p) => Number(p.stock) <= Number(p.lowStockThreshold)
+  ).length;
+
   return (
     <div className="admin-layout">
       <AdminMobileNav links={navLinks} />
@@ -53,10 +62,18 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
         <nav className="sidebar-nav" aria-label="Admin">
           {navLinks.map((link) => {
             const Icon = iconMap[link.iconName];
+            const showBadge = link.href === "/admin/productos" && lowStockCount > 0;
             return (
-              <Link className="nav-link" href={link.href} key={link.href}>
-                {Icon ? <Icon aria-hidden size={18} /> : null}
-                {link.label}
+              <Link className="nav-link" href={link.href} key={link.href} style={{ justifyContent: "space-between" }}>
+                <span style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  {Icon ? <Icon aria-hidden size={18} /> : null}
+                  {link.label}
+                </span>
+                {showBadge ? (
+                  <span style={{ background: "#b91c1c", color: "#fff", borderRadius: 10, fontSize: "0.68rem", fontWeight: 700, padding: "1px 7px", minWidth: 18, textAlign: "center" }}>
+                    {lowStockCount}
+                  </span>
+                ) : null}
               </Link>
             );
           })}

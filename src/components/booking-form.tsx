@@ -137,6 +137,7 @@ export function BookingForm({
 
     try {
       const bonusCodeRaw = String(formData.get("bonusCode") ?? "").trim();
+      const birthdayRaw = String(formData.get("birthday") ?? "").trim();
       const response = await fetch("/api/bookings", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -144,7 +145,8 @@ export function BookingForm({
           client: {
             name: String(formData.get("name") ?? ""),
             phone: String(formData.get("phone") ?? ""),
-            email: String(formData.get("email") ?? "")
+            email: String(formData.get("email") ?? ""),
+            ...(birthdayRaw ? { birthday: birthdayRaw } : {})
           },
           serviceIds: selectedServices,
           staffId: selectedSlot.staffId,
@@ -314,6 +316,11 @@ export function BookingForm({
           <p className="small muted" style={{ marginTop: 4 }}>
             Si recibiste un bono de cumpleaños, ingresa tu código para aplicar el descuento.
           </p>
+        </div>
+        <div className="field">
+          <label htmlFor="birthday">Fecha de cumpleaños <span className="muted" style={{ fontWeight: 400 }}>(opcional)</span></label>
+          <input className="input" id="birthday" name="birthday" type="date" />
+          <p className="small muted" style={{ marginTop: 4 }}>Recibe un bono especial en tu cumpleaños.</p>
         </div>
         <div className="field">
           <label htmlFor="notes">Notas</label>

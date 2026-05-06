@@ -1,9 +1,9 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, MessageCircle, Pencil, RotateCcw, Save } from "lucide-react";
+import { ArrowLeft, MessageCircle, Pencil, RotateCcw, Save, XCircle } from "lucide-react";
 
 import { StatusBadge } from "@/components/status-badge";
-import { completeAppointmentAction, markDepositPaidAction, refundPaymentAction } from "@/lib/actions";
+import { cancelAppointmentAction, completeAppointmentAction, markDepositPaidAction, refundPaymentAction } from "@/lib/actions";
 import { getAppointmentForCheckout, getSalonSettings } from "@/lib/data";
 import { formatDateInZone, formatTimeInZone } from "@/lib/time";
 import { formatCurrency, normalizePhone } from "@/lib/utils";
@@ -146,6 +146,18 @@ export default async function AppointmentDetailPage({ params }: PageProps) {
           {appointment.status !== "CONFIRMED" ? (
             <div className="empty">Esta cita ya no esta pendiente de cobro.</div>
           ) : (
+            <>
+            <form className="form-grid" action={cancelAppointmentAction} style={{ marginBottom: 20, paddingBottom: 20, borderBottom: "1px solid var(--line)" }}>
+              <input type="hidden" name="appointmentId" value={appointment.id} />
+              <div className="field">
+                <label htmlFor="cancel-note">Motivo de cancelación (se envía a la clienta)</label>
+                <textarea className="textarea" id="cancel-note" name="note" placeholder="Ej: Johanna está enferma, reagendaremos pronto..." rows={2} />
+              </div>
+              <button className="btn danger" type="submit" style={{ alignSelf: "flex-start" }}>
+                <XCircle size={16} aria-hidden />
+                Cancelar cita y notificar a la clienta
+              </button>
+            </form>
             <form className="form-grid" action={completeAppointmentAction}>
               <input type="hidden" name="appointmentId" value={appointment.id} />
               <div className="grid two">
@@ -196,6 +208,7 @@ export default async function AppointmentDetailPage({ params }: PageProps) {
                 Completar y cobrar
               </button>
             </form>
+            </>
           )}
         </section>
 

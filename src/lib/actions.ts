@@ -6,7 +6,7 @@ import { redirect } from "next/navigation";
 
 import { requireAdmin } from "@/lib/auth";
 import { createBookingFromLocalTime, getSalonSettings } from "@/lib/data";
-import { sendBookingCancellation } from "@/lib/email";
+import { sendBookingCancellation, sendLowStockAlert } from "@/lib/email";
 import { prisma } from "@/lib/prisma";
 import { addMinutes, formatDateInZone, formatTimeInZone } from "@/lib/time";
 import { normalizePhone } from "@/lib/utils";
@@ -158,6 +158,7 @@ export async function updateAppointmentAction(formData: FormData) {
 export async function cancelAppointmentAction(formData: FormData) {
   await requireAdmin();
   const appointmentId = requiredString(formData, "appointmentId");
+  const note = optionalString(formData, "note");
 
   const appointment = await prisma.appointment.update({
     where: { id: appointmentId },
@@ -175,9 +176,12 @@ export async function cancelAppointmentAction(formData: FormData) {
       clientName: appointment.client.name,
       serviceName: serviceNames,
       dateLabel: formatDateInZone(appointment.startAt, settings.timezone),
-      timeLabel: formatTimeInZone(appointment.startAt, settings.timezone)
+      timeLabel: formatTimeInZone(appointment.startAt, settings.timezone),
+      note: note ?? undefined
     }).catch((err) => console.error("[email] cancelacion fallo:", err));
   }
+
+  redirect("/admin/agenda");
 }
 
 export async function markNoShowAction(formData: FormData) {
@@ -256,7 +260,23 @@ export async function completeAppointmentAction(formData: FormData) {
   revalidatePath("/admin/agenda");
   revalidatePath("/admin/productos");
   revalidatePath("/admin/caja");
+
+  checkAndAlertLowStock().catch((err) => console.error("[stock-alert]", err));
+
   redirect("/admin/agenda");
+}
+
+async function checkAndAlertLowStock() {
+  const products = await prisma.product.findMany({
+    where: { isActive: true },
+    select: { name: true, stock: true, unit: true, lowStockThreshold: true }
+  });
+  const low = products
+    .filter((p) => Number(p.stock) <= Number(p.lowStockThreshold))
+    .map((p) => ({ name: p.name, stock: Number(p.stock), unit: p.unit, threshold: Number(p.lowStockThreshold) }));
+  if (low.length > 0) {
+    await sendLowStockAlert(low);
+  }
 }
 
 // ─── Servicios ───────────────────────────────────────────────────────────────
@@ -414,6 +434,8 @@ export async function adjustProductStockAction(formData: FormData) {
 
   revalidatePath("/admin/productos");
   revalidatePath(`/admin/productos/${productId}`);
+
+  checkAndAlertLowStock().catch((err) => console.error("[stock-alert]", err));
 }
 
 // ─── Clientes ────────────────────────────────────────────────────────────────
@@ -472,6 +494,7 @@ export async function updateClientAction(formData: FormData) {
 
   revalidatePath("/admin/clientes");
   revalidatePath(`/admin/clientes/${clientId}`);
+  redirect(`/admin/clientes/${clientId}?ok=1`);
 }
 
 export async function deleteClientAction(formData: FormData) {

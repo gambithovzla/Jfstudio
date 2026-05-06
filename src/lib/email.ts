@@ -27,6 +27,7 @@ type CancellationEmailData = {
   serviceName: string;
   dateLabel: string;
   timeLabel: string;
+  note?: string;
 };
 
 type BirthdayBonusEmailData = {
@@ -113,7 +114,7 @@ function reminderHtml({
 </html>`;
 }
 
-function cancellationHtml({ clientName, serviceName, dateLabel, timeLabel }: CancellationEmailData) {
+function cancellationHtml({ clientName, serviceName, dateLabel, timeLabel, note }: CancellationEmailData) {
   return `<!DOCTYPE html>
 <html lang="es">
 <head><meta charset="utf-8"><title>Cita cancelada</title></head>
@@ -129,9 +130,42 @@ function cancellationHtml({ clientName, serviceName, dateLabel, timeLabel }: Can
             <tr><td style="padding:4px 0;font-size:0.9rem;"><strong>Servicio:</strong> ${serviceName}</td></tr>
             <tr><td style="padding:4px 0;font-size:0.9rem;"><strong>Fecha:</strong> ${dateLabel}</td></tr>
             <tr><td style="padding:4px 0;font-size:0.9rem;"><strong>Hora:</strong> ${timeLabel}</td></tr>
+            ${note ? `<tr><td style="padding:8px 0 0;font-size:0.9rem;border-top:1px solid #ddd6cc;margin-top:6px;"><strong>Motivo:</strong> ${note}</td></tr>` : ""}
           </table>
-          <a href="${APP_URL}/reservar" style="display:inline-block;background:#0f766e;color:#fff;text-decoration:none;border-radius:8px;padding:12px 24px;font-weight:700;font-size:0.95rem;">Hacer nueva reserva</a>
+          <a href="${APP_URL}/reservar" style="display:inline-block;background:#c4587a;color:#fff;text-decoration:none;border-radius:8px;padding:12px 24px;font-weight:700;font-size:0.95rem;">Hacer nueva reserva</a>
           <p style="margin:24px 0 0;font-size:0.82rem;color:#9ca3af;">JF Studio · Cualquier consulta por WhatsApp.</p>
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`;
+}
+
+function lowStockHtml(products: { name: string; stock: number; unit: string; threshold: number }[]) {
+  const rows = products
+    .map((p) => `<tr><td style="padding:6px 8px;border-bottom:1px solid #e8e2d8;">${p.name}</td><td style="padding:6px 8px;border-bottom:1px solid #e8e2d8;color:#b91c1c;font-weight:700;">${p.stock} ${p.unit}</td><td style="padding:6px 8px;border-bottom:1px solid #e8e2d8;color:#6b7280;">${p.threshold} ${p.unit}</td></tr>`)
+    .join("");
+  return `<!DOCTYPE html>
+<html lang="es">
+<head><meta charset="utf-8"><title>Stock bajo</title></head>
+<body style="margin:0;padding:0;background:#fbfaf7;font-family:sans-serif;color:#1f2933;">
+  <table width="100%" cellpadding="0" cellspacing="0">
+    <tr><td align="center" style="padding:32px 16px;">
+      <table width="560" style="max-width:100%;background:#fff;border-radius:12px;border:1px solid #e5e7eb;padding:32px;">
+        <tr><td>
+          <p style="margin:0 0 8px;font-size:0.78rem;font-weight:800;text-transform:uppercase;color:#c4587a;">JF Studio · Alerta de inventario</p>
+          <h1 style="margin:0 0 16px;font-size:1.4rem;color:#1a1a1a;">⚠️ Stock bajo en productos</h1>
+          <p style="margin:0 0 20px;color:#374151;">Los siguientes productos están por debajo del umbral de alerta:</p>
+          <table width="100%" style="border-collapse:collapse;font-size:0.9rem;">
+            <thead><tr style="background:#f5f2ed;">
+              <th style="padding:8px;text-align:left;">Producto</th>
+              <th style="padding:8px;text-align:left;">Stock actual</th>
+              <th style="padding:8px;text-align:left;">Umbral</th>
+            </tr></thead>
+            <tbody>${rows}</tbody>
+          </table>
+          <p style="margin:20px 0 0;font-size:0.85rem;color:#6b7280;">Revisa el inventario en el panel de administración.</p>
         </td></tr>
       </table>
     </td></tr>
@@ -180,6 +214,16 @@ export async function sendBookingCancellation(data: CancellationEmailData) {
     to: data.to,
     subject: `Cita cancelada · JF Studio`,
     html: cancellationHtml(data)
+  });
+}
+
+export async function sendLowStockAlert(products: { name: string; stock: number; unit: string; threshold: number }[]) {
+  const to = process.env.ADMIN_EMAIL ?? FROM.replace(/^[^<]*<|>$/g, "");
+  await safeSend({
+    from: FROM,
+    to,
+    subject: `⚠️ Stock bajo en ${products.length} producto${products.length > 1 ? "s" : ""} · JF Studio`,
+    html: lowStockHtml(products)
   });
 }
 
