@@ -193,7 +193,7 @@ export async function getAvailabilityForServices(input: {
 }
 
 export async function createBooking(input: {
-  client: { name: string; phone: string; email?: string | null };
+  client: { name: string; phone: string; email?: string | null; birthday?: Date | null };
   serviceIds: string[];
   staffId: string;
   startAt: Date;
@@ -282,12 +282,14 @@ export async function createBooking(input: {
         where: { phone },
         update: {
           name: input.client.name.trim(),
-          email: input.client.email?.trim() || null
+          email: input.client.email?.trim() || null,
+          ...(input.client.birthday ? { birthday: input.client.birthday } : {})
         },
         create: {
           name: input.client.name.trim(),
           phone,
-          email: input.client.email?.trim() || null
+          email: input.client.email?.trim() || null,
+          birthday: input.client.birthday ?? null
         }
       });
 
@@ -591,7 +593,12 @@ export async function getProductById(id: string) {
       movements: {
         orderBy: { createdAt: "desc" },
         take: 50,
-        include: { createdByStaff: { select: { name: true } } }
+        include: {
+          createdByStaff: { select: { name: true } },
+          appointment: {
+            include: { client: { select: { id: true, name: true } } }
+          }
+        }
       }
     }
   });

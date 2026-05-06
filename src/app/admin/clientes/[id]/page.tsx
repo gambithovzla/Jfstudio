@@ -13,8 +13,13 @@ type PageProps = {
   params: Promise<{ id: string }>;
 };
 
-export default async function ClientDetailPage({ params }: PageProps) {
+export default async function ClientDetailPage({
+  params,
+  searchParams
+}: PageProps & { searchParams?: Promise<{ ok?: string }> }) {
   const { id } = await params;
+  const sp = searchParams ? await searchParams : {};
+  const saved = sp.ok === "1";
   const { client, settings } = await getClientById(id);
 
   if (!client) {
@@ -36,6 +41,11 @@ export default async function ClientDetailPage({ params }: PageProps) {
 
   return (
     <>
+      {saved ? (
+        <div style={{ background: "#dcfce7", border: "1px solid #86efac", borderRadius: 10, padding: "12px 18px", marginBottom: 20, color: "#166534", fontWeight: 500 }}>
+          ✓ Cambios guardados correctamente.
+        </div>
+      ) : null}
       <div className="page-header">
         <div>
           <p className="eyebrow">Cliente</p>
