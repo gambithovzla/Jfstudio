@@ -16,11 +16,6 @@ const TAXI_SERVICES = [
       `https://m.uber.com/ul/?action=setPickup&pickup=my_location&dropoff[latitude]=${lat}&dropoff[longitude]=${lon}&dropoff[nickname]=JF+Studio`,
     className: "taxi-btn taxi-btn--uber",
   },
-  { name: "Cabify", getHref: () => "https://cabify.com/lima/solicitar-taxi", className: "taxi-btn" },
-  { name: "Yango", getHref: () => "https://yango.com/", className: "taxi-btn" },
-  { name: "InDriver", getHref: () => "https://indriver.com/", className: "taxi-btn" },
-  { name: "DiDi", getHref: () => "https://web.didiglobal.com/pe/", className: "taxi-btn" },
-  { name: "Beat", getHref: () => "https://thebeat.co/pe/es/", className: "taxi-btn" },
 ];
 
 export function Location() {

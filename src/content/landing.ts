@@ -97,10 +97,10 @@ export const landingContent: LandingContent = {
     imageAlt: "Johanna Figueredo"
   },
   about: {
-    title: "Sobre Johanna",
+    title: "Manos que escuchan, tijeras que transforman.",
     paragraphs: [
-      "Soy Johanna Figueredo, estilista profesional con más de una década acompañando a mis clientas en sus momentos más importantes.",
-      "En JF Studio encontrarás un espacio cálido donde cada servicio se piensa para resaltar tu personalidad. Trabajamos con marcas premium y técnicas actualizadas para cuidar tu cabello y tu tiempo."
+      "Soy Johanna Figueredo, estilista profesional con más de una década dedicada al arte del cabello. Estudié colorimetría en Wella Studios y me especialicé en técnicas de balayage y peinados editoriales en Buenos Aires y Madrid.",
+      "Mi estudio nace de la idea de que cada clienta merece una experiencia personalizada — un espacio íntimo, sin prisas, donde tu estilo se piensa en conjunto y se ejecuta con técnica y cuidado."
     ],
     portraitUrl: "/images/johanna-portrait.webp",
     portraitAlt: "Johanna Figueredo"

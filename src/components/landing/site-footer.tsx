@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Camera, Music } from "lucide-react";
+import Image from "next/image";
 
 import { landingContent } from "@/content/landing";
 
@@ -10,51 +10,68 @@ export function SiteFooter() {
   return (
     <footer className="site-footer">
       <div className="site-footer-inner">
-        <div>
-          <span className="brand-mark" aria-label={brand.name}>
-            <span className="brand-dot">{brand.initials}</span>
-            <span>{brand.name}</span>
-          </span>
-          <p className="small" style={{ marginTop: 8, opacity: 0.7 }}>
-            {brand.tagline}
+
+        {/* Col 1 — Brand */}
+        <div className="footer-brand-col">
+          <Link href="/" className="footer-brand-mark" aria-label={brand.name}>
+            {brand.logoUrl ? (
+              <Image src={brand.logoUrl} alt="" width={40} height={40} style={{ objectFit: "contain" }} />
+            ) : (
+              <span className="footer-brand-dot">{brand.initials}</span>
+            )}
+            <span className="footer-brand-name">
+              Johanna Figueredo<em> Studio</em>
+              <span className="footer-brand-sub">Salón · Lima</span>
+            </span>
+          </Link>
+          <p className="footer-brand-desc">
+            Boutique de belleza dedicada a cortes, color y peinados de autor. Atención personalizada en un espacio íntimo en Miraflores.
           </p>
         </div>
-        <nav className="site-footer-nav" aria-label="Pie de página">
-          <Link href="/#servicios">Servicios</Link>
-          <Link href="/#sobre">Sobre</Link>
-          <Link href="/#contacto">Contacto</Link>
-          <Link href="/reservar">Reservar</Link>
-        </nav>
-        <div>
-          <p className="small" style={{ opacity: 0.7, marginBottom: 12 }}>
-            {contact.phone} · {contact.email}
-          </p>
-          <div className="site-footer-social">
+
+        {/* Col 2 — Navegación */}
+        <div className="footer-col">
+          <h4 className="footer-col-title">Navegación</h4>
+          <ul className="footer-col-links">
+            <li><Link href="/#servicios">Servicios</Link></li>
+            <li><Link href="/#sobre">Sobre Johanna</Link></li>
+            <li><Link href="/#galeria">Galería</Link></li>
+            <li><Link href="/#testimonios">Testimonios</Link></li>
+            <li><Link href="/#ubicacion">Ubicación</Link></li>
+          </ul>
+        </div>
+
+        {/* Col 3 — Reservas */}
+        <div className="footer-col">
+          <h4 className="footer-col-title">Reservas</h4>
+          <ul className="footer-col-links">
+            <li><Link href="/reservar">Reservar online</Link></li>
+            <li><Link href="/reservar">Reagendar cita</Link></li>
+            <li><Link href="/#contacto">Política de cancelación</Link></li>
+            <li><Link href="/#contacto">Preguntas frecuentes</Link></li>
+          </ul>
+        </div>
+
+        {/* Col 4 — Contacto */}
+        <div className="footer-col">
+          <h4 className="footer-col-title">Contacto</h4>
+          <ul className="footer-col-links">
+            <li><a href={`mailto:${contact.email}`}>{contact.email}</a></li>
+            <li><a href={`tel:${contact.phone.replace(/[^0-9+]/g, "")}`}>{contact.phone}</a></li>
             {contact.instagram ? (
-              <a
-                href={contact.instagram}
-                target="_blank"
-                rel="noreferrer"
-                aria-label="Instagram"
-              >
-                <Camera size={18} />
-              </a>
+              <li><a href={contact.instagram} target="_blank" rel="noreferrer">Instagram · @jfigueredo07</a></li>
             ) : null}
             {contact.tiktok ? (
-              <a
-                href={contact.tiktok}
-                target="_blank"
-                rel="noreferrer"
-                aria-label="TikTok"
-              >
-                <Music size={18} />
-              </a>
+              <li><a href={contact.tiktok} target="_blank" rel="noreferrer">TikTok · @jfigueredo07</a></li>
             ) : null}
-          </div>
+          </ul>
         </div>
+
       </div>
-      <div className="site-footer-bottom small">
-        &copy; {year} {brand.name}. Todos los derechos reservados.
+
+      <div className="site-footer-bottom">
+        <span>© {year} Johanna Figueredo Studio</span>
+        <span>By Gambitho Labs · Lima Perú</span>
       </div>
     </footer>
   );
