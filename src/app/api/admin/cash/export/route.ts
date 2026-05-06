@@ -32,9 +32,10 @@ export async function GET(request: NextRequest) {
   const isRange = Boolean(from && to);
   const { payments, settings } = await getCashReport(isRange ? { from, to } : { date });
 
-  const ruc       = process.env.SALON_RUC ?? "";
-  const address   = process.env.SALON_ADDRESS ?? "Lima, Peru";
-  const salonName = settings.name;
+  const ruc         = process.env.SALON_RUC ?? "";
+  const address     = process.env.SALON_ADDRESS ?? "Lima, Peru";
+  const businessName = process.env.SALON_BUSINESS_NAME ?? "Johanna Figueredo Studio E.I.R.L.";
+  const salonName   = settings.name;
   const periodo   = isRange ? `${from} al ${to}` : (date ?? new Date().toISOString().slice(0, 10));
   const generado  = new Date().toLocaleDateString("es-PE", { year: "numeric", month: "long", day: "numeric" });
 
@@ -63,7 +64,7 @@ export async function GET(request: NextRequest) {
   ];
 
   // Cabecera institucional
-  const r1 = ws1.addRow([salonName.toUpperCase()]);
+  const r1 = ws1.addRow([businessName.toUpperCase()]);
   ws1.mergeCells(`A${r1.number}:C${r1.number}`);
   r1.getCell(1).font  = { bold: true, size: 14, color: { argb: WHITE } };
   r1.getCell(1).fill  = hFill(DARK);
@@ -183,7 +184,7 @@ export async function GET(request: NextRequest) {
   ];
 
   // Cabecera hoja detalle
-  const d1 = ws2.addRow([`${salonName.toUpperCase()} — REGISTRO DE VENTAS`]);
+  const d1 = ws2.addRow([`${businessName.toUpperCase()} — REGISTRO DE VENTAS`]);
   ws2.mergeCells(`A${d1.number}:I${d1.number}`);
   d1.getCell(1).font  = { bold: true, size: 13, color: { argb: WHITE } };
   d1.getCell(1).fill  = hFill(DARK);
