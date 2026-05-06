@@ -183,10 +183,14 @@ async function safeSend(args: Parameters<ReturnType<typeof getResend>["emails"][
     return;
   }
 
+  const recipient = Array.isArray(args.to) ? args.to.join(",") : args.to;
+  console.log("[email] enviando a:", recipient, "| asunto:", args.subject);
   try {
     const result = await getResend().emails.send(args);
     if (result.error) {
       console.error("[email] error de Resend:", result.error);
+    } else {
+      console.log("[email] enviado OK, id:", result.data?.id);
     }
   } catch (error) {
     console.error("[email] fallo inesperado:", error);
@@ -283,6 +287,7 @@ export async function sendNewBookingNotification(data: {
   timeLabel: string;
 }) {
   const to = process.env.ADMIN_EMAIL ?? FROM.replace(/^[^<]*<|>$/g, "");
+  console.log("[email] notif admin → ADMIN_EMAIL:", process.env.ADMIN_EMAIL ?? "(no definido, usando FROM)");
   await safeSend({
     from: FROM,
     to,

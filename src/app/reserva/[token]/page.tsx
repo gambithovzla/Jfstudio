@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 
+import { ConfirmSubmitButton } from "@/components/confirm-submit-button";
 import { SiteFooter } from "@/components/landing/site-footer";
 import { SiteHeader } from "@/components/landing/site-header";
 import { StatusBadge } from "@/components/status-badge";
@@ -142,9 +143,13 @@ export default async function PublicAppointmentPage({ params }: PageProps) {
                     Reagendar
                   </Link>
                   <form action={cancelAction}>
-                    <button className="btn danger" type="submit">
+                    <ConfirmSubmitButton
+                      className="btn danger"
+                      type="submit"
+                      message="¿Confirmas que deseas cancelar tu cita? Recibirás un email de confirmación."
+                    >
                       Cancelar cita
-                    </button>
+                    </ConfirmSubmitButton>
                   </form>
                 </div>
               </>

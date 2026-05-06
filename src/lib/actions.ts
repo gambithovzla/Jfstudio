@@ -445,6 +445,7 @@ export async function adjustProductStockAction(formData: FormData) {
   const productId = requiredString(formData, "productId");
   const quantity = decimalFromForm(formData, "quantity");
   const note = optionalString(formData, "note") ?? "Ajuste manual";
+  const staffId = optionalString(formData, "staffId");
 
   await prisma.$transaction(async (tx) => {
     await tx.product.update({
@@ -457,7 +458,8 @@ export async function adjustProductStockAction(formData: FormData) {
         productId,
         type: InventoryMovementType.ADJUSTMENT,
         quantity,
-        note
+        note,
+        createdByStaffId: staffId
       }
     });
   });
@@ -836,5 +838,17 @@ export async function refundPaymentAction(formData: FormData) {
 
   revalidatePath(`/admin/agenda/${appointmentId}`);
   revalidatePath("/admin/caja");
+}
+
+export async function deleteAppointmentAction(formData: FormData) {
+  await requireAdmin();
+  const appointmentId = requiredString(formData, "appointmentId");
+
+  await prisma.appointment.delete({ where: { id: appointmentId } });
+
+  revalidatePath("/admin/agenda");
+  revalidatePath("/admin/caja");
+  revalidatePath("/admin/clientes");
+  redirect("/admin/agenda");
 }
 
