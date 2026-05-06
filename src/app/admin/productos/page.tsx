@@ -1,4 +1,5 @@
-import { PackagePlus, PlusCircle } from "lucide-react";
+import Link from "next/link";
+import { History, PackagePlus, PlusCircle } from "lucide-react";
 
 import { adjustProductStockAction, createProductAction } from "@/lib/actions";
 import { getProductsAdmin } from "@/lib/data";
@@ -87,10 +88,16 @@ export default async function ProductsPage() {
                     <input className="input" id={`note-${product.id}`} name="note" />
                   </div>
                 </div>
-                <button className="btn secondary" type="submit">
-                  <PlusCircle size={17} aria-hidden />
-                  Aplicar ajuste
-                </button>
+                <div className="button-row">
+                  <button className="btn secondary" type="submit">
+                    <PlusCircle size={17} aria-hidden />
+                    Aplicar ajuste
+                  </button>
+                  <Link className="btn secondary" href={`/admin/productos/${product.id}`}>
+                    <History size={17} aria-hidden />
+                    Historial
+                  </Link>
+                </div>
               </form>
             </article>
           ))}
