@@ -96,7 +96,7 @@ export function AgendaCalendar({
         localizer={localizer}
         events={events}
         defaultView={"week" as View}
-        views={["week", "day", "agenda"]}
+        views={["month", "week", "day", "agenda"]}
         defaultDate={defaultDate}
         step={15}
         timeslots={4}
@@ -105,13 +105,15 @@ export function AgendaCalendar({
         eventPropGetter={eventPropGetter}
         onSelectEvent={onSelectEvent}
         messages={{
+          month: "Mes",
           week: "Semana",
           day: "Dia",
           agenda: "Lista",
           today: "Hoy",
           previous: "Anterior",
           next: "Siguiente",
-          noEventsInRange: "Sin citas en este periodo."
+          noEventsInRange: "Sin citas en este periodo.",
+          showMore: (count) => `+${count} más`
         }}
         culture="es"
       />
