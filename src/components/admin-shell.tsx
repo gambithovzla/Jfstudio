@@ -43,10 +43,20 @@ const navLinks: AdminNavLink[] = [
 ];
 
 export async function AdminShell({ children }: { children: React.ReactNode }) {
-  const allProducts = await prisma.product.findMany({
-    where: { isActive: true },
-    select: { stock: true, lowStockThreshold: true }
-  });
+  const now = new Date();
+  const todayStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+  const todayEnd = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1));
+
+  const [allProducts, todayAppointmentCount] = await Promise.all([
+    prisma.product.findMany({
+      where: { isActive: true },
+      select: { stock: true, lowStockThreshold: true }
+    }),
+    prisma.appointment.count({
+      where: { status: "CONFIRMED", startAt: { gte: todayStart, lt: todayEnd } }
+    })
+  ]);
+
   const lowStockCount = allProducts.filter(
     (p) => Number(p.stock) <= Number(p.lowStockThreshold)
   ).length;
@@ -63,6 +73,7 @@ export async function AdminShell({ children }: { children: React.ReactNode }) {
           {navLinks.map((link) => {
             const Icon = iconMap[link.iconName];
             const showBadge = link.href === "/admin/productos" && lowStockCount > 0;
+            const showAgendaBadge = link.href === "/admin/agenda" && todayAppointmentCount > 0;
             return (
               <Link className="nav-link" href={link.href} key={link.href} style={{ justifyContent: "space-between" }}>
                 <span style={{ display: "flex", alignItems: "center", gap: 10 }}>
@@ -72,6 +83,11 @@ export async function AdminShell({ children }: { children: React.ReactNode }) {
                 {showBadge ? (
                   <span style={{ background: "#b91c1c", color: "#fff", borderRadius: 10, fontSize: "0.68rem", fontWeight: 700, padding: "1px 7px", minWidth: 18, textAlign: "center" }}>
                     {lowStockCount}
+                  </span>
+                ) : null}
+                {showAgendaBadge ? (
+                  <span style={{ background: "#c4587a", color: "#fff", borderRadius: 10, fontSize: "0.68rem", fontWeight: 700, padding: "1px 7px", minWidth: 18, textAlign: "center" }}>
+                    {todayAppointmentCount}
                   </span>
                 ) : null}
               </Link>

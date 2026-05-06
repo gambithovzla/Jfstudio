@@ -1,9 +1,10 @@
 import Link from "next/link";
-import { CalendarPlus, Eye, XCircle } from "lucide-react";
+import { CalendarPlus, Eye } from "lucide-react";
 
 import { AgendaCalendar } from "@/components/agenda-calendar";
+import { InlineCancelForm } from "@/components/inline-cancel-form";
 import { StatusBadge } from "@/components/status-badge";
-import { cancelAppointmentAction, createAdminAppointmentAction, markNoShowAction } from "@/lib/actions";
+import { createAdminAppointmentAction, markNoShowAction } from "@/lib/actions";
 import { getAgenda, getAgendaRange } from "@/lib/data";
 import { formatTimeInZone } from "@/lib/time";
 import { formatCurrency } from "@/lib/utils";
@@ -26,13 +27,10 @@ export default async function AgendaPage({ searchParams }: PageProps) {
 
   if (isCalendarView) {
     const now = new Date();
-    const weekStart = new Date(now);
-    weekStart.setDate(now.getDate() - now.getDay());
-    weekStart.setHours(0, 0, 0, 0);
-    const weekEnd = new Date(weekStart);
-    weekEnd.setDate(weekStart.getDate() + 14);
+    const rangeStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - 1, 1));
+    const rangeEnd = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 2, 1));
 
-    const { appointments: rangeAppts, settings: rs } = await getAgendaRange(weekStart, weekEnd);
+    const { appointments: rangeAppts, settings: rs } = await getAgendaRange(rangeStart, rangeEnd);
     void rs;
     calendarAppointments = rangeAppts.map((a) => ({
       id: a.id,
@@ -176,13 +174,7 @@ export default async function AgendaPage({ searchParams }: PageProps) {
                     </Link>
                     {appointment.status === "CONFIRMED" ? (
                       <>
-                        <form action={cancelAppointmentAction}>
-                          <input type="hidden" name="appointmentId" value={appointment.id} />
-                          <button className="btn danger" type="submit">
-                            <XCircle size={17} aria-hidden />
-                            Cancelar
-                          </button>
-                        </form>
+                        <InlineCancelForm appointmentId={appointment.id} />
                         <form action={markNoShowAction}>
                           <input type="hidden" name="appointmentId" value={appointment.id} />
                           <button className="btn secondary" type="submit">

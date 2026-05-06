@@ -227,6 +227,46 @@ export async function sendLowStockAlert(products: { name: string; stock: number;
   });
 }
 
+export async function sendNewBookingNotification(data: {
+  clientName: string;
+  clientPhone: string;
+  serviceName: string;
+  staffName: string;
+  dateLabel: string;
+  timeLabel: string;
+}) {
+  const to = process.env.ADMIN_EMAIL ?? FROM.replace(/^[^<]*<|>$/g, "");
+  await safeSend({
+    from: FROM,
+    to,
+    subject: `Nueva reserva: ${data.clientName} · ${data.dateLabel} ${data.timeLabel}`,
+    html: `<!DOCTYPE html>
+<html lang="es">
+<head><meta charset="utf-8"><title>Nueva reserva</title></head>
+<body style="margin:0;padding:0;background:#fbfaf7;font-family:sans-serif;color:#1f2933;">
+  <table width="100%" cellpadding="0" cellspacing="0">
+    <tr><td align="center" style="padding:32px 16px;">
+      <table width="480" style="max-width:100%;background:#fff;border-radius:12px;border:1px solid #e5e7eb;padding:28px 32px;">
+        <tr><td>
+          <p style="margin:0 0 6px;font-size:0.72rem;font-weight:800;text-transform:uppercase;color:#c4587a;letter-spacing:0.08em;">JF Studio · Nueva reserva</p>
+          <h1 style="margin:0 0 18px;font-size:1.3rem;color:#1a1a1a;">📅 ${data.clientName} reservó una cita</h1>
+          <table width="100%" style="background:#f5f2ed;border-radius:10px;padding:14px 18px;font-size:0.9rem;">
+            <tr><td style="padding:3px 0;"><strong>Servicio:</strong> ${data.serviceName}</td></tr>
+            <tr><td style="padding:3px 0;"><strong>Estilista:</strong> ${data.staffName}</td></tr>
+            <tr><td style="padding:3px 0;"><strong>Fecha:</strong> ${data.dateLabel}</td></tr>
+            <tr><td style="padding:3px 0;"><strong>Hora:</strong> ${data.timeLabel}</td></tr>
+            <tr><td style="padding:3px 0;"><strong>Telefono:</strong> ${data.clientPhone}</td></tr>
+          </table>
+          <p style="margin:18px 0 0;font-size:0.82rem;color:#9ca3af;">Puedes ver y gestionar esta cita desde el panel de administracion.</p>
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`
+  });
+}
+
 function birthdayHtml({ clientName, discountPercent, code, expiresLabel }: BirthdayBonusEmailData) {
   return `<!DOCTYPE html>
 <html lang="es">

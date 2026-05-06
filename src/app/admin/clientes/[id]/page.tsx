@@ -173,12 +173,14 @@ export default async function ClientDetailPage({
                           {apt.services.map((s) => s.serviceNameSnapshot).join(", ")} · {apt.staff.name}
                         </p>
                       </div>
-                      <div>
+                      <div style={{ textAlign: "right" }}>
                         <StatusBadge status={apt.status} />
                         {paid > 0 ? (
-                          <p className="small" style={{ textAlign: "right", marginTop: 4 }}>
+                          <p className="small" style={{ textAlign: "right", marginTop: 4, color: "#166534", fontWeight: 600 }}>
                             {formatCurrency(paid, settings.currency)}
                           </p>
+                        ) : apt.status === "CANCELED" ? (
+                          <p className="small muted" style={{ textAlign: "right", marginTop: 4 }}>Sin cobro</p>
                         ) : null}
                       </div>
                     </div>
