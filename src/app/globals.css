@@ -1442,6 +1442,13 @@ textarea {
   flex-shrink: 0;
 }
 
+.footer-logo-wrap {
+  display: block;
+  width: 80px;
+  height: 80px;
+  flex-shrink: 0;
+}
+
 .footer-brand-name {
   font-family: var(--font-display, "Cormorant Garamond", Georgia, serif);
   font-size: 1.25rem;
