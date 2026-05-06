@@ -4,7 +4,6 @@ import { ArrowLeft } from "lucide-react";
 
 import { adjustProductStockAction, updateProductAction } from "@/lib/actions";
 import { getProductById } from "@/lib/data";
-import { formatCurrency } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 

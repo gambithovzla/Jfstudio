@@ -16,7 +16,7 @@ export async function GET(request: NextRequest) {
   const to = searchParams.get("to") ?? undefined;
 
   const isRange = Boolean(from && to);
-  const { payments, settings, summary } = await getCashReport(isRange ? { from, to } : { date });
+  const { payments, settings } = await getCashReport(isRange ? { from, to } : { date });
 
   const periodo = isRange ? `${from} al ${to}` : (date ?? "Hoy");
   const totalGeneral = payments.reduce((s, p) => s + Number(p.amount), 0);
@@ -91,7 +91,7 @@ export async function GET(request: NextRequest) {
   XLSX.utils.book_append_sheet(wb, wsDetalle, "Detalle");
 
   // ── Escribir buffer ───────────────────────────────────────────────────────
-  const buf = XLSX.write(wb, { type: "buffer", bookType: "xlsx" }) as Buffer;
+  const buf = XLSX.write(wb, { type: "array", bookType: "xlsx" }) as Uint8Array;
   const filename = isRange
     ? `ReporteCaja_JFStudio_${from}_${to}.xlsx`
     : `ReporteCaja_JFStudio_${date ?? "hoy"}.xlsx`;
