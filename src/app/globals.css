@@ -126,6 +126,43 @@ textarea {
   font-size: 0.82rem;
 }
 
+/* Header brand */
+.header-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+}
+
+.header-brand-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  line-height: 1;
+}
+
+.header-brand-name {
+  font-family: var(--font-display, "Cormorant Garamond", Georgia, serif);
+  font-size: 1.15rem;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  color: var(--foreground);
+}
+
+.header-brand-name em {
+  font-style: italic;
+  color: var(--brand);
+  font-weight: 400;
+}
+
+.header-brand-sub {
+  font-family: var(--font-sans, Inter, sans-serif);
+  font-size: 0.6rem;
+  letter-spacing: 0.3em;
+  color: var(--muted);
+  text-transform: uppercase;
+}
+
 .admin-layout {
   min-height: 100vh;
   display: grid;
@@ -1407,26 +1444,27 @@ textarea {
 
 .footer-brand-name {
   font-family: var(--font-display, "Cormorant Garamond", Georgia, serif);
-  font-size: 1.2rem;
-  color: #f5efe6;
-  line-height: 1;
+  font-size: 1.25rem;
+  color: var(--gold);
+  line-height: 1.1;
   letter-spacing: 0.01em;
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 2px;
 }
 
 .footer-brand-name em {
   font-style: italic;
   color: var(--gold);
+  font-size: 1.45rem;
 }
 
 .footer-brand-sub {
   font-family: var(--font-sans, Inter, sans-serif);
   font-style: normal;
-  font-size: 0.62rem;
-  letter-spacing: 0.28em;
-  color: rgba(245, 239, 230, 0.4);
+  font-size: 0.6rem;
+  letter-spacing: 0.3em;
+  color: rgba(201, 169, 110, 0.55);
   text-transform: uppercase;
 }
 

@@ -81,10 +81,10 @@ const whatsapp = "51921153808";
 
 export const landingContent: LandingContent = {
   brand: {
-    name: "JF Studio",
+    name: "Johanna Figueredo Studio",
     tagline: "Estilismo y belleza por Johanna Figueredo",
     initials: "JF",
-    logoUrl: null
+    logoUrl: "/images/logo-jf.png"
   },
   hero: {
     eyebrow: "Salón de belleza",
