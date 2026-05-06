@@ -44,6 +44,10 @@ export function Hero() {
               <span className="small muted">Espacio para foto del estudio</span>
             </div>
           )}
+          <span className="hero-frame-corner tl" aria-hidden />
+          <span className="hero-frame-corner tr" aria-hidden />
+          <span className="hero-frame-corner bl" aria-hidden />
+          <span className="hero-frame-corner br" aria-hidden />
         </div>
       </ScrollReveal>
     </section>

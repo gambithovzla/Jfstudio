@@ -2,17 +2,17 @@
 
 :root {
   --background: #fbfaf7;
-  --foreground: #1f2933;
-  --muted: #6b7280;
-  --line: #e5e7eb;
+  --foreground: #1a1a1a;
+  --muted: #6b6259;
+  --line: #e8e2d8;
   --surface: #ffffff;
-  --surface-soft: #f5f2ed;
+  --surface-soft: #f4efe8;
   --brand: #c4587a;
   --brand-strong: #a83e5e;
-  --brand-light: #f9e8ee;
+  --brand-light: #f6dfe6;
   --accent: #c9a96e;
   --gold: #c9a96e;
-  --gold-light: #f5edd6;
+  --gold-light: #f1e6c9;
   --dark: #1a1a1a;
   --dark-soft: #2d2d2d;
   --warning: #b45309;
@@ -53,7 +53,7 @@ body {
 
 .display-title,
 .section-title {
-  font-family: var(--font-display, "Playfair Display", Georgia, serif);
+  font-family: var(--font-display, "Cormorant Garamond", "Playfair Display", Georgia, serif);
   letter-spacing: -0.01em;
 }
 
@@ -100,7 +100,7 @@ textarea {
 
 .topbar-inner {
   width: min(1180px, calc(100% - 32px));
-  min-height: 64px;
+  min-height: 78px;
   margin: 0 auto;
   display: flex;
   align-items: center;
@@ -494,6 +494,15 @@ textarea {
 .reveal-delay-2 { transition-delay: 0.2s; }
 .reveal-delay-3 { transition-delay: 0.3s; }
 
+/* Landing: botones editoriales (sharp corners, uppercase) — admin queda intacto */
+.landing .btn,
+.landing .btn.secondary {
+  border-radius: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 600;
+}
+
 /* Landing page */
 .landing {
   width: min(1200px, calc(100% - 32px));
@@ -510,14 +519,33 @@ textarea {
 }
 
 .site-nav-link {
-  font-weight: 600;
-  font-size: 0.93rem;
-  color: #374151;
+  font-weight: 500;
+  font-size: 0.88rem;
+  color: var(--dark-soft);
   letter-spacing: 0.01em;
+  position: relative;
+  padding-bottom: 4px;
+}
+
+.site-nav-link::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 1px;
+  background: var(--brand);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.3s ease;
 }
 
 .site-nav-link:hover {
-  color: var(--brand-strong);
+  color: var(--brand);
+}
+
+.site-nav-link:hover::after {
+  transform: scaleX(1);
 }
 
 /* ─── Hero ─── */
@@ -531,25 +559,48 @@ textarea {
 }
 
 .landing-hero-text .eyebrow {
-  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 18px;
   color: var(--brand);
-  font-weight: 700;
-  letter-spacing: 0.08em;
+  font-family: var(--font-mono, "JetBrains Mono", ui-monospace, monospace);
+  font-weight: 400;
+  font-size: 0.72rem;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+}
+
+.landing-hero-text .eyebrow::before {
+  content: "";
+  width: 36px;
+  height: 1px;
+  background: var(--brand);
+  flex-shrink: 0;
 }
 
 .display-title {
-  font-size: clamp(2.6rem, 5.5vw, 4rem);
-  line-height: 1.02;
-  margin: 0 0 18px;
-  font-weight: 700;
+  font-size: clamp(3rem, 6vw, 4.8rem);
+  line-height: 0.97;
+  margin: 0 0 20px;
+  font-weight: 500;
+  letter-spacing: -0.015em;
+}
+
+.display-title em {
+  font-style: italic;
+  color: var(--brand);
+  font-weight: 400;
 }
 
 .hero-tagline {
-  font-family: var(--font-display, "Playfair Display", Georgia, serif);
+  font-family: var(--font-display, "Cormorant Garamond", Georgia, serif);
   font-style: italic;
   color: var(--gold);
-  font-size: 1.15rem;
-  margin: 0 0 6px;
+  font-size: 1.5rem;
+  margin: 0 0 14px;
+  font-weight: 400;
+  line-height: 1;
 }
 
 .lead {
@@ -570,7 +621,7 @@ textarea {
 .gallery-placeholder,
 .map-placeholder,
 .landing-about-portrait .hero-placeholder {
-  border-radius: 24px;
+  border-radius: 0;
 }
 
 .landing-hero-media {
@@ -579,8 +630,21 @@ textarea {
   overflow: hidden;
   display: block;
   position: relative;
-  box-shadow: 0 25px 60px -12px rgba(0, 0, 0, 0.18);
 }
+
+/* Corner frames decorativos */
+.hero-frame-corner {
+  position: absolute;
+  width: 48px;
+  height: 48px;
+  border: 1px solid var(--gold);
+  pointer-events: none;
+  z-index: 2;
+}
+.hero-frame-corner.tl { top: 18px; left: 18px; border-right: none; border-bottom: none; }
+.hero-frame-corner.tr { top: 18px; right: 18px; border-left: none; border-bottom: none; }
+.hero-frame-corner.bl { bottom: 18px; left: 18px; border-right: none; border-top: none; }
+.hero-frame-corner.br { bottom: 18px; right: 18px; border-left: none; border-top: none; }
 
 .landing-hero-media img {
   width: 100%;
@@ -602,22 +666,44 @@ textarea {
 
 /* ─── Section headers ─── */
 .section-header {
-  text-align: center;
+  text-align: left;
   display: grid;
-  gap: 10px;
-  margin-bottom: 32px;
+  gap: 8px;
+  margin-bottom: 40px;
 }
 
 .section-header .eyebrow {
   color: var(--brand);
-  letter-spacing: 0.08em;
+  font-family: var(--font-mono, "JetBrains Mono", ui-monospace, monospace);
+  font-weight: 400;
+  font-size: 0.72rem;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.section-header .eyebrow::before {
+  content: "";
+  display: inline-block;
+  width: 24px;
+  height: 1px;
+  background: var(--brand);
+  flex-shrink: 0;
 }
 
 .section-title {
-  font-size: clamp(1.8rem, 3.2vw, 2.6rem);
+  font-size: clamp(2rem, 3.5vw, 2.8rem);
   margin: 0;
-  line-height: 1.1;
-  font-weight: 600;
+  line-height: 1.05;
+  font-weight: 400;
+  letter-spacing: -0.01em;
+}
+
+.section-title em {
+  font-style: italic;
+  color: var(--brand);
 }
 
 /* ─── Services ─── */
@@ -629,25 +715,39 @@ textarea {
   display: grid;
   gap: 14px;
   align-content: start;
-  border-radius: 16px;
-  padding: 24px;
-  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1),
-              box-shadow 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  border-radius: 0;
+  padding: 28px 24px;
+  border-top: 2px solid var(--line);
+  border-left: none;
+  border-right: none;
+  border-bottom: none;
+  box-shadow: none;
+  transition: background 0.25s ease, border-top-color 0.25s ease;
 }
 
 .service-card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 16px 32px rgba(0, 0, 0, 0.08);
+  background: var(--surface-soft);
+  border-top-color: var(--brand);
+  transform: none;
+  box-shadow: none;
 }
 
 .service-card-icon {
-  width: 52px;
-  height: 52px;
-  border-radius: 14px;
+  width: 44px;
+  height: 44px;
+  border-radius: 0;
   background: var(--brand-light);
   color: var(--brand-strong);
   display: grid;
   place-items: center;
+}
+
+.service-card-name {
+  font-family: var(--font-display, "Cormorant Garamond", Georgia, serif);
+  font-size: 1.5rem;
+  font-weight: 500;
+  line-height: 1.1;
+  letter-spacing: -0.01em;
 }
 
 .service-card-name {
@@ -674,25 +774,17 @@ textarea {
 
 .landing-about-portrait {
   aspect-ratio: 4 / 5;
-  background: linear-gradient(135deg, var(--brand-light) 0%, var(--gold-light) 100%);
-  border-radius: 24px;
+  background: var(--surface-soft);
+  border-radius: 0;
   overflow: hidden;
   display: grid;
   place-items: center;
-  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.12);
+  box-shadow: none;
   position: relative;
 }
 
 .landing-about-portrait::before {
-  content: '';
-  position: absolute;
-  top: -16px;
-  right: -16px;
-  width: 100px;
-  height: 100px;
-  background: var(--gold-light);
-  border-radius: 50%;
-  z-index: -1;
+  display: none;
 }
 
 .landing-about-portrait img {
@@ -704,16 +796,33 @@ textarea {
 
 .about-experience-badge {
   position: absolute;
-  bottom: 24px;
-  right: -12px;
+  bottom: 0;
+  left: 0;
   background: var(--dark);
   color: #fff;
-  padding: 14px 22px;
-  border-radius: 14px;
-  font-family: var(--font-display, "Playfair Display", Georgia, serif);
-  font-size: 1rem;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+  padding: 20px 24px;
+  border-radius: 0;
+  font-family: var(--font-display, "Cormorant Garamond", Georgia, serif);
+  font-style: italic;
+  font-size: 1.8rem;
+  line-height: 1;
+  box-shadow: none;
   z-index: 2;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.about-experience-badge::after {
+  content: "Años de oficio";
+  font-family: var(--font-mono, "JetBrains Mono", ui-monospace, monospace);
+  font-style: normal;
+  font-size: 0.65rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: rgba(245, 239, 230, 0.65);
+  display: block;
+  margin-top: 4px;
 }
 
 .landing-about-text {
@@ -723,7 +832,23 @@ textarea {
 
 .landing-about-text .eyebrow {
   color: var(--brand);
-  letter-spacing: 0.08em;
+  font-family: var(--font-mono, "JetBrains Mono", ui-monospace, monospace);
+  font-weight: 400;
+  font-size: 0.72rem;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 16px;
+}
+
+.landing-about-text .eyebrow::before {
+  content: "";
+  width: 36px;
+  height: 1px;
+  background: var(--brand);
+  flex-shrink: 0;
 }
 
 /* ─── Gallery ─── */
@@ -736,7 +861,7 @@ textarea {
 
 .gallery-item {
   margin: 0;
-  border-radius: 18px;
+  border-radius: 0;
   overflow: hidden;
   background: var(--surface-soft);
   position: relative;
@@ -821,13 +946,28 @@ textarea {
 .landing-testimonials {
   background: var(--dark);
   color: #fff;
-  padding: 64px 40px;
-  border-radius: 28px;
+  padding: 80px 48px;
+  border-radius: 0;
 }
 
 .landing-testimonials .eyebrow {
   color: var(--gold);
-  letter-spacing: 0.08em;
+  font-family: var(--font-mono, "JetBrains Mono", ui-monospace, monospace);
+  font-weight: 400;
+  font-size: 0.72rem;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.landing-testimonials .eyebrow::before {
+  content: "";
+  width: 24px;
+  height: 1px;
+  background: var(--gold);
+  flex-shrink: 0;
 }
 
 .landing-testimonials .section-title {
@@ -838,11 +978,11 @@ textarea {
   display: grid;
   gap: 14px;
   align-content: start;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-left: 3px solid var(--gold);
-  border-radius: 14px;
-  padding: 24px;
+  background: transparent;
+  border: none;
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 0;
+  padding: 32px 0;
 }
 
 .testimonial-icon {
@@ -851,11 +991,12 @@ textarea {
 
 .testimonial-card p {
   margin: 0;
-  font-family: var(--font-display, "Playfair Display", Georgia, serif);
+  font-family: var(--font-display, "Cormorant Garamond", Georgia, serif);
   font-style: italic;
-  font-size: 1.05rem;
-  line-height: 1.6;
+  font-size: 1.35rem;
+  line-height: 1.55;
   color: rgba(255, 255, 255, 0.9);
+  font-weight: 400;
 }
 
 .testimonial-card footer {
@@ -905,11 +1046,11 @@ textarea {
 
 .landing-location-map {
   background: var(--surface-soft);
-  border-radius: 20px;
+  border-radius: 0;
   overflow: hidden;
   min-height: 320px;
   display: grid;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06);
+  box-shadow: none;
 }
 
 .landing-location-map iframe {
@@ -1014,14 +1155,16 @@ textarea {
 
 .contact-cta {
   background: linear-gradient(140deg, var(--brand-light) 0%, #fff 100%);
-  border: 2px solid var(--brand);
-  border-radius: 18px;
+  border: 1px solid var(--brand);
+  border-radius: 0;
 }
 
 .contact-cta .btn {
-  border-radius: 12px;
+  border-radius: 0;
   min-height: 48px;
   font-size: 1rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
 /* ─── Footer (dark) ─── */
@@ -1155,6 +1298,7 @@ textarea {
   align-content: start;
   box-shadow: -12px 0 40px rgba(0, 0, 0, 0.18);
   overflow-y: auto;
+  border-radius: 0;
 }
 
 .mobile-nav-panel.open {

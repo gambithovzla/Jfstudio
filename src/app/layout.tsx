@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Inter, Playfair_Display } from "next/font/google";
+import { Inter, Cormorant_Garamond, JetBrains_Mono } from "next/font/google";
 
 import { landingContent } from "@/content/landing";
 import { BottomNav } from "@/components/landing/bottom-nav";
@@ -12,10 +12,19 @@ const inter = Inter({
   variable: "--font-sans"
 });
 
-const playfair = Playfair_Display({
+const cormorant = Cormorant_Garamond({
   subsets: ["latin"],
   display: "swap",
+  weight: ["400", "500", "600"],
+  style: ["normal", "italic"],
   variable: "--font-display"
+});
+
+const jetbrainsMono = JetBrains_Mono({
+  subsets: ["latin"],
+  display: "swap",
+  weight: ["400"],
+  variable: "--font-mono"
 });
 
 const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
@@ -61,7 +70,7 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const className = `${inter.variable} ${playfair.variable}`;
+  const className = `${inter.variable} ${cormorant.variable} ${jetbrainsMono.variable}`;
 
   return (
     <html lang="es" className={className}>
