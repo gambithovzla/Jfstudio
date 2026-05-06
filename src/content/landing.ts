@@ -99,7 +99,8 @@ export const landingContent: LandingContent = {
   about: {
     title: "Manos que escuchan, tijeras que transforman.",
     paragraphs: [
-      "Soy Johanna Figueredo, estilista profesional con más de una década dedicada al arte del cabello. Estudié colorimetría en Wella Studios y me especialicé en técnicas de balayage y peinados editoriales en Buenos Aires y Madrid.",
+      "Soy Johanna Figueredo, estilista profesional con más de 12 años dedicada al arte del cabello. Me he formado con academias y educadores de reconocimiento internacional, entre ellos la Academia Nacional de Peluquería Integral (ANPI), Slik de Venezuela, Mounir y Wanessa Braga.",
+      "Mi pasión por compartir conocimiento me ha llevado a participar como educadora en conferencias internacionales en Madrid, Argentina y Venezuela, difundiendo las últimas tendencias en laceados orgánicos y técnicas de vanguardia.",
       "Mi estudio nace de la idea de que cada clienta merece una experiencia personalizada — un espacio íntimo, sin prisas, donde tu estilo se piensa en conjunto y se ejecuta con técnica y cuidado."
     ],
     portraitUrl: "/images/johanna-portrait.webp",

@@ -16,6 +16,8 @@ export default function CancelacionPage() {
       <main className="static-page">
         <div className="static-page-inner">
 
+          <Link href="/" className="static-back">← Volver al inicio</Link>
+
           <nav className="static-breadcrumb">
             <Link href="/">Inicio</Link>
             <span>·</span>

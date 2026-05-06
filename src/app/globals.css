@@ -170,18 +170,33 @@ textarea {
 }
 
 .sidebar {
-  border-right: 1px solid var(--line);
-  background: #ffffff;
-  padding: 20px 16px;
+  border-right: none;
+  background: var(--dark);
+  padding: 24px 16px;
   position: sticky;
   top: 0;
   height: 100vh;
+  box-shadow: 1px 0 0 rgba(255, 255, 255, 0.06);
+}
+
+.sidebar .brand-mark {
+  color: #fff;
+}
+
+.sidebar .brand-dot {
+  background: var(--gold);
+  color: var(--dark);
+  font-family: var(--font-display, "Cormorant Garamond", Georgia, serif);
+  font-style: italic;
+  font-size: 0.95rem;
 }
 
 .sidebar-nav {
   display: grid;
-  gap: 6px;
+  gap: 4px;
   margin-top: 28px;
+  padding-top: 20px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .nav-link {
@@ -202,12 +217,40 @@ textarea {
   color: var(--brand-strong);
 }
 
+.sidebar .nav-link {
+  color: rgba(255, 255, 255, 0.55);
+  font-size: 0.88rem;
+  font-weight: 500;
+}
+
+.sidebar .nav-link:hover,
+.sidebar .nav-link.active {
+  background: rgba(201, 169, 110, 0.12);
+  color: var(--gold);
+}
+
 .page-header {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
   gap: 18px;
-  margin-bottom: 22px;
+  margin-bottom: 28px;
+  padding-bottom: 24px;
+  border-bottom: 1px solid var(--line);
+}
+
+.page-header .title {
+  font-family: var(--font-display, "Cormorant Garamond", Georgia, serif);
+  font-weight: 500;
+  letter-spacing: -0.01em;
+}
+
+.page-header .eyebrow {
+  color: var(--brand);
+  font-family: var(--font-mono, "JetBrains Mono", ui-monospace, monospace);
+  font-size: 0.72rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
 }
 
 .eyebrow {
@@ -851,15 +894,7 @@ textarea {
 }
 
 .about-experience-badge::after {
-  content: "Años de oficio";
-  font-family: var(--font-mono, "JetBrains Mono", ui-monospace, monospace);
-  font-style: normal;
-  font-size: 0.65rem;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  color: rgba(245, 239, 230, 0.65);
-  display: block;
-  margin-top: 4px;
+  content: none;
 }
 
 .landing-about-text {
@@ -1817,9 +1852,9 @@ textarea {
   display: inline-flex;
   align-items: center;
   gap: 10px;
-  font-weight: 800;
+  font-weight: 700;
   letter-spacing: 0.04em;
-  color: var(--foreground);
+  color: #fff;
   text-decoration: none;
 }
 
@@ -1828,10 +1863,10 @@ textarea {
   height: 44px;
   display: grid;
   place-items: center;
-  background: none;
-  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 10px;
-  color: var(--foreground);
+  color: rgba(255, 255, 255, 0.85);
   cursor: pointer;
 }
 
@@ -1841,15 +1876,27 @@ textarea {
   gap: 12px;
   padding: 14px 12px;
   font-size: 1rem;
-  font-weight: 600;
-  color: var(--foreground);
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.6);
   border-radius: 10px;
   text-decoration: none;
 }
 
+.admin-mobile-nav-link:hover,
 .admin-mobile-nav-link.active {
-  background: var(--brand-light);
-  color: var(--brand-strong);
+  background: rgba(201, 169, 110, 0.12);
+  color: var(--gold);
+}
+
+/* Admin mobile nav panel - dark theme */
+.admin-nav-panel {
+  background: var(--dark);
+}
+
+.admin-nav-panel .mobile-nav-close {
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 @media (max-width: 860px) {
@@ -1869,10 +1916,10 @@ textarea {
     position: sticky;
     top: 0;
     z-index: 30;
-    background: rgba(255, 255, 255, 0.97);
+    background: rgba(26, 26, 26, 0.97);
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
-    border-bottom: 1px solid var(--line);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
     padding: max(env(safe-area-inset-top, 0px), 8px) 16px 8px;
     padding-right: max(16px, env(safe-area-inset-right, 0px));
     padding-left: max(16px, env(safe-area-inset-left, 0px));
@@ -1994,6 +2041,23 @@ textarea {
 .static-page-inner {
   width: min(100% - 48px, 760px);
   margin-inline: auto;
+}
+
+/* Back link */
+.static-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.85rem;
+  color: var(--muted);
+  text-decoration: none;
+  margin-bottom: 20px;
+  transition: color 0.2s;
+  letter-spacing: 0.01em;
+}
+
+.static-back:hover {
+  color: var(--brand);
 }
 
 /* Breadcrumb */

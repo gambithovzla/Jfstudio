@@ -25,7 +25,7 @@ export function About() {
               <span className="small muted">Foto de Johanna</span>
             </div>
           )}
-          <div className="about-experience-badge">10+ años de experiencia</div>
+          <div className="about-experience-badge">12+ años de experiencia</div>
         </div>
       </ScrollReveal>
       <ScrollReveal delay={1}>
