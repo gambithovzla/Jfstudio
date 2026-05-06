@@ -43,17 +43,13 @@ const navLinks: AdminNavLink[] = [
 ];
 
 export async function AdminShell({ children }: { children: React.ReactNode }) {
-  const now = new Date();
-  const todayStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
-  const todayEnd = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1));
-
   const [allProducts, todayAppointmentCount] = await Promise.all([
     prisma.product.findMany({
       where: { isActive: true },
       select: { stock: true, lowStockThreshold: true }
     }),
     prisma.appointment.count({
-      where: { status: "CONFIRMED", startAt: { gte: todayStart, lt: todayEnd } }
+      where: { status: "CONFIRMED", startAt: { gte: new Date() } }
     })
   ]);
 
