@@ -92,11 +92,14 @@ export async function GET(request: NextRequest) {
 
   // ── Escribir buffer ───────────────────────────────────────────────────────
   const buf = XLSX.write(wb, { type: "array", bookType: "xlsx" }) as Uint8Array;
+  const ab = new ArrayBuffer(buf.byteLength);
+  new Uint8Array(ab).set(buf);
+
   const filename = isRange
     ? `ReporteCaja_JFStudio_${from}_${to}.xlsx`
     : `ReporteCaja_JFStudio_${date ?? "hoy"}.xlsx`;
 
-  return new NextResponse(buf, {
+  return new NextResponse(ab, {
     headers: {
       "Content-Type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
       "Content-Disposition": `attachment; filename="${filename}"`
