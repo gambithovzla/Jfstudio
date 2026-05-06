@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { AtSign, Mail, MessageCircle, Music, Phone } from "lucide-react";
 
 import { landingContent } from "@/content/landing";
 import { ScrollReveal } from "./scroll-reveal";
@@ -7,80 +6,37 @@ import { ScrollReveal } from "./scroll-reveal";
 export function Contact() {
   const { contact } = landingContent;
   const whatsappLink = `https://wa.me/${contact.whatsapp.replace(/[^0-9]/g, "")}`;
-  const socialHandle = (url: string) => {
-    const last = url.replace(/\/$/, "").split("/").pop() ?? url;
-    return last.startsWith("@") ? last : `@${last}`;
-  };
 
   return (
-    <section className="landing-section landing-contact" id="contacto">
-      <ScrollReveal>
-        <div className="section-header">
-          <p className="eyebrow">{contact.title}</p>
-          <h2 className="section-title">{contact.description}</h2>
-        </div>
-      </ScrollReveal>
-      <div className="grid two landing-contact-grid">
-        <div className="card contact-card">
-          <div className="contact-row">
-            <MessageCircle size={20} aria-hidden />
-            <div>
-              <strong>WhatsApp</strong>
-              <a href={whatsappLink} target="_blank" rel="noreferrer" className="small">
-                Escribir por WhatsApp
-              </a>
-            </div>
-          </div>
-          <div className="contact-row">
-            <Phone size={20} aria-hidden />
-            <div>
-              <strong>Telefono</strong>
-              <a href={`tel:${contact.phone.replace(/[^0-9+]/g, "")}`} className="small">
-                {contact.phone}
-              </a>
-            </div>
-          </div>
-          <div className="contact-row">
-            <Mail size={20} aria-hidden />
-            <div>
-              <strong>Email</strong>
-              <a href={`mailto:${contact.email}`} className="small">
-                {contact.email}
-              </a>
-            </div>
-          </div>
-          {contact.instagram ? (
-            <div className="contact-row">
-              <AtSign size={20} aria-hidden />
-              <div>
-                <strong>Instagram</strong>
-                <a href={contact.instagram} target="_blank" rel="noreferrer" className="small">
-                  {socialHandle(contact.instagram)}
-                </a>
-              </div>
-            </div>
-          ) : null}
-          {contact.tiktok ? (
-            <div className="contact-row">
-              <Music size={20} aria-hidden />
-              <div>
-                <strong>TikTok</strong>
-                <a href={contact.tiktok} target="_blank" rel="noreferrer" className="small">
-                  {socialHandle(contact.tiktok)}
-                </a>
-              </div>
-            </div>
-          ) : null}
-        </div>
-        <div className="card contact-cta">
-          <h3 className="card-title">Reserva en línea</h3>
-          <p className="small muted">
-            Elige servicio, estilista y horario. Confirmamos al instante por correo.
+    <section className="landing-cta" id="contacto">
+      <div className="landing-cta-inner">
+        <ScrollReveal>
+          <p className="landing-cta-eyebrow">Reservar cita</p>
+          <h2 className="landing-cta-title">
+            Tu próxima<br /><em>transformación</em> empieza aquí.
+          </h2>
+          <p className="landing-cta-body">
+            Reserva en línea en menos de un minuto. Recibe confirmación inmediata por email y un recordatorio 24h antes de tu cita.
           </p>
-          <Link className="btn" href="/reservar">
-            Reservar cita ahora
-          </Link>
-        </div>
+          <div className="button-row" style={{ justifyContent: "center", gap: 14 }}>
+            <Link className="btn" href="/reservar">
+              Reservar online →
+            </Link>
+            <a
+              className="btn secondary"
+              href={whatsappLink}
+              target="_blank"
+              rel="noreferrer"
+            >
+              Escribir por WhatsApp
+            </a>
+          </div>
+          <div className="landing-cta-tags">
+            <span className="landing-cta-tag">Confirmación por email</span>
+            <span className="landing-cta-tag">Recordatorio 24h antes</span>
+            <span className="landing-cta-tag">Reagendar online</span>
+          </div>
+        </ScrollReveal>
       </div>
     </section>
   );
