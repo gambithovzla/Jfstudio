@@ -52,7 +52,7 @@ export default async function ClientsPage({ searchParams }: PageProps) {
             );
 
             return (
-              <article className="card" key={client.id}>
+              <article className="card" key={client.id} style={{ borderTop: "3px solid var(--brand-light)" }}>
                 <div className="card-header">
                   <div>
                     <h2 className="card-title">{client.name}</h2>
@@ -86,15 +86,20 @@ export default async function ClientsPage({ searchParams }: PageProps) {
                     <tbody>
                       {client.appointments.map((apt) => {
                         const paid = apt.payments.reduce((s, p) => s + Number(p.amount), 0);
+                        const statusClass = apt.status === "COMPLETED" ? "row-completed"
+                          : apt.status === "CONFIRMED" ? "row-confirmed"
+                          : apt.status === "CANCELED" ? "row-canceled"
+                          : apt.status === "NO_SHOW" ? "row-no-show"
+                          : "";
                         return (
-                          <tr key={apt.id}>
+                          <tr key={apt.id} className={statusClass}>
                             <td className="small" data-label="Fecha">
                               {formatDateInZone(apt.startAt, settings.timezone)}{" "}
-                              {formatTimeInZone(apt.startAt, settings.timezone)}
+                              <span className="muted">{formatTimeInZone(apt.startAt, settings.timezone)}</span>
                             </td>
                             <td className="small" data-label="Servicios">{apt.services.map((s) => s.serviceNameSnapshot).join(", ")}</td>
-                            <td className="small" data-label="Estilista">{apt.staff.name}</td>
-                            <td className="small" data-label="Total">
+                            <td className="small" data-label="Estilista" style={{ fontWeight: 600 }}>{apt.staff.name}</td>
+                            <td className="small" data-label="Total" style={{ fontWeight: 700 }}>
                               {paid > 0 ? formatCurrency(paid, settings.currency) : <span className="muted">Pendiente</span>}
                             </td>
                           </tr>

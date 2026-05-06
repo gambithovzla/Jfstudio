@@ -632,13 +632,13 @@ export async function createStaffAction(formData: FormData) {
     }
   });
 
-  for (const dayOfWeek of [1, 2, 3, 4, 5, 6]) {
+  for (const dayOfWeek of [0, 1, 2, 3, 4, 5, 6]) {
     await prisma.workingHour.create({
       data: {
         staffId: staff.id,
         dayOfWeek,
         startTime: "09:00",
-        endTime: dayOfWeek === 6 ? "16:00" : "18:00",
+        endTime: dayOfWeek === 0 || dayOfWeek === 6 ? "16:00" : "18:00",
         breakStart: "13:00",
         breakEnd: "14:00",
         isActive: true
@@ -684,6 +684,36 @@ export async function deactivateStaffAction(formData: FormData) {
   revalidatePath("/admin/configuracion");
   revalidatePath("/reservar");
   redirect("/admin/configuracion");
+}
+
+export async function createWorkingHourAction(formData: FormData) {
+  await requireAdmin();
+
+  const staffId = requiredString(formData, "staffId");
+  const dayOfWeek = parseInt(requiredString(formData, "dayOfWeek"), 10);
+
+  const existing = await prisma.workingHour.findFirst({ where: { staffId, dayOfWeek } });
+  if (existing) {
+    revalidatePath(`/admin/configuracion/staff/${staffId}`);
+    revalidatePath("/reservar");
+    return;
+  }
+
+  await prisma.workingHour.create({
+    data: {
+      staffId,
+      dayOfWeek,
+      startTime: "09:00",
+      endTime: dayOfWeek === 0 || dayOfWeek === 6 ? "16:00" : "18:00",
+      breakStart: "13:00",
+      breakEnd: "14:00",
+      isActive: true
+    }
+  });
+
+  revalidatePath("/admin/configuracion");
+  revalidatePath(`/admin/configuracion/staff/${staffId}`);
+  revalidatePath("/reservar");
 }
 
 export async function updateWorkingHourAction(formData: FormData) {

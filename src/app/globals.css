@@ -452,33 +452,100 @@ textarea {
 .metric {
   display: grid;
   gap: 4px;
+  border-top: 3px solid var(--brand-light);
+  transition: border-top-color 0.2s;
+}
+
+.metric:hover {
+  border-top-color: var(--brand);
 }
 
 .metric-value {
   font-size: 1.65rem;
   line-height: 1.1;
   font-weight: 850;
+  color: var(--brand-strong);
 }
+
+/* Admin appointment card con acento de staff */
+.agenda-appt-card {
+  border-left: 4px solid var(--brand);
+  padding-left: 14px;
+}
+
+/* Tags de metodo de pago en caja */
+.method-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  padding: 2px 9px;
+  border-radius: 999px;
+  background: var(--surface-soft);
+  color: var(--muted);
+  border: 1px solid var(--line);
+}
+.method-tag.efectivo  { background: #dcfce7; color: #166534; border-color: #bbf7d0; }
+.method-tag.tarjeta   { background: #dbeafe; color: #1e40af; border-color: #bfdbfe; }
+.method-tag.transferencia { background: #fef9c3; color: #854d0e; border-color: #fef08a; }
+.method-tag.otro      { background: #f3e8ff; color: #6b21a8; border-color: #e9d5ff; }
 
 .table {
   width: 100%;
   border-collapse: collapse;
   font-size: 0.93rem;
+  border-radius: 8px;
+  overflow: hidden;
 }
 
 .table th,
 .table td {
   text-align: left;
-  padding: 12px 10px;
+  padding: 11px 14px;
   border-bottom: 1px solid var(--line);
-  vertical-align: top;
+  vertical-align: middle;
 }
 
 .table th {
-  color: #4b5563;
-  font-size: 0.8rem;
+  background: var(--surface-soft);
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 800;
   text-transform: uppercase;
-  letter-spacing: 0;
+  letter-spacing: 0.08em;
+  border-bottom: 2px solid var(--line);
+}
+
+.table tbody tr:hover {
+  background: #f9f6f2;
+}
+
+.table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.table tbody tr:nth-child(even) {
+  background: #faf8f5;
+}
+
+.table tbody tr:nth-child(even):hover {
+  background: #f4f0ea;
+}
+
+/* Fila con acento de color por estado */
+.table tr.row-confirmed td:first-child {
+  border-left: 3px solid #3b82f6;
+  padding-left: 11px;
+}
+.table tr.row-completed td:first-child {
+  border-left: 3px solid #22c55e;
+  padding-left: 11px;
+}
+.table tr.row-canceled td:first-child,
+.table tr.row-no-show td:first-child {
+  border-left: 3px solid #ef4444;
+  padding-left: 11px;
 }
 
 .badge {

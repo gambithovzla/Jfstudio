@@ -154,7 +154,11 @@ export default async function AgendaPage({ searchParams }: PageProps) {
           ) : (
             <div className="grid">
               {appointments.map((appointment) => (
-                <article className="card" key={appointment.id} style={{ boxShadow: "none" }}>
+                <article
+                  className="card"
+                  key={appointment.id}
+                  style={{ boxShadow: "none", borderLeft: `4px solid ${appointment.staff.color}`, paddingLeft: 14 }}
+                >
                   <div className="card-header">
                     <div>
                       <h3 className="card-title">
@@ -162,7 +166,7 @@ export default async function AgendaPage({ searchParams }: PageProps) {
                       </h3>
                       <p className="small muted">
                         {appointment.services.map((service) => service.serviceNameSnapshot).join(", ")} ·{" "}
-                        {appointment.staff.name}
+                        <span style={{ fontWeight: 700, color: appointment.staff.color }}>{appointment.staff.name}</span>
                       </p>
                     </div>
                     <StatusBadge status={appointment.status} />

@@ -104,11 +104,18 @@ export default async function CashPage({ searchParams }: PageProps) {
             <div className="empty">No hay pagos en este periodo.</div>
           ) : (
             <table className="table">
+              <thead>
+                <tr><th>Metodo</th><th>Total</th></tr>
+              </thead>
               <tbody>
                 {summary.byMethod.map((row) => (
                   <tr key={row.method}>
-                    <td>{row.method}</td>
-                    <td>{formatCurrency(row.amount, settings.currency)}</td>
+                    <td>
+                      <span className={`method-tag ${row.method.toLowerCase().replace(/\s+/g, "")}`}>
+                        {row.method}
+                      </span>
+                    </td>
+                    <td style={{ fontWeight: 700 }}>{formatCurrency(row.amount, settings.currency)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -122,12 +129,15 @@ export default async function CashPage({ searchParams }: PageProps) {
             <div className="empty">Sin datos.</div>
           ) : (
             <table className="table">
+              <thead>
+                <tr><th>Estilista</th><th>Cobros</th><th>Total</th></tr>
+              </thead>
               <tbody>
                 {Array.from(byStaff.values()).map((row) => (
                   <tr key={row.name}>
-                    <td>{row.name}</td>
-                    <td className="muted">{row.count} cobros</td>
-                    <td>{formatCurrency(row.amount, settings.currency)}</td>
+                    <td style={{ fontWeight: 600 }}>{row.name}</td>
+                    <td className="muted">{row.count}</td>
+                    <td style={{ fontWeight: 700 }}>{formatCurrency(row.amount, settings.currency)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -141,13 +151,18 @@ export default async function CashPage({ searchParams }: PageProps) {
             <div className="empty">Sin datos.</div>
           ) : (
             <table className="table">
+              <thead>
+                <tr><th>Servicio</th><th>Citas</th></tr>
+              </thead>
               <tbody>
                 {Array.from(byService.values())
                   .sort((a, b) => b.count - a.count)
                   .map((row) => (
                     <tr key={row.name}>
                       <td>{row.name}</td>
-                      <td className="muted">{row.count} citas</td>
+                      <td>
+                        <span className="badge">{row.count}</span>
+                      </td>
                     </tr>
                   ))}
               </tbody>
@@ -172,13 +187,17 @@ export default async function CashPage({ searchParams }: PageProps) {
               <tbody>
                 {payments.map((payment) => (
                   <tr key={payment.id}>
-                    <td style={{ fontSize: "0.82rem" }}>
+                    <td style={{ fontSize: "0.82rem", color: "var(--muted)" }}>
                       {formatDateInZone(payment.paidAt, settings.timezone)}{" "}
                       {formatTimeInZone(payment.paidAt, settings.timezone)}
                     </td>
-                    <td>{payment.appointment.client.name}</td>
-                    <td>{payment.method}</td>
-                    <td>{formatCurrency(Number(payment.amount), settings.currency)}</td>
+                    <td style={{ fontWeight: 600 }}>{payment.appointment.client.name}</td>
+                    <td>
+                      <span className={`method-tag ${payment.method.toLowerCase().replace(/\s+/g, "")}`}>
+                        {payment.method}
+                      </span>
+                    </td>
+                    <td style={{ fontWeight: 700 }}>{formatCurrency(Number(payment.amount), settings.currency)}</td>
                   </tr>
                 ))}
               </tbody>
