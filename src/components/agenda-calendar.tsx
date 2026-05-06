@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Calendar, dateFnsLocalizer, type View } from "react-big-calendar";
 import { format, getDay, parse, startOfWeek } from "date-fns";
 import { es } from "date-fns/locale/es";
@@ -90,12 +90,17 @@ export function AgendaCalendar({
     window.location.href = `/admin/agenda/${event.id}`;
   }, []);
 
+  const [defaultView, setDefaultView] = useState<View>("week");
+  useEffect(() => {
+    if (window.innerWidth <= 860) setDefaultView("agenda");
+  }, []);
+
   return (
-    <div style={{ height: 650, fontFamily: "inherit" }}>
+    <div style={{ height: defaultView === "agenda" ? "auto" : 650, minHeight: 400, fontFamily: "inherit" }}>
       <Calendar
         localizer={localizer}
         events={events}
-        defaultView={"week" as View}
+        defaultView={defaultView}
         views={["month", "week", "day", "agenda"]}
         defaultDate={defaultDate}
         step={15}
