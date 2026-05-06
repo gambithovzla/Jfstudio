@@ -75,19 +75,19 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // Notificar al admin — awaitar settings antes de retornar
+    // Notificar al admin
     try {
       const settings = await getSalonSettings();
-      void sendNewBookingNotification({
+      await sendNewBookingNotification({
         clientName: appointment.client.name,
         clientPhone: appointment.client.phone ?? "",
         serviceName: appointment.services.map((s) => s.serviceNameSnapshot).join(", "),
         staffName: appointment.staff.name,
         dateLabel: formatDateInZone(appointment.startAt, settings.timezone),
         timeLabel: formatTimeInZone(appointment.startAt, settings.timezone)
-      }).catch((err) => console.error("[email] notificacion admin fallo:", err));
+      });
     } catch (err) {
-      console.error("[email] getSalonSettings fallo:", err);
+      console.error("[email] notificacion admin fallo:", err);
     }
 
     return NextResponse.json({
