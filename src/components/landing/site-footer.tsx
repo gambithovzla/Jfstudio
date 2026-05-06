@@ -57,9 +57,8 @@ export function SiteFooter() {
           <h4 className="footer-col-title">Reservas</h4>
           <ul className="footer-col-links">
             <li><Link href="/reservar">Reservar online</Link></li>
-            <li><Link href="/reservar">Reagendar cita</Link></li>
-            <li><Link href="/#contacto">Política de cancelación</Link></li>
-            <li><Link href="/#contacto">Preguntas frecuentes</Link></li>
+            <li><Link href="/cancelacion">Política de cancelación</Link></li>
+            <li><Link href="/faq">Preguntas frecuentes</Link></li>
           </ul>
         </div>
 
