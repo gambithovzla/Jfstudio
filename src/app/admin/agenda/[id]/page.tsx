@@ -3,7 +3,7 @@ import Link from "next/link";
 import { ArrowLeft, MessageCircle, Pencil, RotateCcw, Save, XCircle } from "lucide-react";
 
 import { StatusBadge } from "@/components/status-badge";
-import { cancelAppointmentAction, completeAppointmentAction, markDepositPaidAction, refundPaymentAction } from "@/lib/actions";
+import { cancelAppointmentAction, cancelForceMajeureAction, completeAppointmentAction, markDepositPaidAction, refundPaymentAction } from "@/lib/actions";
 import { getAppointmentForCheckout, getSalonSettings } from "@/lib/data";
 import { formatDateInZone, formatTimeInZone } from "@/lib/time";
 import { formatCurrency, normalizePhone } from "@/lib/utils";
@@ -147,15 +147,29 @@ export default async function AppointmentDetailPage({ params }: PageProps) {
             <div className="empty">Esta cita ya no esta pendiente de cobro.</div>
           ) : (
             <>
-            <form className="form-grid" action={cancelAppointmentAction} style={{ marginBottom: 20, paddingBottom: 20, borderBottom: "1px solid var(--line)" }}>
+            <form className="form-grid" action={cancelAppointmentAction} style={{ marginBottom: 16, paddingBottom: 16, borderBottom: "1px solid var(--line)" }}>
               <input type="hidden" name="appointmentId" value={appointment.id} />
               <div className="field">
                 <label htmlFor="cancel-note">Motivo de cancelación (se envía a la clienta)</label>
-                <textarea className="textarea" id="cancel-note" name="note" placeholder="Ej: Johanna está enferma, reagendaremos pronto..." rows={2} />
+                <textarea className="textarea" id="cancel-note" name="note" placeholder="Ej: agenda completa, reagendaremos pronto..." rows={2} />
               </div>
               <button className="btn danger" type="submit" style={{ alignSelf: "flex-start" }}>
                 <XCircle size={16} aria-hidden />
-                Cancelar cita y notificar a la clienta
+                Cancelar y notificar a la clienta
+              </button>
+            </form>
+
+            <form className="form-grid" action={cancelForceMajeureAction} style={{ marginBottom: 20, paddingBottom: 20, borderBottom: "1px solid var(--line)", background: "#fef3c7", borderRadius: 10, padding: "14px 16px" }}>
+              <input type="hidden" name="appointmentId" value={appointment.id} />
+              <p className="small" style={{ margin: "0 0 8px", fontWeight: 600, color: "#92400e" }}>⚡ Cancelar por fuerza mayor</p>
+              <p className="small muted" style={{ margin: "0 0 10px", fontSize: "0.8rem" }}>La clienta recibirá un email especial indicando que su adelanto será reembolsado o puede reagendar sin costo.</p>
+              <div className="field">
+                <label htmlFor="fm-reason" style={{ fontSize: "0.85rem" }}>Motivo (obligatorio)</label>
+                <textarea className="textarea" id="fm-reason" name="reason" placeholder="Ej: Johanna se encuentra en urgencias médicas. Nos disculpamos..." rows={2} required />
+              </div>
+              <button className="btn" type="submit" style={{ alignSelf: "flex-start", background: "#f59e0b", color: "#fff", borderColor: "#f59e0b" }}>
+                <XCircle size={16} aria-hidden />
+                Cancelar por fuerza mayor y notificar
               </button>
             </form>
             <form className="form-grid" action={completeAppointmentAction}>

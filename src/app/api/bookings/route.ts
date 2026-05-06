@@ -1,13 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 
-import { createBooking } from "@/lib/data";
+import { createBooking, getSalonSettings } from "@/lib/data";
 import { sendNewBookingNotification } from "@/lib/email";
 import { formatDateInZone, formatTimeInZone } from "@/lib/time";
 import { prisma } from "@/lib/prisma";
-import { getSalonSettings } from "@/lib/data";
 
-const CANCEL_WINDOW_HOURS = 4;
+export const CANCEL_WINDOW_HOURS = 24;
 
 const bookingSchema = z.object({
   client: z.object({
@@ -76,16 +75,20 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    getSalonSettings().then((settings) => {
-      sendNewBookingNotification({
+    // Notificar al admin — awaitar settings antes de retornar
+    try {
+      const settings = await getSalonSettings();
+      void sendNewBookingNotification({
         clientName: appointment.client.name,
         clientPhone: appointment.client.phone ?? "",
         serviceName: appointment.services.map((s) => s.serviceNameSnapshot).join(", "),
         staffName: appointment.staff.name,
         dateLabel: formatDateInZone(appointment.startAt, settings.timezone),
         timeLabel: formatTimeInZone(appointment.startAt, settings.timezone)
-      }).catch((err) => console.error("[email] notificacion reserva fallo:", err));
-    }).catch(() => {});
+      }).catch((err) => console.error("[email] notificacion admin fallo:", err));
+    } catch (err) {
+      console.error("[email] getSalonSettings fallo:", err);
+    }
 
     return NextResponse.json({
       appointment: {

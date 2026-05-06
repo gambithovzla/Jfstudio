@@ -65,7 +65,10 @@ function bookingHtml({
             <tr><td style="padding:4px 0;font-size:0.9rem;"><strong>Fecha:</strong> ${dateLabel}</td></tr>
             <tr><td style="padding:4px 0;font-size:0.9rem;"><strong>Hora:</strong> ${timeLabel}</td></tr>
           </table>
-          <p style="margin:0 0 16px;font-size:0.9rem;color:#374151;">Si necesitas cancelar o reagendar, puedes hacerlo desde el siguiente enlace hasta 4 horas antes de tu cita.</p>
+          <p style="margin:0 0 12px;font-size:0.9rem;color:#374151;">Si necesitas cancelar o reagendar, hazlo desde el enlace a continuacion con al menos <strong>24 horas de anticipacion</strong>.</p>
+          <div style="background:#fef3c7;border-left:3px solid #f59e0b;padding:10px 14px;border-radius:0 8px 8px 0;margin:0 0 16px;font-size:0.85rem;color:#92400e;">
+            Cancelaciones con menos de 24 horas o inasistencias: el adelanto queda retenido como compensacion.
+          </div>
           <a href="${manageUrl}" style="display:inline-block;background:#0f766e;color:#fff;text-decoration:none;border-radius:8px;padding:12px 24px;font-weight:700;font-size:0.95rem;">Gestionar mi reserva</a>
           <p style="margin:24px 0 0;font-size:0.82rem;color:#9ca3af;">JF Studio · Cualquier consulta por WhatsApp.</p>
         </td></tr>
@@ -214,6 +217,50 @@ export async function sendBookingCancellation(data: CancellationEmailData) {
     to: data.to,
     subject: `Cita cancelada · JF Studio`,
     html: cancellationHtml(data)
+  });
+}
+
+export async function sendForceMajeureCancellation(data: {
+  to: string;
+  clientName: string;
+  serviceName: string;
+  dateLabel: string;
+  timeLabel: string;
+  reason: string;
+}) {
+  await safeSend({
+    from: FROM,
+    to: data.to,
+    subject: `Tu cita fue reprogramada por causa de fuerza mayor · JF Studio`,
+    html: `<!DOCTYPE html>
+<html lang="es">
+<head><meta charset="utf-8"><title>Cita reprogramada</title></head>
+<body style="margin:0;padding:0;background:#fbfaf7;font-family:sans-serif;color:#1f2933;">
+  <table width="100%" cellpadding="0" cellspacing="0">
+    <tr><td align="center" style="padding:32px 16px;">
+      <table width="560" style="max-width:100%;background:#fff;border-radius:12px;border:1px solid #e5e7eb;padding:32px;">
+        <tr><td>
+          <p style="margin:0 0 8px;font-size:0.78rem;font-weight:800;text-transform:uppercase;color:#c4587a;">JF Studio</p>
+          <h1 style="margin:0 0 16px;font-size:1.5rem;color:#1a1a1a;">Informacion importante sobre tu cita</h1>
+          <p style="margin:0 0 14px;font-size:0.95rem;color:#374151;">Hola <strong>${data.clientName}</strong>, lamentamos informarte que por circunstancias excepcionales fue necesario cancelar tu cita:</p>
+          <table width="100%" style="margin:0 0 20px;background:#f5f2ed;border-radius:10px;padding:14px 18px;">
+            <tr><td style="padding:3px 0;font-size:0.9rem;"><strong>Servicio:</strong> ${data.serviceName}</td></tr>
+            <tr><td style="padding:3px 0;font-size:0.9rem;"><strong>Fecha:</strong> ${data.dateLabel}</td></tr>
+            <tr><td style="padding:3px 0;font-size:0.9rem;"><strong>Hora:</strong> ${data.timeLabel}</td></tr>
+            <tr><td style="padding:10px 0 3px;font-size:0.9rem;border-top:1px solid #ddd6cc;"><strong>Motivo:</strong> ${data.reason}</td></tr>
+          </table>
+          <div style="background:#fef3c7;border:1px solid #fcd34d;border-radius:10px;padding:14px 18px;margin-bottom:20px;">
+            <p style="margin:0;font-size:0.9rem;color:#92400e;"><strong>Tu adelanto sera reembolsado en su totalidad</strong> o puedes reagendar sin penalizacion ni costo adicional. Nos comunicaremos contigo a la brevedad.</p>
+          </div>
+          <p style="margin:0 0 16px;font-size:0.9rem;color:#374151;">Pedimos disculpas por los inconvenientes. Quedamos a tu disposicion por WhatsApp para coordinar tu nueva cita.</p>
+          <a href="${APP_URL}/reservar" style="display:inline-block;background:#c4587a;color:#fff;text-decoration:none;border-radius:8px;padding:12px 24px;font-weight:700;font-size:0.95rem;">Reservar nueva fecha</a>
+          <p style="margin:24px 0 0;font-size:0.82rem;color:#9ca3af;">JF Studio · Gracias por tu comprension.</p>
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`
   });
 }
 

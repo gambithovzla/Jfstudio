@@ -6,7 +6,7 @@ import { redirect } from "next/navigation";
 
 import { requireAdmin } from "@/lib/auth";
 import { createBookingFromLocalTime, getSalonSettings } from "@/lib/data";
-import { sendBookingCancellation, sendLowStockAlert } from "@/lib/email";
+import { sendBookingCancellation, sendForceMajeureCancellation, sendLowStockAlert } from "@/lib/email";
 import { prisma } from "@/lib/prisma";
 import { addMinutes, formatDateInZone, formatTimeInZone } from "@/lib/time";
 import { normalizePhone } from "@/lib/utils";
@@ -179,6 +179,36 @@ export async function cancelAppointmentAction(formData: FormData) {
       timeLabel: formatTimeInZone(appointment.startAt, settings.timezone),
       note: note ?? undefined
     }).catch((err) => console.error("[email] cancelacion fallo:", err));
+  }
+
+  redirect("/admin/agenda");
+}
+
+export async function cancelForceMajeureAction(formData: FormData) {
+  await requireAdmin();
+  const appointmentId = requiredString(formData, "appointmentId");
+  const reason = optionalString(formData, "reason") ?? "Circunstancias excepcionales ajenas al estudio.";
+
+  const appointment = await prisma.appointment.update({
+    where: { id: appointmentId },
+    data: { status: AppointmentStatus.CANCELED },
+    include: { client: true, staff: true, services: true }
+  });
+
+  revalidatePath("/admin/agenda");
+  revalidatePath(`/admin/agenda/${appointmentId}`);
+
+  if (appointment.client.email) {
+    const settings = await getSalonSettings();
+    const serviceNames = appointment.services.map((s) => s.serviceNameSnapshot).join(", ");
+    sendForceMajeureCancellation({
+      to: appointment.client.email,
+      clientName: appointment.client.name,
+      serviceName: serviceNames,
+      dateLabel: formatDateInZone(appointment.startAt, settings.timezone),
+      timeLabel: formatTimeInZone(appointment.startAt, settings.timezone),
+      reason
+    }).catch((err) => console.error("[email] fuerza mayor fallo:", err));
   }
 
   redirect("/admin/agenda");
