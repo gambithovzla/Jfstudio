@@ -15,7 +15,7 @@ ENV DATABASE_URL="postgresql://build:build@localhost:5432/build"
 RUN npx prisma generate
 RUN npm run build
 
-# Production image — only standalone output
+# Production image — standalone output + prisma CLI for migrations
 FROM base AS runner
 ENV NODE_ENV=production
 ENV PORT=3000
@@ -23,5 +23,10 @@ ENV HOSTNAME="0.0.0.0"
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
+# Prisma CLI needed for pre-deploy migrate command
+COPY --from=builder /app/node_modules/.bin/prisma ./node_modules/.bin/prisma
+COPY --from=builder /app/node_modules/prisma ./node_modules/prisma
+COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
+COPY --from=builder /app/prisma ./prisma
 EXPOSE 3000
 CMD ["node", "server.js"]
