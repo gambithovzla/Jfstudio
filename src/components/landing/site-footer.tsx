@@ -15,9 +15,18 @@ export function SiteFooter() {
         <div className="footer-brand-col">
           <Link href="/" className="footer-brand-mark" aria-label={brand.name}>
             {brand.logoUrl ? (
-              <span className="footer-logo-wrap">
-                <Image src={brand.logoUrl} alt="" width={80} height={80} style={{ objectFit: "contain", filter: "invert(1) hue-rotate(180deg)" }} />
-              </span>
+              <Image
+                src={brand.logoUrl}
+                alt=""
+                width={90}
+                height={90}
+                style={{
+                  objectFit: "contain",
+                  filter: "invert(1) hue-rotate(180deg)",
+                  mixBlendMode: "screen",
+                  display: "block",
+                }}
+              />
             ) : (
               <span className="footer-brand-dot">{brand.initials}</span>
             )}
