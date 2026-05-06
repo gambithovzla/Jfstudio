@@ -54,10 +54,6 @@ const FAQS = [
     q: "¿Cómo cancelo o reagendo mi cita?",
     a: "Usa el enlace de tu confirmación por email o escríbenos por WhatsApp. Recuerda hacerlo con al menos 24 horas de anticipación para evitar cargos. Más detalles en nuestra política de cancelación."
   },
-  {
-    q: "¿Atienden a hombres y niños también?",
-    a: "Sí. Ofrecemos cortes para hombres y niños. Puedes seleccionarlos al momento de reservar."
-  },
 ];
 
 export default function FaqPage() {
@@ -66,6 +62,8 @@ export default function FaqPage() {
       <SiteHeader />
       <main className="static-page">
         <div className="static-page-inner">
+
+          <Link href="/" className="static-back">← Volver al inicio</Link>
 
           <nav className="static-breadcrumb">
             <Link href="/">Inicio</Link>

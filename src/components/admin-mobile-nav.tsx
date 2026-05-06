@@ -63,7 +63,7 @@ export function AdminMobileNav({ links }: Props) {
         onClick={close}
         aria-hidden
       />
-      <nav className={`mobile-nav-panel ${open ? "open" : ""}`} aria-label="Menú admin">
+      <nav className={`mobile-nav-panel admin-nav-panel ${open ? "open" : ""}`} aria-label="Menú admin">
         <button
           className="mobile-nav-close"
           onClick={close}
