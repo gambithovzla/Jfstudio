@@ -6,7 +6,7 @@ import { sendNewBookingNotification } from "@/lib/email";
 import { formatDateInZone, formatTimeInZone } from "@/lib/time";
 import { prisma } from "@/lib/prisma";
 
-export const CANCEL_WINDOW_HOURS = 24;
+const CANCEL_WINDOW_HOURS = 24;
 
 const bookingSchema = z.object({
   client: z.object({

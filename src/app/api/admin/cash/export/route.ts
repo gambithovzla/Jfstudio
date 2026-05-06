@@ -35,7 +35,6 @@ export async function GET(request: NextRequest) {
   const ruc         = process.env.SALON_RUC ?? "";
   const address     = process.env.SALON_ADDRESS ?? "Lima, Peru";
   const businessName = process.env.SALON_BUSINESS_NAME ?? "Johanna Figueredo Studio E.I.R.L.";
-  const salonName   = settings.name;
   const periodo   = isRange ? `${from} al ${to}` : (date ?? new Date().toISOString().slice(0, 10));
   const generado  = new Date().toLocaleDateString("es-PE", { year: "numeric", month: "long", day: "numeric" });
 
