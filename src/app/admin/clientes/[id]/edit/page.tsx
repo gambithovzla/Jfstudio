@@ -91,11 +91,7 @@ export default async function EditClientPage({ params }: PageProps) {
               <p className="small muted" style={{ marginBottom: 10 }}>
                 Esta clienta no tiene citas. Puedes eliminarla permanentemente.
               </p>
-              <button
-                className="btn danger"
-                type="submit"
-                onClick={() => confirm("¿Eliminar esta clienta? Esta accion no se puede deshacer.")}
-              >
+              <button className="btn danger" type="submit">
                 Eliminar clienta
               </button>
             </form>
