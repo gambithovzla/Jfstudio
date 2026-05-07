@@ -325,18 +325,29 @@ export function BookingForm({
           <input className="input" id="email" name="email" type="email" />
         </div>
 
-        {(birthdayStatus === "new" || birthdayStatus === "missing_birthday") && (
-          <div style={{ background: "#fdf4ff", border: "1px solid #d8b4fe", borderRadius: 10, padding: "14px 16px", display: "grid", gap: 8 }}>
-            <p style={{ fontSize: "0.9rem", fontWeight: 600, margin: 0, color: "#7e22ce" }}>
-              {birthdayStatus === "new" ? "¡Bienvenida! Registra tu cumpleaños" : "Completa tu cumpleaños"}
-            </p>
-            <p style={{ fontSize: "0.82rem", color: "#6b21a8", margin: 0 }}>
-              {birthdayStatus === "new"
-                ? "Guardamos tu cumpleaños para celebrarte con beneficios exclusivos."
-                : "Aun no tienes cumpleaños registrado. Agregalo y recibe sorpresas el dia de tu cumpleaños."}
-            </p>
+        {birthdayStatus !== "has_birthday" && (
+          <div style={
+            birthdayStatus === "new" || birthdayStatus === "missing_birthday"
+              ? { background: "#fdf4ff", border: "1px solid #d8b4fe", borderRadius: 10, padding: "14px 16px", display: "grid", gap: 8 }
+              : {}
+          }>
+            {(birthdayStatus === "new" || birthdayStatus === "missing_birthday") && (
+              <>
+                <p style={{ fontSize: "0.9rem", fontWeight: 600, margin: 0, color: "#7e22ce" }}>
+                  {birthdayStatus === "new" ? "¡Bienvenida! Registra tu cumpleaños" : "Completa tu cumpleaños"}
+                </p>
+                <p style={{ fontSize: "0.82rem", color: "#6b21a8", margin: 0 }}>
+                  {birthdayStatus === "new"
+                    ? "Guardamos tu cumpleaños para celebrarte con beneficios exclusivos."
+                    : "Aun no tienes cumpleaños registrado. Agregalo y recibe sorpresas el dia de tu cumpleaños."}
+                </p>
+              </>
+            )}
             <div className="field" style={{ margin: 0 }}>
-              <label htmlFor="birthday" style={{ color: "#7e22ce" }}>Fecha de cumpleaños</label>
+              <label htmlFor="birthday" style={birthdayStatus !== "unknown" ? { color: "#7e22ce" } : {}}>
+                Cumpleaños{" "}
+                {birthdayStatus === "unknown" && <span className="muted" style={{ fontWeight: 400 }}>(opcional)</span>}
+              </label>
               <input
                 className="input"
                 id="birthday"
@@ -346,6 +357,9 @@ export function BookingForm({
                 onChange={(e) => setBirthday(e.target.value)}
                 max={new Date().toISOString().slice(0, 10)}
               />
+              {birthdayStatus === "unknown" && (
+                <p className="small muted" style={{ marginTop: 4 }}>Recibe un bono especial en tu cumpleaños.</p>
+              )}
             </div>
           </div>
         )}
