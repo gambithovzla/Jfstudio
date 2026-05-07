@@ -54,13 +54,12 @@ export async function POST(request: NextRequest) {
   }
 
   try {
+    const birthdayDate = parsed.data.client.birthday
+      ? new Date(parsed.data.client.birthday + "T00:00:00Z")
+      : null;
+
     const appointment = await createBooking({
-      client: {
-        ...parsed.data.client,
-        birthday: parsed.data.client.birthday
-          ? new Date(parsed.data.client.birthday + "T00:00:00Z")
-          : undefined
-      },
+      client: { ...parsed.data.client, birthday: birthdayDate },
       serviceIds: parsed.data.serviceIds,
       staffId: parsed.data.staffId,
       startAt: new Date(parsed.data.startAt),

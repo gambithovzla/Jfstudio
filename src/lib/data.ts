@@ -529,6 +529,19 @@ export async function getClientsWithHistory(search?: string) {
   });
 }
 
+export async function getClientsWithoutBirthday() {
+  return prisma.client.findMany({
+    where: { birthday: null },
+    orderBy: { name: "asc" },
+    select: {
+      id: true,
+      name: true,
+      phone: true,
+      _count: { select: { appointments: true } }
+    }
+  });
+}
+
 export async function getClientById(id: string) {
   const [client, settings] = await Promise.all([
     prisma.client.findUnique({

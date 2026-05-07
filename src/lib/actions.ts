@@ -533,6 +533,28 @@ export async function updateClientAction(formData: FormData) {
   redirect(`/admin/clientes/${clientId}?ok=1`);
 }
 
+export async function updateClientBirthdayAction(formData: FormData) {
+  await requireAdmin();
+
+  const clientId = requiredString(formData, "clientId");
+  const birthdayStr = optionalString(formData, "birthday");
+  if (!birthdayStr) return;
+
+  const match = birthdayStr.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!match) return;
+
+  const birthday = new Date(Date.UTC(Number(match[1]), Number(match[2]) - 1, Number(match[3])));
+  if (isNaN(birthday.getTime())) return;
+
+  await prisma.client.update({
+    where: { id: clientId },
+    data: { birthday }
+  });
+
+  revalidatePath("/admin/clientes/cumpleanos");
+  revalidatePath("/admin/cumpleanos");
+}
+
 export async function deleteClientAction(formData: FormData) {
   await requireAdmin();
 
