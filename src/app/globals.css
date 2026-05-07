@@ -1024,8 +1024,7 @@ textarea {
 .price-disclaimer-bubble {
   position: absolute;
   bottom: calc(100% + 8px);
-  left: 0;
-  transform: translateX(-12px);
+  right: -8px;
   width: max-content;
   max-width: 240px;
   background: #1f1f1f;
@@ -1045,7 +1044,7 @@ textarea {
   content: "";
   position: absolute;
   top: 100%;
-  left: 18px;
+  right: 13px;
   width: 0;
   height: 0;
   border: 6px solid transparent;

@@ -15,6 +15,7 @@ const securityHeaders = [
       "font-src 'self' https://fonts.gstatic.com",
       "img-src 'self' data: blob:",
       "connect-src 'self'",
+      "frame-src 'self' https://www.openstreetmap.org https://www.google.com",
       "frame-ancestors 'none'"
     ].join("; ")
   }
