@@ -1,6 +1,40 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
+// In-memory rate limiter — resets on cold start (acceptable for Edge runtime)
+const rateLimitStore = new Map<string, { count: number; resetAt: number }>();
+
+type RateLimitRule = { windowMs: number; max: number };
+
+const RATE_LIMITS: Record<string, RateLimitRule> = {
+  "/api/auth/login":    { windowMs: 60_000, max: 10 },   // 10 attempts/min
+  "/api/bookings":      { windowMs: 60_000, max: 8 },    // 8 bookings/min per IP
+  "/api/availability":  { windowMs: 60_000, max: 60 }    // 60 availability checks/min
+};
+
+function getIp(request: NextRequest): string {
+  return (
+    request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
+    request.headers.get("x-real-ip") ??
+    "unknown"
+  );
+}
+
+function isRateLimited(key: string, rule: RateLimitRule): boolean {
+  const now = Date.now();
+  const entry = rateLimitStore.get(key);
+
+  if (!entry || now > entry.resetAt) {
+    rateLimitStore.set(key, { count: 1, resetAt: now + rule.windowMs });
+    return false;
+  }
+
+  entry.count += 1;
+  if (entry.count > rule.max) return true;
+
+  return false;
+}
+
 async function sha256hex(input: string): Promise<string> {
   const data = new TextEncoder().encode(input);
   const buffer = await crypto.subtle.digest("SHA-256", data);
@@ -11,6 +45,19 @@ async function sha256hex(input: string): Promise<string> {
 
 export async function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
+
+  // Rate limiting for public API routes
+  const rule = RATE_LIMITS[pathname];
+  if (rule) {
+    const ip = getIp(request);
+    const key = `${pathname}:${ip}`;
+    if (isRateLimited(key, rule)) {
+      return NextResponse.json(
+        { error: "Demasiadas solicitudes. Intenta en un momento." },
+        { status: 429 }
+      );
+    }
+  }
 
   if (!pathname.startsWith("/admin") || pathname === "/admin/login") {
     const res = NextResponse.next();
@@ -38,5 +85,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/admin/:path*"]
+  matcher: ["/admin/:path*", "/api/auth/login", "/api/bookings", "/api/availability"]
 };
