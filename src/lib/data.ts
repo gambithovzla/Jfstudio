@@ -199,7 +199,14 @@ export async function getAvailabilityForServices(input: {
 }
 
 export async function createBooking(input: {
-  client: { name: string; phone: string; email?: string | null; birthday?: Date | null };
+  client: {
+    name: string;
+    phone: string;
+    email?: string | null;
+    birthday?: Date | null;
+    documentType?: "DNI" | "CE" | "PASSPORT" | null;
+    documentNumber?: string | null;
+  };
   serviceIds: string[];
   staffId: string;
   startAt: Date;
@@ -284,18 +291,24 @@ export async function createBooking(input: {
         throw new Error("Ese horario esta fuera del horario laboral.");
       }
 
+      const dni = input.client.documentNumber?.trim() || null;
+      const documentType = dni ? input.client.documentType ?? "DNI" : null;
+
       const client = await tx.client.upsert({
         where: { phone },
         update: {
           name: input.client.name.trim(),
           email: input.client.email?.trim() || null,
-          ...(input.client.birthday ? { birthday: input.client.birthday } : {})
+          ...(input.client.birthday ? { birthday: input.client.birthday } : {}),
+          ...(dni ? { dni, documentType } : {})
         },
         create: {
           name: input.client.name.trim(),
           phone,
           email: input.client.email?.trim() || null,
-          birthday: input.client.birthday ?? null
+          birthday: input.client.birthday ?? null,
+          dni,
+          documentType
         }
       });
 
@@ -385,7 +398,13 @@ export async function createBooking(input: {
 }
 
 export async function createBookingFromLocalTime(input: {
-  client: { name: string; phone: string; email?: string | null };
+  client: {
+    name: string;
+    phone: string;
+    email?: string | null;
+    documentType?: "DNI" | "CE" | "PASSPORT" | null;
+    documentNumber?: string | null;
+  };
   serviceIds: string[];
   staffId: string;
   localDateTime: string;

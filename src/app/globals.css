@@ -987,6 +987,77 @@ textarea {
   margin-top: 8px;
 }
 
+.price-with-disclaimer {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.price-disclaimer {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.price-disclaimer-trigger {
+  background: transparent;
+  border: 0;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  color: var(--brand);
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.price-disclaimer-trigger:hover,
+.price-disclaimer-trigger:focus-visible {
+  background: var(--surface-soft);
+  color: var(--brand-strong, var(--brand));
+  outline: none;
+}
+
+.price-disclaimer-bubble {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 0;
+  transform: translateX(-12px);
+  width: max-content;
+  max-width: 240px;
+  background: #1f1f1f;
+  color: #fff;
+  font-size: 0.78rem;
+  line-height: 1.35;
+  padding: 8px 10px;
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s ease;
+  z-index: 5;
+}
+
+.price-disclaimer-bubble::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: 18px;
+  width: 0;
+  height: 0;
+  border: 6px solid transparent;
+  border-top-color: #1f1f1f;
+}
+
+.price-disclaimer:hover .price-disclaimer-bubble,
+.price-disclaimer.is-open .price-disclaimer-bubble,
+.price-disclaimer-trigger:focus-visible + .price-disclaimer-bubble {
+  opacity: 1;
+}
+
 /* ─── About ─── */
 .landing-about {
   display: grid;

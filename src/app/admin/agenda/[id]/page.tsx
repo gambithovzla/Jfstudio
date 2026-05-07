@@ -105,6 +105,16 @@ export default async function AppointmentDetailPage({ params }: PageProps) {
             <div>
               <h2 className="card-title">Detalle</h2>
               <p className="small muted">{appointment.client.phone ?? "Sin telefono"}</p>
+              {appointment.client.dni ? (
+                <p className="small muted">
+                  {appointment.client.documentType === "CE"
+                    ? "CE"
+                    : appointment.client.documentType === "PASSPORT"
+                    ? "Pasaporte"
+                    : "DNI"}
+                  : {appointment.client.dni}
+                </p>
+              ) : null}
             </div>
             {phone ? (
               <Link className="btn secondary" href={`https://wa.me/${phone}?text=${message}`} target="_blank">

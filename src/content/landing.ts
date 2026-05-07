@@ -182,7 +182,7 @@ export const landingContent: LandingContent = {
     title: "Visítanos",
     address: "Av. José Larco 345, Miraflores, Lima",
     mapsEmbedUrl:
-      "https://maps.google.com/maps?q=Av+Jose+Larco+345+Miraflores+Lima+Peru&hl=es&output=embed",
+      "https://www.openstreetmap.org/export/embed.html?bbox=-77.0321%2C-12.1289%2C-77.0261%2C-12.1229&layer=mapnik&marker=-12.1259%2C-77.0291",
     coordinates: { lat: -12.1259, lon: -77.0291 },
     hours: ["Lunes a domingo: 8:00 - 18:00"],
     notes: "Atención solo con reserva previa."

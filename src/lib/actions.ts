@@ -1,6 +1,6 @@
 "use server";
 
-import { AppointmentStatus, InventoryMovementType, Prisma, UserRole } from "@prisma/client";
+import { AppointmentStatus, DocumentType, InventoryMovementType, Prisma, UserRole } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
@@ -476,6 +476,16 @@ export async function adjustProductStockAction(formData: FormData) {
 
 // ─── Clientes ────────────────────────────────────────────────────────────────
 
+function documentTypeFromForm(formData: FormData): DocumentType | null {
+  const value = formData.get("documentType");
+  if (typeof value !== "string") return null;
+  const trimmed = value.trim().toUpperCase();
+  if (trimmed === "DNI" || trimmed === "CE" || trimmed === "PASSPORT") {
+    return trimmed as DocumentType;
+  }
+  return null;
+}
+
 function birthdayFromForm(formData: FormData): Date | null {
   const value = formData.get("birthday");
   if (typeof value !== "string" || !value.trim()) return null;
@@ -492,12 +502,16 @@ export async function createClientAction(formData: FormData) {
   const rawPhone = optionalString(formData, "phone");
   const phone = rawPhone ? normalizePhone(rawPhone) : null;
 
+  const dni = optionalString(formData, "dni");
+  const documentType = dni ? documentTypeFromForm(formData) ?? DocumentType.DNI : null;
+
   await prisma.client.create({
     data: {
       name: requiredString(formData, "name"),
       phone,
       email: optionalString(formData, "email"),
-      dni: optionalString(formData, "dni"),
+      dni,
+      documentType,
       source: optionalString(formData, "source"),
       notes: optionalString(formData, "notes"),
       birthday: birthdayFromForm(formData)
@@ -515,13 +529,17 @@ export async function updateClientAction(formData: FormData) {
   const rawPhone = optionalString(formData, "phone");
   const phone = rawPhone ? normalizePhone(rawPhone) : null;
 
+  const dni = optionalString(formData, "dni");
+  const documentType = dni ? documentTypeFromForm(formData) ?? DocumentType.DNI : null;
+
   await prisma.client.update({
     where: { id: clientId },
     data: {
       name: requiredString(formData, "name"),
       phone,
       email: optionalString(formData, "email"),
-      dni: optionalString(formData, "dni"),
+      dni,
+      documentType,
       source: optionalString(formData, "source"),
       notes: optionalString(formData, "notes"),
       birthday: birthdayFromForm(formData)

@@ -14,7 +14,9 @@ const bookingSchema = z.object({
     name: z.string().min(2).max(100),
     phone: z.string().min(6).max(30),
     email: z.string().email().optional().or(z.literal("")),
-    birthday: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional()
+    birthday: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+    documentType: z.enum(["DNI", "CE", "PASSPORT"]).optional(),
+    documentNumber: z.string().min(4).max(30).optional()
   }),
   serviceIds: z.array(z.string()).min(1).max(10),
   staffId: z.string().min(1),
@@ -65,7 +67,14 @@ export async function POST(request: NextRequest) {
       : null;
 
     const appointment = await createBooking({
-      client: { ...parsed.data.client, birthday: birthdayDate },
+      client: {
+        name: parsed.data.client.name,
+        phone: parsed.data.client.phone,
+        email: parsed.data.client.email,
+        birthday: birthdayDate,
+        documentType: parsed.data.client.documentNumber ? parsed.data.client.documentType ?? "DNI" : null,
+        documentNumber: parsed.data.client.documentNumber ?? null
+      },
       serviceIds: parsed.data.serviceIds,
       staffId: parsed.data.staffId,
       startAt: new Date(parsed.data.startAt),

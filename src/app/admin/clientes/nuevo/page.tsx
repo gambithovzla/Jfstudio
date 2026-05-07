@@ -31,13 +31,21 @@ export default function NewClientPage() {
               <input className="input" id="phone" name="phone" />
             </div>
           </div>
+          <div className="field">
+            <label htmlFor="email">Correo</label>
+            <input className="input" id="email" name="email" type="email" />
+          </div>
           <div className="grid two">
             <div className="field">
-              <label htmlFor="email">Correo</label>
-              <input className="input" id="email" name="email" type="email" />
+              <label htmlFor="documentType">Tipo de documento</label>
+              <select className="select" id="documentType" name="documentType" defaultValue="DNI">
+                <option value="DNI">DNI</option>
+                <option value="CE">Carnet de extranjería</option>
+                <option value="PASSPORT">Pasaporte</option>
+              </select>
             </div>
             <div className="field">
-              <label htmlFor="dni">DNI</label>
+              <label htmlFor="dni">Número de documento</label>
               <input className="input" id="dni" name="dni" />
             </div>
           </div>
