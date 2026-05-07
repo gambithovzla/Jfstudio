@@ -9,16 +9,17 @@ import { prisma } from "@/lib/prisma";
 const CANCEL_WINDOW_HOURS = 24;
 
 const bookingSchema = z.object({
+  _trap: z.string().max(0).optional(),
   client: z.object({
-    name: z.string().min(2),
-    phone: z.string().min(6),
+    name: z.string().min(2).max(100),
+    phone: z.string().min(6).max(30),
     email: z.string().email().optional().or(z.literal("")),
     birthday: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional()
   }),
-  serviceIds: z.array(z.string()).min(1),
+  serviceIds: z.array(z.string()).min(1).max(10),
   staffId: z.string().min(1),
   startAt: z.string().datetime(),
-  notes: z.string().optional(),
+  notes: z.string().max(500).optional(),
   replaceToken: z.string().optional(),
   bonusCode: z.string().optional()
 });
@@ -26,6 +27,11 @@ const bookingSchema = z.object({
 export async function POST(request: NextRequest) {
   const body = await request.json();
   const parsed = bookingSchema.safeParse(body);
+
+  // Honeypot: if _trap is filled, silently discard
+  if (parsed.success && parsed.data._trap) {
+    return NextResponse.json({ ok: true });
+  }
 
   if (!parsed.success) {
     return NextResponse.json({ error: "Datos de reserva invalidos." }, { status: 400 });

@@ -146,6 +146,13 @@ export function BookingForm({
     }
 
     const formData = new FormData(event.currentTarget);
+
+    // Honeypot: bots fill hidden fields, humans don't
+    if (String(formData.get("_trap") ?? "").trim()) {
+      setResult({ id: "", startAt: "", endAt: "", clientName: String(formData.get("name") ?? ""), staffName: "", services: [] });
+      return;
+    }
+
     setSubmitting(true);
 
     try {
@@ -216,6 +223,8 @@ export function BookingForm({
 
   return (
     <form className="grid two" onSubmit={submit}>
+      {/* honeypot — invisible to humans, bots fill it */}
+      <input name="_trap" type="text" tabIndex={-1} autoComplete="off" aria-hidden style={{ display: "none" }} />
       <section className="card form-grid">
         <div>
           <p className="eyebrow">Servicios</p>
