@@ -62,6 +62,7 @@ export function BookingForm({
   const [result, setResult] = useState<BookingResult | null>(null);
   const [birthdayStatus, setBirthdayStatus] = useState<"unknown" | "new" | "missing_birthday" | "has_birthday">("unknown");
   const [birthday, setBirthday] = useState("");
+  const [documentType, setDocumentType] = useState<"DNI" | "CE" | "PASSPORT">("DNI");
 
   const selectedServiceRows = useMemo(
     () => services.filter((service) => selectedServices.includes(service.id)),
@@ -158,6 +159,8 @@ export function BookingForm({
     try {
       const bonusCodeRaw = String(formData.get("bonusCode") ?? "").trim();
       const birthdayRaw = String(formData.get("birthday") ?? "").trim();
+      const documentNumberRaw = String(formData.get("documentNumber") ?? "").trim();
+      const documentTypeRaw = String(formData.get("documentType") ?? "").trim();
       const response = await fetch("/api/bookings", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -166,7 +169,10 @@ export function BookingForm({
             name: String(formData.get("name") ?? ""),
             phone: String(formData.get("phone") ?? ""),
             email: String(formData.get("email") ?? ""),
-            ...(birthdayRaw ? { birthday: birthdayRaw } : {})
+            ...(birthdayRaw ? { birthday: birthdayRaw } : {}),
+            ...(documentNumberRaw
+              ? { documentNumber: documentNumberRaw, documentType: documentTypeRaw || "DNI" }
+              : {})
           },
           serviceIds: selectedServices,
           staffId: selectedSlot.staffId,
@@ -332,6 +338,32 @@ export function BookingForm({
         <div className="field">
           <label htmlFor="email">Correo</label>
           <input className="input" id="email" name="email" type="email" />
+        </div>
+        <div className="grid two">
+          <div className="field">
+            <label htmlFor="documentType">Tipo de documento (opcional)</label>
+            <select
+              className="select"
+              id="documentType"
+              name="documentType"
+              value={documentType}
+              onChange={(event) => setDocumentType(event.target.value as "DNI" | "CE" | "PASSPORT")}
+            >
+              <option value="DNI">DNI</option>
+              <option value="CE">Carnet de extranjería</option>
+              <option value="PASSPORT">Pasaporte</option>
+            </select>
+          </div>
+          <div className="field">
+            <label htmlFor="documentNumber">Número</label>
+            <input
+              className="input"
+              id="documentNumber"
+              name="documentNumber"
+              autoComplete="off"
+              placeholder="Opcional"
+            />
+          </div>
         </div>
 
         {(birthdayStatus === "new" || birthdayStatus === "missing_birthday") && (

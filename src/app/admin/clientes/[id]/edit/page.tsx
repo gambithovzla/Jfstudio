@@ -47,13 +47,26 @@ export default async function EditClientPage({ params }: PageProps) {
               <input className="input" id="phone" name="phone" defaultValue={client.phone ?? ""} />
             </div>
           </div>
+          <div className="field">
+            <label htmlFor="email">Correo</label>
+            <input className="input" id="email" name="email" type="email" defaultValue={client.email ?? ""} />
+          </div>
           <div className="grid two">
             <div className="field">
-              <label htmlFor="email">Correo</label>
-              <input className="input" id="email" name="email" type="email" defaultValue={client.email ?? ""} />
+              <label htmlFor="documentType">Tipo de documento</label>
+              <select
+                className="select"
+                id="documentType"
+                name="documentType"
+                defaultValue={client.documentType ?? (client.dni ? "DNI" : "DNI")}
+              >
+                <option value="DNI">DNI</option>
+                <option value="CE">Carnet de extranjería</option>
+                <option value="PASSPORT">Pasaporte</option>
+              </select>
             </div>
             <div className="field">
-              <label htmlFor="dni">DNI</label>
+              <label htmlFor="dni">Número de documento</label>
               <input className="input" id="dni" name="dni" defaultValue={client.dni ?? ""} />
             </div>
           </div>

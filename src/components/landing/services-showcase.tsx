@@ -3,6 +3,7 @@ import { Scissors, Paintbrush, Sparkles } from "lucide-react";
 
 import { landingContent } from "@/content/landing";
 import { formatCurrency } from "@/lib/utils";
+import { PriceDisclaimer } from "./price-disclaimer";
 import { ScrollReveal } from "./scroll-reveal";
 
 const SERVICE_ICONS = [Scissors, Paintbrush, Sparkles, Scissors, Paintbrush, Sparkles];
@@ -48,7 +49,10 @@ export function ServicesShowcase({ services, currency }: Props) {
                     ) : null}
                     <div className="service-card-meta">
                       <span className="badge">{service.durationMinutes} min</span>
-                      <strong>{formatCurrency(service.price, currency)}</strong>
+                      <span className="price-with-disclaimer">
+                        <PriceDisclaimer />
+                        <strong>{formatCurrency(service.price, currency)}</strong>
+                      </span>
                     </div>
                   </article>
                 </ScrollReveal>

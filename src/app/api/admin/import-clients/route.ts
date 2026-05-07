@@ -107,7 +107,17 @@ export async function POST(request: NextRequest) {
       }
 
       await prisma.client.create({
-        data: { name: fullName, phone, email, dni, source, notes, firstVisitAt, birthday }
+        data: {
+          name: fullName,
+          phone,
+          email,
+          dni,
+          documentType: dni ? "DNI" : null,
+          source,
+          notes,
+          firstVisitAt,
+          birthday
+        }
       });
       imported++;
     } catch (err) {

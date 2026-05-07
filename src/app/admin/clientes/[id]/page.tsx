@@ -89,7 +89,13 @@ export default async function ClientDetailPage({
             ) : null}
             {client.dni ? (
               <div>
-                <p className="field-label">DNI</p>
+                <p className="field-label">
+                  {client.documentType === "CE"
+                    ? "Carnet de extranjería"
+                    : client.documentType === "PASSPORT"
+                    ? "Pasaporte"
+                    : "DNI"}
+                </p>
                 <p>{client.dni}</p>
               </div>
             ) : null}

@@ -26,6 +26,12 @@ enum InventoryMovementType {
   SERVICE_USAGE
 }
 
+enum DocumentType {
+  DNI
+  CE
+  PASSPORT
+}
+
 model SalonSettings {
   id                         String   @id @default("default")
   name                       String   @default("JF Studio")
@@ -77,6 +83,7 @@ model Client {
   phone           String?         @unique
   email           String?
   dni             String?
+  documentType    DocumentType?
   source          String?
   notes           String?
   birthday        DateTime?       @db.Date
