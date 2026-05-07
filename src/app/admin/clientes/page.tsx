@@ -1,7 +1,7 @@
 import Link from "next/link";
-import { Plus, Search } from "lucide-react";
+import { Cake, Plus, Search } from "lucide-react";
 
-import { getClientsWithHistory, getSalonSettings } from "@/lib/data";
+import { getClientsWithHistory, getClientsWithoutBirthday, getSalonSettings } from "@/lib/data";
 import { formatDateInZone, formatTimeInZone } from "@/lib/time";
 import { formatCurrency } from "@/lib/utils";
 
@@ -13,9 +13,10 @@ type PageProps = {
 
 export default async function ClientsPage({ searchParams }: PageProps) {
   const params = searchParams ? await searchParams : {};
-  const [clients, settings] = await Promise.all([
+  const [clients, settings, noBirthday] = await Promise.all([
     getClientsWithHistory(params.q),
-    getSalonSettings()
+    getSalonSettings(),
+    getClientsWithoutBirthday()
   ]);
 
   return (
@@ -34,6 +35,12 @@ export default async function ClientsPage({ searchParams }: PageProps) {
               Buscar
             </button>
           </form>
+          {noBirthday.length > 0 && (
+            <Link className="btn secondary" href="/admin/clientes/cumpleanos">
+              <Cake size={16} aria-hidden />
+              Cumpleaños ({noBirthday.length})
+            </Link>
+          )}
           <Link className="btn" href="/admin/clientes/nuevo">
             <Plus size={17} aria-hidden />
             Nueva clienta

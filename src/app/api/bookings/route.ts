@@ -10,7 +10,8 @@ const bookingSchema = z.object({
   client: z.object({
     name: z.string().min(2),
     phone: z.string().min(6),
-    email: z.string().email().optional().or(z.literal(""))
+    email: z.string().email().optional().or(z.literal("")),
+    birthday: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional()
   }),
   serviceIds: z.array(z.string()).min(1),
   staffId: z.string().min(1),
@@ -50,8 +51,12 @@ export async function POST(request: NextRequest) {
   }
 
   try {
+    const birthdayDate = parsed.data.client.birthday
+      ? new Date(parsed.data.client.birthday + "T00:00:00Z")
+      : null;
+
     const appointment = await createBooking({
-      client: parsed.data.client,
+      client: { ...parsed.data.client, birthday: birthdayDate },
       serviceIds: parsed.data.serviceIds,
       staffId: parsed.data.staffId,
       startAt: new Date(parsed.data.startAt),

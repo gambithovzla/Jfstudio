@@ -60,6 +60,8 @@ export function BookingForm({
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [result, setResult] = useState<BookingResult | null>(null);
+  const [birthdayStatus, setBirthdayStatus] = useState<"unknown" | "new" | "missing_birthday" | "has_birthday">("unknown");
+  const [birthday, setBirthday] = useState("");
 
   const selectedServiceRows = useMemo(
     () => services.filter((service) => selectedServices.includes(service.id)),
@@ -117,6 +119,17 @@ export function BookingForm({
     return () => controller.abort();
   }, [date, selectedServices, staffId]);
 
+  async function checkBirthday(phone: string) {
+    if (phone.length < 6) return;
+    try {
+      const res = await fetch(`/api/clients/birthday-check?phone=${encodeURIComponent(phone)}`);
+      const data = await res.json();
+      setBirthdayStatus(data.status ?? "unknown");
+    } catch {
+      // silent — birthday field just stays hidden
+    }
+  }
+
   function toggleService(serviceId: string) {
     setSelectedServices((current) =>
       current.includes(serviceId) ? current.filter((id) => id !== serviceId) : [...current, serviceId]
@@ -143,7 +156,8 @@ export function BookingForm({
           client: {
             name: String(formData.get("name") ?? ""),
             phone: String(formData.get("phone") ?? ""),
-            email: String(formData.get("email") ?? "")
+            email: String(formData.get("email") ?? ""),
+            ...(birthday ? { birthday } : {})
           },
           serviceIds: selectedServices,
           staffId: selectedSlot.staffId,
@@ -293,13 +307,45 @@ export function BookingForm({
           </div>
           <div className="field">
             <label htmlFor="phone">Telefono</label>
-            <input className="input" id="phone" name="phone" required minLength={6} />
+            <input
+              className="input"
+              id="phone"
+              name="phone"
+              required
+              minLength={6}
+              onBlur={(e) => checkBirthday(e.target.value)}
+            />
           </div>
         </div>
         <div className="field">
           <label htmlFor="email">Correo</label>
           <input className="input" id="email" name="email" type="email" />
         </div>
+
+        {(birthdayStatus === "new" || birthdayStatus === "missing_birthday") && (
+          <div style={{ background: "#fdf4ff", border: "1px solid #d8b4fe", borderRadius: 10, padding: "14px 16px", display: "grid", gap: 8 }}>
+            <p style={{ fontSize: "0.9rem", fontWeight: 600, margin: 0, color: "#7e22ce" }}>
+              {birthdayStatus === "new" ? "¡Bienvenida! Registra tu cumpleaños" : "Completa tu cumpleaños"}
+            </p>
+            <p style={{ fontSize: "0.82rem", color: "#6b21a8", margin: 0 }}>
+              {birthdayStatus === "new"
+                ? "Guardamos tu cumpleaños para celebrarte con beneficios exclusivos."
+                : "Aun no tienes cumpleaños registrado. Agregalo y recibe sorpresas el dia de tu cumpleaños."}
+            </p>
+            <div className="field" style={{ margin: 0 }}>
+              <label htmlFor="birthday" style={{ color: "#7e22ce" }}>Fecha de cumpleaños</label>
+              <input
+                className="input"
+                id="birthday"
+                name="birthday"
+                type="date"
+                value={birthday}
+                onChange={(e) => setBirthday(e.target.value)}
+                max={new Date().toISOString().slice(0, 10)}
+              />
+            </div>
+          </div>
+        )}
         <div className="field">
           <label htmlFor="notes">Notas</label>
           <textarea className="textarea" id="notes" name="notes" />

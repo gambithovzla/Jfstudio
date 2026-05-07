@@ -136,7 +136,7 @@ export async function getAvailabilityForServices(input: {
 }
 
 export async function createBooking(input: {
-  client: { name: string; phone: string; email?: string | null };
+  client: { name: string; phone: string; email?: string | null; birthday?: Date | null };
   serviceIds: string[];
   staffId: string;
   startAt: Date;
@@ -222,12 +222,14 @@ export async function createBooking(input: {
         where: { phone },
         update: {
           name: input.client.name.trim(),
-          email: input.client.email?.trim() || null
+          email: input.client.email?.trim() || null,
+          ...(input.client.birthday ? { birthday: input.client.birthday } : {})
         },
         create: {
           name: input.client.name.trim(),
           phone,
-          email: input.client.email?.trim() || null
+          email: input.client.email?.trim() || null,
+          birthday: input.client.birthday ?? null
         }
       });
 
@@ -418,6 +420,19 @@ export async function getClientsWithHistory(search?: string) {
           payments: true
         }
       }
+    }
+  });
+}
+
+export async function getClientsWithoutBirthday() {
+  return prisma.client.findMany({
+    where: { birthday: null },
+    orderBy: { name: "asc" },
+    select: {
+      id: true,
+      name: true,
+      phone: true,
+      _count: { select: { appointments: true } }
     }
   });
 }
