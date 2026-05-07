@@ -1,10 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 
-import { createBooking } from "@/lib/data";
+import { createBooking, getSalonSettings } from "@/lib/data";
+import { sendNewBookingNotification } from "@/lib/email";
+import { formatDateInZone, formatTimeInZone } from "@/lib/time";
 import { prisma } from "@/lib/prisma";
 
-const CANCEL_WINDOW_HOURS = 4;
+const CANCEL_WINDOW_HOURS = 24;
 
 const bookingSchema = z.object({
   client: z.object({
@@ -17,7 +19,8 @@ const bookingSchema = z.object({
   staffId: z.string().min(1),
   startAt: z.string().datetime(),
   notes: z.string().optional(),
-  replaceToken: z.string().optional()
+  replaceToken: z.string().optional(),
+  bonusCode: z.string().optional()
 });
 
 export async function POST(request: NextRequest) {
@@ -60,7 +63,8 @@ export async function POST(request: NextRequest) {
       serviceIds: parsed.data.serviceIds,
       staffId: parsed.data.staffId,
       startAt: new Date(parsed.data.startAt),
-      notes: parsed.data.notes
+      notes: parsed.data.notes,
+      bonusCode: parsed.data.bonusCode || null
     });
 
     if (cancelAppointmentId) {
@@ -68,6 +72,21 @@ export async function POST(request: NextRequest) {
         where: { id: cancelAppointmentId },
         data: { status: "CANCELED" }
       });
+    }
+
+    // Notificar al admin
+    try {
+      const settings = await getSalonSettings();
+      await sendNewBookingNotification({
+        clientName: appointment.client.name,
+        clientPhone: appointment.client.phone ?? "",
+        serviceName: appointment.services.map((s) => s.serviceNameSnapshot).join(", "),
+        staffName: appointment.staff.name,
+        dateLabel: formatDateInZone(appointment.startAt, settings.timezone),
+        timeLabel: formatTimeInZone(appointment.startAt, settings.timezone)
+      });
+    } catch (err) {
+      console.error("[email] notificacion admin fallo:", err);
     }
 
     return NextResponse.json({

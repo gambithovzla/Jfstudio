@@ -4,14 +4,19 @@ import { Pencil, Power, Scissors } from "lucide-react";
 import { createServiceAction, toggleServiceAction } from "@/lib/actions";
 import { getServicesAdmin, getSalonSettings } from "@/lib/data";
 import { formatCurrency } from "@/lib/utils";
+import { FlashMessage } from "@/components/flash-message";
 
 export const dynamic = "force-dynamic";
 
-export default async function ServicesPage() {
+type PageProps = { searchParams?: Promise<{ msg?: string }> };
+
+export default async function ServicesPage({ searchParams }: PageProps) {
+  const params = searchParams ? await searchParams : {};
   const [services, settings] = await Promise.all([getServicesAdmin(), getSalonSettings()]);
 
   return (
     <>
+      <FlashMessage msg={params.msg} />
       <div className="page-header">
         <div>
           <p className="eyebrow">Servicios</p>

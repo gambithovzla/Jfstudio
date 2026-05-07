@@ -82,7 +82,9 @@ export function buildAvailabilitySlots(input: {
     ) {
       const candidateEnd = addMinutes(candidate, input.durationMinutes);
       const hitsBreak =
-        breakStart && breakEnd ? overlaps(candidate, candidateEnd, breakStart, breakEnd) : false;
+        breakStart && breakEnd
+          ? candidate >= breakStart && candidate < breakEnd
+          : false;
       const hitsAppointment = staffMember.appointments.some((appointment) =>
         overlaps(candidate, candidateEnd, appointment.startAt, appointment.endAt)
       );

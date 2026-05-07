@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 
+import { ConfirmSubmitButton } from "@/components/confirm-submit-button";
 import { SiteFooter } from "@/components/landing/site-footer";
 import { SiteHeader } from "@/components/landing/site-header";
 import { StatusBadge } from "@/components/status-badge";
@@ -14,7 +15,7 @@ export const dynamic = "force-dynamic";
 
 type PageProps = { params: Promise<{ token: string }> };
 
-const CANCEL_WINDOW_HOURS = 4;
+const CANCEL_WINDOW_HOURS = 24;
 
 async function cancelByToken(token: string) {
   "use server";
@@ -131,24 +132,36 @@ export default async function PublicAppointmentPage({ params }: PageProps) {
             <h2 className="card-title" style={{ marginBottom: 8 }}>Gestionar</h2>
             {canModify ? (
               <>
-                <p className="small muted" style={{ marginBottom: 16 }}>
-                  Puedes cancelar o reagendar tu cita hasta {CANCEL_WINDOW_HOURS} horas antes.
+                <p className="small muted" style={{ marginBottom: 12 }}>
+                  Puedes cancelar o reagendar con al menos {CANCEL_WINDOW_HOURS} horas de anticipacion.
                 </p>
+                <div style={{ background: "#fef3c7", border: "1px solid #fcd34d", borderRadius: 8, padding: "10px 14px", marginBottom: 16, fontSize: "0.83rem", color: "#92400e" }}>
+                  Cancelaciones con menos de 24 horas o inasistencias: el adelanto queda retenido como compensacion.
+                </div>
                 <div className="button-row">
                   <Link className="btn" href={`/reserva/${token}/reagendar`}>
                     Reagendar
                   </Link>
                   <form action={cancelAction}>
-                    <button className="btn danger" type="submit">
+                    <ConfirmSubmitButton
+                      className="btn danger"
+                      type="submit"
+                      message="¿Confirmas que deseas cancelar tu cita? Recibirás un email de confirmación."
+                    >
                       Cancelar cita
-                    </button>
+                    </ConfirmSubmitButton>
                   </form>
                 </div>
               </>
             ) : (
-              <p className="small muted">
-                Ya no es posible modificar esta cita (menos de {CANCEL_WINDOW_HOURS} horas de anticipacion). Contactanos por WhatsApp.
-              </p>
+              <>
+                <p className="small muted" style={{ marginBottom: 12 }}>
+                  Ya no es posible modificar esta cita (menos de {CANCEL_WINDOW_HOURS} horas de anticipacion).
+                </p>
+                <div style={{ background: "#fee2e2", border: "1px solid #fca5a5", borderRadius: 8, padding: "10px 14px", fontSize: "0.83rem", color: "#991b1b" }}>
+                  Cancelaciones o inasistencias a esta altura retienen el adelanto como compensacion. Contactanos por WhatsApp si tienes alguna urgencia.
+                </div>
+              </>
             )}
           </section>
         ) : null}

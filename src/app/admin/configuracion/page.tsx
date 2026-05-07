@@ -1,7 +1,8 @@
 import Link from "next/link";
-import { Pencil, Plus, Settings, Trash2 } from "lucide-react";
+import { Cake, KeyRound, Pencil, Plus, Settings, Trash2 } from "lucide-react";
 
 import {
+  changeAdminPasswordAction,
   createPaymentMethodAction,
   createStaffAction,
   deletePaymentMethodAction,
@@ -9,6 +10,7 @@ import {
   updateSalonSettingsAction
 } from "@/lib/actions";
 import { getConfigurationAdmin } from "@/lib/data";
+import { FlashMessage } from "@/components/flash-message";
 
 export const dynamic = "force-dynamic";
 
@@ -20,16 +22,26 @@ const ROLES: Record<string, string> = {
   RECEPTIONIST: "Recepcion"
 };
 
-export default async function ConfigurationPage() {
+type PageProps = { searchParams?: Promise<{ msg?: string }> };
+
+export default async function ConfigurationPage({ searchParams }: PageProps) {
+  const params = searchParams ? await searchParams : {};
   const { settings, staff, methods } = await getConfigurationAdmin();
 
   return (
     <>
+      <FlashMessage msg={params.msg} />
       <div className="page-header">
         <div>
           <p className="eyebrow">Configuracion</p>
           <h1 className="title">{settings.name}</h1>
           <p className="subtitle">Datos del salon, staff, horarios y metodos de pago.</p>
+        </div>
+        <div className="button-row">
+          <Link className="btn secondary" href="/admin/configuracion/cumpleanos">
+            <Cake size={16} aria-hidden />
+            Bono de cumpleaños
+          </Link>
         </div>
       </div>
 
@@ -203,6 +215,34 @@ export default async function ConfigurationPage() {
             <button className="btn secondary" type="submit">
               <Plus size={16} aria-hidden />
               Crear metodo
+            </button>
+          </form>
+        </section>
+
+        <section className="card">
+          <div className="card-header">
+            <h2 className="card-title">Contraseña de acceso</h2>
+            <KeyRound size={20} aria-hidden />
+          </div>
+          <p className="small muted" style={{ marginBottom: 16 }}>
+            Cambia la contraseña del panel de administración. Solo la nueva contraseña te permitirá ingresar.
+          </p>
+          <form className="form-grid" action={changeAdminPasswordAction}>
+            <div className="field">
+              <label htmlFor="currentPassword">Contraseña actual</label>
+              <input className="input" id="currentPassword" name="currentPassword" type="password" required autoComplete="current-password" />
+            </div>
+            <div className="field">
+              <label htmlFor="newPassword">Nueva contraseña</label>
+              <input className="input" id="newPassword" name="newPassword" type="password" required autoComplete="new-password" minLength={6} />
+            </div>
+            <div className="field">
+              <label htmlFor="confirmPassword">Confirmar nueva contraseña</label>
+              <input className="input" id="confirmPassword" name="confirmPassword" type="password" required autoComplete="new-password" minLength={6} />
+            </div>
+            <button className="btn" type="submit">
+              <KeyRound size={17} aria-hidden />
+              Cambiar contraseña
             </button>
           </form>
         </section>

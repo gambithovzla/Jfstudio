@@ -24,6 +24,63 @@ export async function getSalonSettings() {
   );
 }
 
+export async function getBirthdayBonusSettings() {
+  assertDatabaseConfigured();
+
+  return (
+    (await prisma.birthdayBonusSettings.findUnique({ where: { id: "default" } })) ??
+    (await prisma.birthdayBonusSettings.create({ data: { id: "default" } }))
+  );
+}
+
+export async function getBirthdayBonusesForToday(timezone: string) {
+  assertDatabaseConfigured();
+
+  const today = todayInTimeZone(timezone);
+  const [year, month, day] = today.split("-").map(Number);
+  const startUtc = startOfSalonDayUtc(today, timezone);
+  const endUtc = endOfSalonDayUtc(today, timezone);
+
+  const yearOfBonus = year;
+  const yearStart = new Date(Date.UTC(yearOfBonus, 0, 1));
+  const yearEnd = new Date(Date.UTC(yearOfBonus + 1, 0, 1));
+
+  const candidates = await prisma.client.findMany({
+    where: {
+      birthday: { not: null }
+    },
+    include: {
+      birthdayBonuses: {
+        where: { generatedAt: { gte: yearStart, lt: yearEnd } },
+        orderBy: { generatedAt: "desc" },
+        take: 1
+      }
+    }
+  });
+
+  return {
+    today,
+    month,
+    day,
+    startUtc,
+    endUtc,
+    candidates: candidates.filter((client) => {
+      if (!client.birthday) return false;
+      const b = client.birthday;
+      return b.getUTCMonth() + 1 === month && b.getUTCDate() === day;
+    })
+  };
+}
+
+export async function getActiveBirthdayBonusByCode(code: string) {
+  assertDatabaseConfigured();
+
+  return prisma.birthdayBonus.findUnique({
+    where: { code: code.trim().toUpperCase() },
+    include: { client: true }
+  });
+}
+
 function assertDatabaseConfigured() {
   const databaseUrl = process.env.DATABASE_URL;
   const placeholderUrl = "postgresql://user:pass@localhost:5432/jfstudio";
@@ -120,7 +177,7 @@ export async function getAvailabilityForServices(input: {
     })
   ]);
 
-  return buildAvailabilitySlots({
+  const allSlots = buildAvailabilitySlots({
     date: input.date,
     timeZone: settings.timezone,
     durationMinutes,
@@ -133,6 +190,12 @@ export async function getAvailabilityForServices(input: {
       workingHours: staffMember.workingHours
     }))
   });
+
+  // Morning-first rule: if any slot starts before 13:00 local time, only show those.
+  // Once morning is fully booked, all slots are shown.
+  const fmt = new Intl.DateTimeFormat("es", { timeZone: settings.timezone, hour: "numeric", hour12: false });
+  const morningSlots = allSlots.filter((s) => parseInt(fmt.format(new Date(s.startAt)), 10) < 13);
+  return morningSlots.length > 0 ? morningSlots : allSlots;
 }
 
 export async function createBooking(input: {
@@ -141,6 +204,7 @@ export async function createBooking(input: {
   staffId: string;
   startAt: Date;
   notes?: string | null;
+  bonusCode?: string | null;
 }) {
   const settings = await getSalonSettings();
   const serviceIds = Array.from(new Set(input.serviceIds.filter(Boolean)));
@@ -149,6 +213,8 @@ export async function createBooking(input: {
   if (!input.client.name.trim() || !phone || serviceIds.length === 0) {
     throw new Error("Faltan datos para crear la reserva.");
   }
+
+  const bonusCodeInput = input.bonusCode?.trim().toUpperCase() || null;
 
   const appointment = await prisma.$transaction(
     async (tx) => {
@@ -233,9 +299,38 @@ export async function createBooking(input: {
         }
       });
 
-      const totalPrice = services.reduce((total, service) => total + Number(service.price), 0);
+      const subtotal = services.reduce((total, service) => total + Number(service.price), 0);
 
-      return tx.appointment.create({
+      let bonusToRedeem: { id: string; discountPercent: number } | null = null;
+      let totalPrice = subtotal;
+
+      if (bonusCodeInput) {
+        const bonus = await tx.birthdayBonus.findUnique({
+          where: { code: bonusCodeInput },
+          include: { appointment: true }
+        });
+
+        if (!bonus) {
+          throw new Error("El código de bono no existe.");
+        }
+
+        if (bonus.clientId !== client.id) {
+          throw new Error("Este código pertenece a otra clienta.");
+        }
+
+        if (bonus.appointment) {
+          throw new Error("Este código ya fue canjeado.");
+        }
+
+        if (bonus.expiresAt < new Date()) {
+          throw new Error("Este código ya está vencido.");
+        }
+
+        bonusToRedeem = { id: bonus.id, discountPercent: bonus.discountPercent };
+        totalPrice = Math.round(subtotal * (1 - bonus.discountPercent / 100) * 100) / 100;
+      }
+
+      const created = await tx.appointment.create({
         data: {
           clientId: client.id,
           staffId: staff.id,
@@ -244,6 +339,7 @@ export async function createBooking(input: {
           status: AppointmentStatus.CONFIRMED,
           notes: input.notes?.trim() || null,
           totalPrice,
+          birthdayBonusId: bonusToRedeem?.id ?? null,
           services: {
             create: services.map((service) => ({
               serviceId: service.id,
@@ -259,6 +355,15 @@ export async function createBooking(input: {
           services: true
         }
       });
+
+      if (bonusToRedeem) {
+        await tx.birthdayBonus.update({
+          where: { id: bonusToRedeem.id },
+          data: { redeemedAt: new Date() }
+        });
+      }
+
+      return created;
     },
     { isolationLevel: Prisma.TransactionIsolationLevel.Serializable }
   );
@@ -507,7 +612,12 @@ export async function getProductById(id: string) {
       movements: {
         orderBy: { createdAt: "desc" },
         take: 50,
-        include: { createdByStaff: { select: { name: true } } }
+        include: {
+          createdByStaff: { select: { name: true } },
+          appointment: {
+            include: { client: { select: { id: true, name: true } } }
+          }
+        }
       }
     }
   });

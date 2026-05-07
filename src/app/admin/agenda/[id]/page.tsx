@@ -1,9 +1,11 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, MessageCircle, Pencil, RotateCcw, Save } from "lucide-react";
+import { ArrowLeft, MessageCircle, Pencil, RotateCcw, Save, XCircle } from "lucide-react";
 
+import { ConfirmSubmitButton } from "@/components/confirm-submit-button";
+import { DeleteAppointmentButton } from "@/components/delete-appointment-button";
 import { StatusBadge } from "@/components/status-badge";
-import { completeAppointmentAction, markDepositPaidAction, refundPaymentAction } from "@/lib/actions";
+import { cancelAppointmentAction, cancelForceMajeureAction, completeAppointmentAction, markDepositPaidAction, refundPaymentAction } from "@/lib/actions";
 import { getAppointmentForCheckout, getSalonSettings } from "@/lib/data";
 import { formatDateInZone, formatTimeInZone } from "@/lib/time";
 import { formatCurrency, normalizePhone } from "@/lib/utils";
@@ -146,6 +148,42 @@ export default async function AppointmentDetailPage({ params }: PageProps) {
           {appointment.status !== "CONFIRMED" ? (
             <div className="empty">Esta cita ya no esta pendiente de cobro.</div>
           ) : (
+            <>
+            <form className="form-grid" action={cancelAppointmentAction} style={{ marginBottom: 16, paddingBottom: 16, borderBottom: "1px solid var(--line)" }}>
+              <input type="hidden" name="appointmentId" value={appointment.id} />
+              <div className="field">
+                <label htmlFor="cancel-note">Motivo de cancelación (se envía a la clienta)</label>
+                <textarea className="textarea" id="cancel-note" name="note" placeholder="Ej: agenda completa, reagendaremos pronto..." rows={2} />
+              </div>
+              <ConfirmSubmitButton
+                className="btn danger"
+                type="submit"
+                style={{ alignSelf: "flex-start" }}
+                message="¿Cancelar esta cita? Se notificará a la clienta por email."
+              >
+                <XCircle size={16} aria-hidden />
+                Cancelar y notificar a la clienta
+              </ConfirmSubmitButton>
+            </form>
+
+            <form className="form-grid" action={cancelForceMajeureAction} style={{ marginBottom: 20, paddingBottom: 20, borderBottom: "1px solid var(--line)", background: "#fef3c7", borderRadius: 10, padding: "14px 16px" }}>
+              <input type="hidden" name="appointmentId" value={appointment.id} />
+              <p className="small" style={{ margin: "0 0 8px", fontWeight: 600, color: "#92400e" }}>⚡ Cancelar por fuerza mayor</p>
+              <p className="small muted" style={{ margin: "0 0 10px", fontSize: "0.8rem" }}>La clienta recibirá un email especial indicando que su adelanto será reembolsado o puede reagendar sin costo.</p>
+              <div className="field">
+                <label htmlFor="fm-reason" style={{ fontSize: "0.85rem" }}>Motivo (obligatorio)</label>
+                <textarea className="textarea" id="fm-reason" name="reason" placeholder="Ej: Johanna se encuentra en urgencias médicas. Nos disculpamos..." rows={2} required />
+              </div>
+              <ConfirmSubmitButton
+                className="btn"
+                type="submit"
+                style={{ alignSelf: "flex-start", background: "#f59e0b", color: "#fff", borderColor: "#f59e0b" }}
+                message="¿Cancelar por fuerza mayor? Se enviará un email especial a la clienta con la promesa de reembolso."
+              >
+                <XCircle size={16} aria-hidden />
+                Cancelar por fuerza mayor y notificar
+              </ConfirmSubmitButton>
+            </form>
             <form className="form-grid" action={completeAppointmentAction}>
               <input type="hidden" name="appointmentId" value={appointment.id} />
               <div className="grid two">
@@ -196,6 +234,7 @@ export default async function AppointmentDetailPage({ params }: PageProps) {
                 Completar y cobrar
               </button>
             </form>
+            </>
           )}
         </section>
 
@@ -256,6 +295,16 @@ export default async function AppointmentDetailPage({ params }: PageProps) {
           </section>
         ) : null}
       </div>
+
+      <section className="card" style={{ marginTop: 16, borderColor: "#fca5a5" }}>
+        <div className="card-header">
+          <div>
+            <h2 className="card-title" style={{ color: "#b91c1c" }}>Zona de peligro</h2>
+            <p className="small muted">Eliminar el registro borra también todos los pagos asociados. No se puede deshacer.</p>
+          </div>
+          <DeleteAppointmentButton appointmentId={id} />
+        </div>
+      </section>
     </>
   );
 }

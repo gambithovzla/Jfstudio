@@ -47,6 +47,11 @@ export type LandingContent = {
     description: string;
     images: GalleryImage[];
   };
+  studio: {
+    title: string;
+    description: string;
+    images: GalleryImage[];
+  };
   testimonials: {
     title: string;
     items: LandingTestimonial[];
@@ -55,6 +60,7 @@ export type LandingContent = {
     title: string;
     address: string;
     mapsEmbedUrl: string | null;
+    coordinates?: { lat: number; lon: number };
     hours: string[];
     notes?: string;
   };
@@ -70,31 +76,32 @@ export type LandingContent = {
   };
 };
 
-const phone = "+51 999 000 000";
-const whatsapp = "51999000000";
+const phone = "+51 921 153 808";
+const whatsapp = "51921153808";
 
 export const landingContent: LandingContent = {
   brand: {
-    name: "JF Studio",
+    name: "Johanna Figueredo Studio",
     tagline: "Estilismo y belleza por Johanna Figueredo",
     initials: "JF",
     logoUrl: "/images/logo-jf.png"
   },
   hero: {
-    eyebrow: "Salon de belleza",
+    eyebrow: "Salón de belleza",
     title: "Realza tu estilo en manos expertas",
     description:
-      "Cortes, color, tratamientos y peinados con productos profesionales. Reserva en linea en menos de un minuto.",
+      "Cortes, color, tratamientos y peinados con productos profesionales. Reserva en línea en menos de un minuto.",
     primaryCta: { label: "Reservar cita", href: "/reservar" },
     secondaryCta: { label: "Ver servicios", href: "#servicios" },
-    imageUrl: "/images/johanna-hero.webp",
-    imageAlt: "Johanna Figueredo trabajando en el estudio"
+    imageUrl: "/images/johanna-portrait-alt.webp",
+    imageAlt: "Johanna Figueredo"
   },
   about: {
-    title: "Sobre Johanna",
+    title: "Manos que escuchan, tijeras que transforman.",
     paragraphs: [
-      "Soy Johanna Figueredo, estilista profesional con mas de una decada acompanando a mis clientas en sus momentos mas importantes.",
-      "En JF Studio encontraras un espacio calido donde cada servicio se piensa para resaltar tu personalidad. Trabajamos con marcas premium y tecnicas actualizadas para cuidar tu cabello y tu tiempo."
+      "Soy Johanna Figueredo, estilista profesional con más de 12 años dedicada al arte del cabello. Me he formado con academias y educadores de reconocimiento internacional, entre ellos la Academia Nacional de Peluquería Integral (ANPI), Slik de Venezuela, Mounir y Wanessa Braga.",
+      "Mi pasión por compartir conocimiento me ha llevado a participar como educadora en conferencias internacionales en Madrid, Argentina y Venezuela, difundiendo las últimas tendencias en laceados orgánicos y técnicas de vanguardia.",
+      "Mi estudio nace de la idea de que cada clienta merece una experiencia personalizada — un espacio íntimo, sin prisas, donde tu estilo se piensa en conjunto y se ejecuta con técnica y cuidado."
     ],
     portraitUrl: "/images/johanna-portrait.webp",
     portraitAlt: "Johanna Figueredo"
@@ -107,7 +114,7 @@ export const landingContent: LandingContent = {
       {
         title: "Corte y peinado",
         description:
-          "Diseno de corte personalizado segun tu estilo de vida, secado y peinado con acabado profesional.",
+          "Diseño de corte personalizado según tu estilo de vida, secado y peinado con acabado profesional.",
         highlight: "60 min"
       },
       {
@@ -119,20 +126,34 @@ export const landingContent: LandingContent = {
       {
         title: "Tratamientos capilares",
         description:
-          "Hidratacion profunda, keratina, botox capilar y nutricion para cabellos secos o danados.",
+          "Hidratación profunda, keratina, bótox capilar y nutrición para cabellos secos o dañados.",
         highlight: "75 min"
       }
     ]
   },
   gallery: {
     title: "Trabajos recientes",
-    description: "Inspirate con algunos de los looks creados en el estudio.",
+    description: "Inspírate con algunos de los looks creados en el estudio.",
     images: [
-      { src: "/images/johanna-hero.webp", alt: "Johanna trabajando en el estudio" },
-      { src: "/images/johanna-portrait.webp", alt: "Johanna Figueredo" },
-      { src: "/images/johanna-portrait-alt.webp", alt: "Retrato profesional" },
-      { src: "/images/johanna-seated.webp", alt: "Johanna en el estudio" },
-      { src: "/images/johanna-conferencia.webp", alt: "Johanna en conferencia" },
+      { src: "/images/gallery-01.webp", alt: "Trabajo realizado en JF Studio" },
+      { src: "/images/gallery-02.webp", alt: "Trabajo realizado en JF Studio" },
+      { src: "/images/gallery-04.webp", alt: "Trabajo realizado en JF Studio" },
+      { src: "/images/gallery-05.webp", alt: "Trabajo realizado en JF Studio" },
+      { src: "/images/gallery-06.webp", alt: "Trabajo realizado en JF Studio" },
+      { src: "/images/gallery-07.webp", alt: "Trabajo realizado en JF Studio" },
+      { src: "/images/gallery-12.webp", alt: "Trabajo realizado en JF Studio" },
+      { src: "/images/gallery-13.webp", alt: "Trabajo realizado en JF Studio" },
+      { src: "/images/gallery-16.webp", alt: "Trabajo realizado en JF Studio" },
+      { src: "/images/gallery-17.webp", alt: "Trabajo realizado en JF Studio" }
+    ]
+  },
+  studio: {
+    title: "Nuestro estudio",
+    description: "Un espacio cálido y cuidado, pensado para que te sientas como en casa.",
+    images: [
+      { src: "/images/gallery-09.webp", alt: "Interior de JF Studio" },
+      { src: "/images/gallery-10.webp", alt: "Espacio de trabajo en JF Studio" },
+      { src: "/images/gallery-11.webp", alt: "Detalle del estudio JF Studio" }
     ]
   },
   testimonials: {
@@ -141,38 +162,40 @@ export const landingContent: LandingContent = {
       {
         quote:
           "Salgo siempre encantada del estudio. Johanna escucha lo que quieres y suma su criterio para que el resultado sea perfecto.",
-        author: "Maria F.",
+        author: "María F.",
         detail: "Cliente desde 2022"
       },
       {
         quote:
-          "El mejor color que me he hecho. Atencion impecable, productos de primera y un trato muy calido.",
+          "El mejor color que me he hecho. Atención impecable, productos de primera y un trato muy cálido.",
         author: "Camila R.",
         detail: "Color completo"
       },
       {
-        quote: "Nunca habia disfrutado tanto un tratamiento. El cabello me quedo brillante por semanas.",
-        author: "Lucia M.",
-        detail: "Hidratacion profunda"
+        quote: "Nunca había disfrutado tanto un tratamiento. El cabello me quedó brillante por semanas.",
+        author: "Lucía M.",
+        detail: "Hidratación profunda"
       }
     ]
   },
   location: {
-    title: "Vistanos",
-    address: "Av. Principal 123, Lima, Peru",
-    mapsEmbedUrl: null,
-    hours: ["Lunes a viernes: 9:00 - 18:00", "Sabado: 9:00 - 16:00", "Domingo: cerrado"],
-    notes: "Atencion solo con reserva previa."
+    title: "Visítanos",
+    address: "Av. José Larco 345, Miraflores, Lima",
+    mapsEmbedUrl:
+      "https://maps.google.com/maps?q=Av+Jose+Larco+345+Miraflores+Lima+Peru&hl=es&output=embed",
+    coordinates: { lat: -12.1259, lon: -77.0291 },
+    hours: ["Lunes a domingo: 8:00 - 18:00"],
+    notes: "Atención solo con reserva previa."
   },
   contact: {
     title: "Reserva o consulta",
     description:
-      "Escribenos por WhatsApp para asesoria personalizada o reserva tu cita en linea.",
+      "Escríbenos por WhatsApp para asesoría personalizada o reserva tu cita en línea.",
     phone,
     whatsapp,
-    email: "hola@jfstudio.local",
-    instagram: "https://instagram.com/jfstudio",
-    tiktok: undefined,
+    email: "johastyle.07@gmail.com",
+    instagram: "https://instagram.com/jfigueredo07",
+    tiktok: "https://tiktok.com/@jfigueredo07",
     facebook: undefined
   }
 };

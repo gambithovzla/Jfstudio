@@ -1,16 +1,22 @@
-import { PackagePlus, PlusCircle } from "lucide-react";
+import Link from "next/link";
+import { History, PackagePlus, PlusCircle } from "lucide-react";
 
 import { adjustProductStockAction, createProductAction } from "@/lib/actions";
 import { getProductsAdmin } from "@/lib/data";
+import { FlashMessage } from "@/components/flash-message";
 
 export const dynamic = "force-dynamic";
 
-export default async function ProductsPage() {
+type PageProps = { searchParams?: Promise<{ msg?: string }> };
+
+export default async function ProductsPage({ searchParams }: PageProps) {
+  const params = searchParams ? await searchParams : {};
   const products = await getProductsAdmin();
   const lowStock = products.filter((product) => Number(product.stock) <= Number(product.lowStockThreshold));
 
   return (
     <>
+      <FlashMessage msg={params.msg} />
       <div className="page-header">
         <div>
           <p className="eyebrow">Inventario</p>
@@ -87,10 +93,16 @@ export default async function ProductsPage() {
                     <input className="input" id={`note-${product.id}`} name="note" />
                   </div>
                 </div>
-                <button className="btn secondary" type="submit">
-                  <PlusCircle size={17} aria-hidden />
-                  Aplicar ajuste
-                </button>
+                <div className="button-row">
+                  <button className="btn secondary" type="submit">
+                    <PlusCircle size={17} aria-hidden />
+                    Aplicar ajuste
+                  </button>
+                  <Link className="btn secondary" href={`/admin/productos/${product.id}`}>
+                    <History size={17} aria-hidden />
+                    Historial
+                  </Link>
+                </div>
               </form>
             </article>
           ))}

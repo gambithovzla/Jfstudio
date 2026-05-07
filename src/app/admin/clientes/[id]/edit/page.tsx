@@ -57,9 +57,21 @@ export default async function EditClientPage({ params }: PageProps) {
               <input className="input" id="dni" name="dni" defaultValue={client.dni ?? ""} />
             </div>
           </div>
-          <div className="field">
-            <label htmlFor="source">Referencia</label>
-            <input className="input" id="source" name="source" defaultValue={client.source ?? ""} placeholder="Ej: Recomendada, Instagram, Redes sociales" />
+          <div className="grid two">
+            <div className="field">
+              <label htmlFor="birthday">Cumpleaños</label>
+              <input
+                className="input"
+                id="birthday"
+                name="birthday"
+                type="date"
+                defaultValue={client.birthday ? new Date(client.birthday).toISOString().slice(0, 10) : ""}
+              />
+            </div>
+            <div className="field">
+              <label htmlFor="source">Referencia</label>
+              <input className="input" id="source" name="source" defaultValue={client.source ?? ""} placeholder="Ej: Recomendada, Instagram" />
+            </div>
           </div>
           <div className="field">
             <label htmlFor="notes">Notas internas</label>

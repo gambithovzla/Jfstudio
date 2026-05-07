@@ -1,14 +1,17 @@
 import Link from "next/link";
 import { Cake, Plus, Search } from "lucide-react";
 
+import { forceDeleteClientAction } from "@/lib/actions";
 import { getClientsWithHistory, getClientsWithoutBirthday, getSalonSettings } from "@/lib/data";
 import { formatDateInZone, formatTimeInZone } from "@/lib/time";
 import { formatCurrency } from "@/lib/utils";
+import { DeleteClientDialog } from "@/components/delete-client-dialog";
+import { FlashMessage } from "@/components/flash-message";
 
 export const dynamic = "force-dynamic";
 
 type PageProps = {
-  searchParams?: Promise<{ q?: string }>;
+  searchParams?: Promise<{ q?: string; msg?: string }>;
 };
 
 export default async function ClientsPage({ searchParams }: PageProps) {
@@ -21,6 +24,7 @@ export default async function ClientsPage({ searchParams }: PageProps) {
 
   return (
     <>
+      <FlashMessage msg={params.msg} />
       <div className="page-header">
         <div>
           <p className="eyebrow">Clientes</p>
@@ -59,7 +63,7 @@ export default async function ClientsPage({ searchParams }: PageProps) {
             );
 
             return (
-              <article className="card" key={client.id}>
+              <article className="card" key={client.id} style={{ borderTop: "3px solid var(--brand-light)" }}>
                 <div className="card-header">
                   <div>
                     <h2 className="card-title">{client.name}</h2>
@@ -75,6 +79,11 @@ export default async function ClientsPage({ searchParams }: PageProps) {
                     <Link className="btn secondary" href={`/admin/clientes/${client.id}/edit`}>
                       Editar
                     </Link>
+                    <DeleteClientDialog
+                      clientId={client.id}
+                      clientName={client.name}
+                      action={forceDeleteClientAction}
+                    />
                   </div>
                 </div>
 
@@ -93,15 +102,20 @@ export default async function ClientsPage({ searchParams }: PageProps) {
                     <tbody>
                       {client.appointments.map((apt) => {
                         const paid = apt.payments.reduce((s, p) => s + Number(p.amount), 0);
+                        const statusClass = apt.status === "COMPLETED" ? "row-completed"
+                          : apt.status === "CONFIRMED" ? "row-confirmed"
+                          : apt.status === "CANCELED" ? "row-canceled"
+                          : apt.status === "NO_SHOW" ? "row-no-show"
+                          : "";
                         return (
-                          <tr key={apt.id}>
-                            <td className="small">
+                          <tr key={apt.id} className={statusClass}>
+                            <td className="small" data-label="Fecha">
                               {formatDateInZone(apt.startAt, settings.timezone)}{" "}
-                              {formatTimeInZone(apt.startAt, settings.timezone)}
+                              <span className="muted">{formatTimeInZone(apt.startAt, settings.timezone)}</span>
                             </td>
-                            <td className="small">{apt.services.map((s) => s.serviceNameSnapshot).join(", ")}</td>
-                            <td className="small">{apt.staff.name}</td>
-                            <td className="small">
+                            <td className="small" data-label="Servicios">{apt.services.map((s) => s.serviceNameSnapshot).join(", ")}</td>
+                            <td className="small" data-label="Estilista" style={{ fontWeight: 600 }}>{apt.staff.name}</td>
+                            <td className="small" data-label="Total" style={{ fontWeight: 700 }}>
                               {paid > 0 ? formatCurrency(paid, settings.currency) : <span className="muted">Pendiente</span>}
                             </td>
                           </tr>

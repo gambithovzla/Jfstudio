@@ -27,6 +27,15 @@ type CancellationEmailData = {
   serviceName: string;
   dateLabel: string;
   timeLabel: string;
+  note?: string;
+};
+
+type BirthdayBonusEmailData = {
+  to: string;
+  clientName: string;
+  discountPercent: number;
+  code: string;
+  expiresLabel: string;
 };
 
 function bookingHtml({
@@ -56,7 +65,10 @@ function bookingHtml({
             <tr><td style="padding:4px 0;font-size:0.9rem;"><strong>Fecha:</strong> ${dateLabel}</td></tr>
             <tr><td style="padding:4px 0;font-size:0.9rem;"><strong>Hora:</strong> ${timeLabel}</td></tr>
           </table>
-          <p style="margin:0 0 16px;font-size:0.9rem;color:#374151;">Si necesitas cancelar o reagendar, puedes hacerlo desde el siguiente enlace hasta 4 horas antes de tu cita.</p>
+          <p style="margin:0 0 12px;font-size:0.9rem;color:#374151;">Si necesitas cancelar o reagendar, hazlo desde el enlace a continuacion con al menos <strong>24 horas de anticipacion</strong>.</p>
+          <div style="background:#fef3c7;border-left:3px solid #f59e0b;padding:10px 14px;border-radius:0 8px 8px 0;margin:0 0 16px;font-size:0.85rem;color:#92400e;">
+            Cancelaciones con menos de 24 horas o inasistencias: el adelanto queda retenido como compensacion.
+          </div>
           <a href="${manageUrl}" style="display:inline-block;background:#0f766e;color:#fff;text-decoration:none;border-radius:8px;padding:12px 24px;font-weight:700;font-size:0.95rem;">Gestionar mi reserva</a>
           <p style="margin:24px 0 0;font-size:0.82rem;color:#9ca3af;">JF Studio · Cualquier consulta por WhatsApp.</p>
         </td></tr>
@@ -105,7 +117,7 @@ function reminderHtml({
 </html>`;
 }
 
-function cancellationHtml({ clientName, serviceName, dateLabel, timeLabel }: CancellationEmailData) {
+function cancellationHtml({ clientName, serviceName, dateLabel, timeLabel, note }: CancellationEmailData) {
   return `<!DOCTYPE html>
 <html lang="es">
 <head><meta charset="utf-8"><title>Cita cancelada</title></head>
@@ -121,9 +133,42 @@ function cancellationHtml({ clientName, serviceName, dateLabel, timeLabel }: Can
             <tr><td style="padding:4px 0;font-size:0.9rem;"><strong>Servicio:</strong> ${serviceName}</td></tr>
             <tr><td style="padding:4px 0;font-size:0.9rem;"><strong>Fecha:</strong> ${dateLabel}</td></tr>
             <tr><td style="padding:4px 0;font-size:0.9rem;"><strong>Hora:</strong> ${timeLabel}</td></tr>
+            ${note ? `<tr><td style="padding:8px 0 0;font-size:0.9rem;border-top:1px solid #ddd6cc;margin-top:6px;"><strong>Motivo:</strong> ${note}</td></tr>` : ""}
           </table>
-          <a href="${APP_URL}/reservar" style="display:inline-block;background:#0f766e;color:#fff;text-decoration:none;border-radius:8px;padding:12px 24px;font-weight:700;font-size:0.95rem;">Hacer nueva reserva</a>
+          <a href="${APP_URL}/reservar" style="display:inline-block;background:#c4587a;color:#fff;text-decoration:none;border-radius:8px;padding:12px 24px;font-weight:700;font-size:0.95rem;">Hacer nueva reserva</a>
           <p style="margin:24px 0 0;font-size:0.82rem;color:#9ca3af;">JF Studio · Cualquier consulta por WhatsApp.</p>
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`;
+}
+
+function lowStockHtml(products: { name: string; stock: number; unit: string; threshold: number }[]) {
+  const rows = products
+    .map((p) => `<tr><td style="padding:6px 8px;border-bottom:1px solid #e8e2d8;">${p.name}</td><td style="padding:6px 8px;border-bottom:1px solid #e8e2d8;color:#b91c1c;font-weight:700;">${p.stock} ${p.unit}</td><td style="padding:6px 8px;border-bottom:1px solid #e8e2d8;color:#6b7280;">${p.threshold} ${p.unit}</td></tr>`)
+    .join("");
+  return `<!DOCTYPE html>
+<html lang="es">
+<head><meta charset="utf-8"><title>Stock bajo</title></head>
+<body style="margin:0;padding:0;background:#fbfaf7;font-family:sans-serif;color:#1f2933;">
+  <table width="100%" cellpadding="0" cellspacing="0">
+    <tr><td align="center" style="padding:32px 16px;">
+      <table width="560" style="max-width:100%;background:#fff;border-radius:12px;border:1px solid #e5e7eb;padding:32px;">
+        <tr><td>
+          <p style="margin:0 0 8px;font-size:0.78rem;font-weight:800;text-transform:uppercase;color:#c4587a;">JF Studio · Alerta de inventario</p>
+          <h1 style="margin:0 0 16px;font-size:1.4rem;color:#1a1a1a;">⚠️ Stock bajo en productos</h1>
+          <p style="margin:0 0 20px;color:#374151;">Los siguientes productos están por debajo del umbral de alerta:</p>
+          <table width="100%" style="border-collapse:collapse;font-size:0.9rem;">
+            <thead><tr style="background:#f5f2ed;">
+              <th style="padding:8px;text-align:left;">Producto</th>
+              <th style="padding:8px;text-align:left;">Stock actual</th>
+              <th style="padding:8px;text-align:left;">Umbral</th>
+            </tr></thead>
+            <tbody>${rows}</tbody>
+          </table>
+          <p style="margin:20px 0 0;font-size:0.85rem;color:#6b7280;">Revisa el inventario en el panel de administración.</p>
         </td></tr>
       </table>
     </td></tr>
@@ -138,10 +183,14 @@ async function safeSend(args: Parameters<ReturnType<typeof getResend>["emails"][
     return;
   }
 
+  const recipient = Array.isArray(args.to) ? args.to.join(",") : args.to;
+  console.log("[email] enviando a:", recipient, "| asunto:", args.subject);
   try {
     const result = await getResend().emails.send(args);
     if (result.error) {
       console.error("[email] error de Resend:", result.error);
+    } else {
+      console.log("[email] enviado OK, id:", result.data?.id);
     }
   } catch (error) {
     console.error("[email] fallo inesperado:", error);
@@ -172,5 +221,143 @@ export async function sendBookingCancellation(data: CancellationEmailData) {
     to: data.to,
     subject: `Cita cancelada · JF Studio`,
     html: cancellationHtml(data)
+  });
+}
+
+export async function sendForceMajeureCancellation(data: {
+  to: string;
+  clientName: string;
+  serviceName: string;
+  dateLabel: string;
+  timeLabel: string;
+  reason: string;
+}) {
+  await safeSend({
+    from: FROM,
+    to: data.to,
+    subject: `Tu cita fue reprogramada por causa de fuerza mayor · JF Studio`,
+    html: `<!DOCTYPE html>
+<html lang="es">
+<head><meta charset="utf-8"><title>Cita reprogramada</title></head>
+<body style="margin:0;padding:0;background:#fbfaf7;font-family:sans-serif;color:#1f2933;">
+  <table width="100%" cellpadding="0" cellspacing="0">
+    <tr><td align="center" style="padding:32px 16px;">
+      <table width="560" style="max-width:100%;background:#fff;border-radius:12px;border:1px solid #e5e7eb;padding:32px;">
+        <tr><td>
+          <p style="margin:0 0 8px;font-size:0.78rem;font-weight:800;text-transform:uppercase;color:#c4587a;">JF Studio</p>
+          <h1 style="margin:0 0 16px;font-size:1.5rem;color:#1a1a1a;">Informacion importante sobre tu cita</h1>
+          <p style="margin:0 0 14px;font-size:0.95rem;color:#374151;">Hola <strong>${data.clientName}</strong>, lamentamos informarte que por circunstancias excepcionales fue necesario cancelar tu cita:</p>
+          <table width="100%" style="margin:0 0 20px;background:#f5f2ed;border-radius:10px;padding:14px 18px;">
+            <tr><td style="padding:3px 0;font-size:0.9rem;"><strong>Servicio:</strong> ${data.serviceName}</td></tr>
+            <tr><td style="padding:3px 0;font-size:0.9rem;"><strong>Fecha:</strong> ${data.dateLabel}</td></tr>
+            <tr><td style="padding:3px 0;font-size:0.9rem;"><strong>Hora:</strong> ${data.timeLabel}</td></tr>
+            <tr><td style="padding:10px 0 3px;font-size:0.9rem;border-top:1px solid #ddd6cc;"><strong>Motivo:</strong> ${data.reason}</td></tr>
+          </table>
+          <div style="background:#fef3c7;border:1px solid #fcd34d;border-radius:10px;padding:14px 18px;margin-bottom:20px;">
+            <p style="margin:0;font-size:0.9rem;color:#92400e;"><strong>Tu adelanto sera reembolsado en su totalidad</strong> o puedes reagendar sin penalizacion ni costo adicional. Nos comunicaremos contigo a la brevedad.</p>
+          </div>
+          <p style="margin:0 0 16px;font-size:0.9rem;color:#374151;">Pedimos disculpas por los inconvenientes. Quedamos a tu disposicion por WhatsApp para coordinar tu nueva cita.</p>
+          <a href="${APP_URL}/reservar" style="display:inline-block;background:#c4587a;color:#fff;text-decoration:none;border-radius:8px;padding:12px 24px;font-weight:700;font-size:0.95rem;">Reservar nueva fecha</a>
+          <p style="margin:24px 0 0;font-size:0.82rem;color:#9ca3af;">JF Studio · Gracias por tu comprension.</p>
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`
+  });
+}
+
+export async function sendLowStockAlert(products: { name: string; stock: number; unit: string; threshold: number }[]) {
+  const to = process.env.ADMIN_EMAIL ?? FROM.replace(/^[^<]*<|>$/g, "");
+  await safeSend({
+    from: FROM,
+    to,
+    subject: `⚠️ Stock bajo en ${products.length} producto${products.length > 1 ? "s" : ""} · JF Studio`,
+    html: lowStockHtml(products)
+  });
+}
+
+export async function sendNewBookingNotification(data: {
+  clientName: string;
+  clientPhone: string;
+  serviceName: string;
+  staffName: string;
+  dateLabel: string;
+  timeLabel: string;
+}) {
+  const to = process.env.ADMIN_EMAIL ?? FROM.replace(/^[^<]*<|>$/g, "");
+  console.log("[email] notif admin → ADMIN_EMAIL:", process.env.ADMIN_EMAIL ?? "(no definido, usando FROM)");
+  await safeSend({
+    from: FROM,
+    to,
+    subject: `Nueva reserva: ${data.clientName} · ${data.dateLabel} ${data.timeLabel}`,
+    html: `<!DOCTYPE html>
+<html lang="es">
+<head><meta charset="utf-8"><title>Nueva reserva</title></head>
+<body style="margin:0;padding:0;background:#fbfaf7;font-family:sans-serif;color:#1f2933;">
+  <table width="100%" cellpadding="0" cellspacing="0">
+    <tr><td align="center" style="padding:32px 16px;">
+      <table width="480" style="max-width:100%;background:#fff;border-radius:12px;border:1px solid #e5e7eb;padding:28px 32px;">
+        <tr><td>
+          <p style="margin:0 0 6px;font-size:0.72rem;font-weight:800;text-transform:uppercase;color:#c4587a;letter-spacing:0.08em;">JF Studio · Nueva reserva</p>
+          <h1 style="margin:0 0 18px;font-size:1.3rem;color:#1a1a1a;">📅 ${data.clientName} reservó una cita</h1>
+          <table width="100%" style="background:#f5f2ed;border-radius:10px;padding:14px 18px;font-size:0.9rem;">
+            <tr><td style="padding:3px 0;"><strong>Servicio:</strong> ${data.serviceName}</td></tr>
+            <tr><td style="padding:3px 0;"><strong>Estilista:</strong> ${data.staffName}</td></tr>
+            <tr><td style="padding:3px 0;"><strong>Fecha:</strong> ${data.dateLabel}</td></tr>
+            <tr><td style="padding:3px 0;"><strong>Hora:</strong> ${data.timeLabel}</td></tr>
+            <tr><td style="padding:3px 0;"><strong>Telefono:</strong> ${data.clientPhone}</td></tr>
+          </table>
+          <p style="margin:18px 0 0;font-size:0.82rem;color:#9ca3af;">Puedes ver y gestionar esta cita desde el panel de administracion.</p>
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`
+  });
+}
+
+function birthdayHtml({ clientName, discountPercent, code, expiresLabel }: BirthdayBonusEmailData) {
+  return `<!DOCTYPE html>
+<html lang="es">
+<head><meta charset="utf-8"><title>Feliz cumpleanos</title></head>
+<body style="margin:0;padding:0;background:#fbfaf7;font-family:Georgia,'Playfair Display',serif;color:#1f2933;">
+  <table width="100%" cellpadding="0" cellspacing="0">
+    <tr><td align="center" style="padding:32px 16px;">
+      <table width="560" style="max-width:100%;background:#fff;border-radius:14px;border:1px solid #e5e7eb;padding:36px 32px;">
+        <tr><td>
+          <p style="margin:0 0 8px;font-size:0.78rem;font-weight:800;text-transform:uppercase;color:#c4587a;letter-spacing:0.08em;font-family:Inter,Arial,sans-serif;">JF Studio</p>
+          <h1 style="margin:0 0 14px;font-size:2rem;line-height:1.15;color:#1a1a1a;">Feliz cumpleanos, ${clientName} 🎉</h1>
+          <p style="margin:0 0 20px;font-size:1rem;line-height:1.55;color:#374151;font-family:Inter,Arial,sans-serif;">
+            Queremos celebrarte con un regalo especial: <strong>${discountPercent}% de descuento</strong> en tu proximo servicio.
+          </p>
+          <table width="100%" style="margin:18px 0 22px;background:linear-gradient(135deg,#f5edd6,#f9e8ee);border-radius:14px;padding:20px;text-align:center;">
+            <tr><td>
+              <p style="margin:0 0 6px;font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:0.12em;color:#a83e5e;font-family:Inter,Arial,sans-serif;">Tu codigo</p>
+              <p style="margin:0;font-size:1.7rem;font-weight:800;letter-spacing:0.18em;color:#1a1a1a;font-family:'Courier New',monospace;">${code}</p>
+              <p style="margin:8px 0 0;font-size:0.85rem;color:#6b7280;font-family:Inter,Arial,sans-serif;">Valido hasta el ${expiresLabel}</p>
+            </td></tr>
+          </table>
+          <p style="margin:0 0 18px;font-size:0.95rem;color:#374151;font-family:Inter,Arial,sans-serif;">
+            Cuando reserves, indicanos tu codigo y aplicaremos el descuento al total.
+          </p>
+          <a href="${APP_URL}/reservar" style="display:inline-block;background:#c4587a;color:#fff;text-decoration:none;border-radius:10px;padding:14px 26px;font-weight:700;font-size:0.95rem;font-family:Inter,Arial,sans-serif;">Reservar ahora</a>
+          <p style="margin:28px 0 0;font-size:0.82rem;color:#9ca3af;font-family:Inter,Arial,sans-serif;">Con carino, el equipo de JF Studio.</p>
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`;
+}
+
+export async function sendBirthdayBonus(data: BirthdayBonusEmailData) {
+  await safeSend({
+    from: FROM,
+    to: data.to,
+    subject: `Feliz cumpleanos ${data.clientName} · Tu regalo de JF Studio 🎉`,
+    html: birthdayHtml(data)
   });
 }

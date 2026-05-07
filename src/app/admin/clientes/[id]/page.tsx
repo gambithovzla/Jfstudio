@@ -13,8 +13,13 @@ type PageProps = {
   params: Promise<{ id: string }>;
 };
 
-export default async function ClientDetailPage({ params }: PageProps) {
+export default async function ClientDetailPage({
+  params,
+  searchParams
+}: PageProps & { searchParams?: Promise<{ ok?: string }> }) {
   const { id } = await params;
+  const sp = searchParams ? await searchParams : {};
+  const saved = sp.ok === "1";
   const { client, settings } = await getClientById(id);
 
   if (!client) {
@@ -36,6 +41,11 @@ export default async function ClientDetailPage({ params }: PageProps) {
 
   return (
     <>
+      {saved ? (
+        <div style={{ background: "#dcfce7", border: "1px solid #86efac", borderRadius: 10, padding: "12px 18px", marginBottom: 20, color: "#166534", fontWeight: 500 }}>
+          ✓ Cambios guardados correctamente.
+        </div>
+      ) : null}
       <div className="page-header">
         <div>
           <p className="eyebrow">Cliente</p>
@@ -163,12 +173,14 @@ export default async function ClientDetailPage({ params }: PageProps) {
                           {apt.services.map((s) => s.serviceNameSnapshot).join(", ")} · {apt.staff.name}
                         </p>
                       </div>
-                      <div>
+                      <div style={{ textAlign: "right" }}>
                         <StatusBadge status={apt.status} />
                         {paid > 0 ? (
-                          <p className="small" style={{ textAlign: "right", marginTop: 4 }}>
+                          <p className="small" style={{ textAlign: "right", marginTop: 4, color: "#166534", fontWeight: 600 }}>
                             {formatCurrency(paid, settings.currency)}
                           </p>
+                        ) : apt.status === "CANCELED" ? (
+                          <p className="small muted" style={{ textAlign: "right", marginTop: 4 }}>Sin cobro</p>
                         ) : null}
                       </div>
                     </div>

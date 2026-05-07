@@ -17,20 +17,25 @@ export function SiteHeader() {
   return (
     <header className="topbar">
       <div className="topbar-inner">
-        <Link className="brand-mark" href="/" aria-label={brand.name}>
+        <Link className="header-brand" href="/" aria-label={brand.name}>
           {brand.logoUrl ? (
             <Image
               src={brand.logoUrl}
-              alt={brand.name}
-              width={36}
-              height={36}
+              alt=""
+              width={52}
+              height={52}
               priority
-              style={{ borderRadius: 6 }}
+              style={{ objectFit: "contain", mixBlendMode: "multiply" }}
             />
           ) : (
             <span className="brand-dot">{brand.initials}</span>
           )}
-          <span>{brand.name}</span>
+          <span className="header-brand-text">
+            <span className="header-brand-name">
+              Johanna Figueredo<em> Studio</em>
+            </span>
+            <span className="header-brand-sub">Salón · Lima</span>
+          </span>
         </Link>
         <nav className="site-nav" aria-label="Navegacion principal">
           {navLinks.map((link) => (

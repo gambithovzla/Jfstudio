@@ -6,7 +6,7 @@ import { redirect } from "next/navigation";
 
 import { requireAdmin } from "@/lib/auth";
 import { createBookingFromLocalTime, getSalonSettings } from "@/lib/data";
-import { sendBookingCancellation } from "@/lib/email";
+import { sendBookingCancellation, sendForceMajeureCancellation, sendLowStockAlert } from "@/lib/email";
 import { prisma } from "@/lib/prisma";
 import { addMinutes, formatDateInZone, formatTimeInZone } from "@/lib/time";
 import { normalizePhone } from "@/lib/utils";
@@ -158,6 +158,7 @@ export async function updateAppointmentAction(formData: FormData) {
 export async function cancelAppointmentAction(formData: FormData) {
   await requireAdmin();
   const appointmentId = requiredString(formData, "appointmentId");
+  const note = optionalString(formData, "note");
 
   const appointment = await prisma.appointment.update({
     where: { id: appointmentId },
@@ -175,9 +176,42 @@ export async function cancelAppointmentAction(formData: FormData) {
       clientName: appointment.client.name,
       serviceName: serviceNames,
       dateLabel: formatDateInZone(appointment.startAt, settings.timezone),
-      timeLabel: formatTimeInZone(appointment.startAt, settings.timezone)
+      timeLabel: formatTimeInZone(appointment.startAt, settings.timezone),
+      note: note ?? undefined
     }).catch((err) => console.error("[email] cancelacion fallo:", err));
   }
+
+  redirect("/admin/agenda");
+}
+
+export async function cancelForceMajeureAction(formData: FormData) {
+  await requireAdmin();
+  const appointmentId = requiredString(formData, "appointmentId");
+  const reason = optionalString(formData, "reason") ?? "Circunstancias excepcionales ajenas al estudio.";
+
+  const appointment = await prisma.appointment.update({
+    where: { id: appointmentId },
+    data: { status: AppointmentStatus.CANCELED },
+    include: { client: true, staff: true, services: true }
+  });
+
+  revalidatePath("/admin/agenda");
+  revalidatePath(`/admin/agenda/${appointmentId}`);
+
+  if (appointment.client.email) {
+    const settings = await getSalonSettings();
+    const serviceNames = appointment.services.map((s) => s.serviceNameSnapshot).join(", ");
+    sendForceMajeureCancellation({
+      to: appointment.client.email,
+      clientName: appointment.client.name,
+      serviceName: serviceNames,
+      dateLabel: formatDateInZone(appointment.startAt, settings.timezone),
+      timeLabel: formatTimeInZone(appointment.startAt, settings.timezone),
+      reason
+    }).catch((err) => console.error("[email] fuerza mayor fallo:", err));
+  }
+
+  redirect("/admin/agenda");
 }
 
 export async function markNoShowAction(formData: FormData) {
@@ -256,7 +290,23 @@ export async function completeAppointmentAction(formData: FormData) {
   revalidatePath("/admin/agenda");
   revalidatePath("/admin/productos");
   revalidatePath("/admin/caja");
+
+  checkAndAlertLowStock().catch((err) => console.error("[stock-alert]", err));
+
   redirect("/admin/agenda");
+}
+
+async function checkAndAlertLowStock() {
+  const products = await prisma.product.findMany({
+    where: { isActive: true },
+    select: { name: true, stock: true, unit: true, lowStockThreshold: true }
+  });
+  const low = products
+    .filter((p) => Number(p.stock) <= Number(p.lowStockThreshold))
+    .map((p) => ({ name: p.name, stock: Number(p.stock), unit: p.unit, threshold: Number(p.lowStockThreshold) }));
+  if (low.length > 0) {
+    await sendLowStockAlert(low);
+  }
 }
 
 // ─── Servicios ───────────────────────────────────────────────────────────────
@@ -276,6 +326,7 @@ export async function createServiceAction(formData: FormData) {
   });
 
   revalidatePath("/admin/servicios");
+  redirect("/admin/servicios?msg=creado");
 }
 
 export async function updateServiceAction(formData: FormData) {
@@ -298,6 +349,7 @@ export async function updateServiceAction(formData: FormData) {
 
   revalidatePath("/admin/servicios");
   revalidatePath(`/admin/servicios/${serviceId}`);
+  redirect(`/admin/servicios/${serviceId}?msg=guardado`);
 }
 
 export async function toggleServiceAction(formData: FormData) {
@@ -370,6 +422,7 @@ export async function createProductAction(formData: FormData) {
   });
 
   revalidatePath("/admin/productos");
+  redirect("/admin/productos?msg=creado");
 }
 
 export async function updateProductAction(formData: FormData) {
@@ -395,6 +448,7 @@ export async function adjustProductStockAction(formData: FormData) {
   const productId = requiredString(formData, "productId");
   const quantity = decimalFromForm(formData, "quantity");
   const note = optionalString(formData, "note") ?? "Ajuste manual";
+  const staffId = optionalString(formData, "staffId");
 
   await prisma.$transaction(async (tx) => {
     await tx.product.update({
@@ -407,16 +461,30 @@ export async function adjustProductStockAction(formData: FormData) {
         productId,
         type: InventoryMovementType.ADJUSTMENT,
         quantity,
-        note
+        note,
+        createdByStaffId: staffId
       }
     });
   });
 
   revalidatePath("/admin/productos");
   revalidatePath(`/admin/productos/${productId}`);
+
+  checkAndAlertLowStock().catch((err) => console.error("[stock-alert]", err));
+  redirect("/admin/productos?msg=guardado");
 }
 
 // ─── Clientes ────────────────────────────────────────────────────────────────
+
+function birthdayFromForm(formData: FormData): Date | null {
+  const value = formData.get("birthday");
+  if (typeof value !== "string" || !value.trim()) return null;
+  const match = value.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!match) return null;
+  const [, y, m, d] = match;
+  const date = new Date(Date.UTC(Number(y), Number(m) - 1, Number(d)));
+  return Number.isNaN(date.getTime()) ? null : date;
+}
 
 export async function createClientAction(formData: FormData) {
   await requireAdmin();
@@ -431,7 +499,8 @@ export async function createClientAction(formData: FormData) {
       email: optionalString(formData, "email"),
       dni: optionalString(formData, "dni"),
       source: optionalString(formData, "source"),
-      notes: optionalString(formData, "notes")
+      notes: optionalString(formData, "notes"),
+      birthday: birthdayFromForm(formData)
     }
   });
 
@@ -454,12 +523,14 @@ export async function updateClientAction(formData: FormData) {
       email: optionalString(formData, "email"),
       dni: optionalString(formData, "dni"),
       source: optionalString(formData, "source"),
-      notes: optionalString(formData, "notes")
+      notes: optionalString(formData, "notes"),
+      birthday: birthdayFromForm(formData)
     }
   });
 
   revalidatePath("/admin/clientes");
   revalidatePath(`/admin/clientes/${clientId}`);
+  redirect(`/admin/clientes/${clientId}?ok=1`);
 }
 
 export async function updateClientBirthdayAction(formData: FormData) {
@@ -498,7 +569,66 @@ export async function deleteClientAction(formData: FormData) {
   await prisma.client.delete({ where: { id: clientId } });
 
   revalidatePath("/admin/clientes");
-  redirect("/admin/clientes");
+  redirect("/admin/clientes?msg=eliminado");
+}
+
+export async function forceDeleteClientAction(formData: FormData) {
+  await requireAdmin();
+
+  const clientId = requiredString(formData, "clientId");
+
+  // Delete appointments first (cascades to Payment and AppointmentService, sets InventoryMovement.appointmentId = null)
+  await prisma.appointment.deleteMany({ where: { clientId } });
+  // Delete the client (cascades to BirthdayBonus)
+  await prisma.client.delete({ where: { id: clientId } });
+
+  revalidatePath("/admin/clientes");
+  redirect("/admin/clientes?msg=eliminado");
+}
+
+// ─── Cumpleaños / Bono ────────────────────────────────────────────────────────
+
+const DEFAULT_BIRTHDAY_TEMPLATE =
+  "🎉 ¡Feliz cumpleaños, {nombre}! En JF Studio queremos celebrarte con un {descuento}% de descuento en tu próximo servicio. Tu código: {codigo} (válido hasta {vence}). ✨";
+
+export async function updateBirthdayBonusSettingsAction(formData: FormData) {
+  await requireAdmin();
+
+  const enabled = formData.get("enabled") === "on";
+  const discountPercentRaw = Number(requiredString(formData, "discountPercent"));
+  const validityDaysRaw = Number(requiredString(formData, "validityDays"));
+  const messageTemplate = optionalString(formData, "messageTemplate") ?? DEFAULT_BIRTHDAY_TEMPLATE;
+
+  const discountPercent = Math.min(100, Math.max(1, Math.round(discountPercentRaw)));
+  const validityDays = Math.min(365, Math.max(1, Math.round(validityDaysRaw)));
+
+  await prisma.birthdayBonusSettings.upsert({
+    where: { id: "default" },
+    update: { enabled, discountPercent, validityDays, messageTemplate },
+    create: {
+      id: "default",
+      enabled,
+      discountPercent,
+      validityDays,
+      messageTemplate
+    }
+  });
+
+  revalidatePath("/admin/configuracion/cumpleanos");
+  revalidatePath("/admin/cumpleanos");
+}
+
+export async function markBirthdayBonusWhatsappSentAction(formData: FormData) {
+  await requireAdmin();
+
+  const bonusId = requiredString(formData, "bonusId");
+
+  await prisma.birthdayBonus.update({
+    where: { id: bonusId },
+    data: { whatsappSentAt: new Date() }
+  });
+
+  revalidatePath("/admin/cumpleanos");
 }
 
 // ─── Staff & Horarios ─────────────────────────────────────────────────────────
@@ -527,6 +657,7 @@ export async function updateSalonSettingsAction(formData: FormData) {
 
   revalidatePath("/admin/configuracion");
   revalidatePath("/reservar");
+  redirect("/admin/configuracion?msg=guardado");
 }
 
 export async function createStaffAction(formData: FormData) {
@@ -542,13 +673,13 @@ export async function createStaffAction(formData: FormData) {
     }
   });
 
-  for (const dayOfWeek of [1, 2, 3, 4, 5, 6]) {
+  for (const dayOfWeek of [0, 1, 2, 3, 4, 5, 6]) {
     await prisma.workingHour.create({
       data: {
         staffId: staff.id,
         dayOfWeek,
         startTime: "09:00",
-        endTime: dayOfWeek === 6 ? "16:00" : "18:00",
+        endTime: dayOfWeek === 0 || dayOfWeek === 6 ? "16:00" : "18:00",
         breakStart: "13:00",
         breakEnd: "14:00",
         isActive: true
@@ -558,6 +689,7 @@ export async function createStaffAction(formData: FormData) {
 
   revalidatePath("/admin/configuracion");
   revalidatePath("/reservar");
+  redirect("/admin/configuracion?msg=creado");
 }
 
 export async function updateStaffAction(formData: FormData) {
@@ -579,6 +711,7 @@ export async function updateStaffAction(formData: FormData) {
   revalidatePath("/admin/configuracion");
   revalidatePath(`/admin/configuracion/staff/${staffId}`);
   revalidatePath("/reservar");
+  redirect(`/admin/configuracion/staff/${staffId}?msg=guardado`);
 }
 
 export async function deactivateStaffAction(formData: FormData) {
@@ -594,6 +727,37 @@ export async function deactivateStaffAction(formData: FormData) {
   revalidatePath("/admin/configuracion");
   revalidatePath("/reservar");
   redirect("/admin/configuracion");
+}
+
+export async function createWorkingHourAction(formData: FormData) {
+  await requireAdmin();
+
+  const staffId = requiredString(formData, "staffId");
+  const dayOfWeek = parseInt(requiredString(formData, "dayOfWeek"), 10);
+
+  const existing = await prisma.workingHour.findFirst({ where: { staffId, dayOfWeek } });
+  if (existing) {
+    revalidatePath(`/admin/configuracion/staff/${staffId}`);
+    revalidatePath("/reservar");
+    return;
+  }
+
+  await prisma.workingHour.create({
+    data: {
+      staffId,
+      dayOfWeek,
+      startTime: "09:00",
+      endTime: dayOfWeek === 0 || dayOfWeek === 6 ? "16:00" : "18:00",
+      breakStart: "13:00",
+      breakEnd: "14:00",
+      isActive: true
+    }
+  });
+
+  revalidatePath("/admin/configuracion");
+  revalidatePath(`/admin/configuracion/staff/${staffId}`);
+  revalidatePath("/reservar");
+  redirect(`/admin/configuracion/staff/${staffId}?msg=creado`);
 }
 
 export async function updateWorkingHourAction(formData: FormData) {
@@ -613,9 +777,11 @@ export async function updateWorkingHourAction(formData: FormData) {
     }
   });
 
+  const staffIdForRedirect = formData.get("staffId") as string;
   revalidatePath("/admin/configuracion");
-  revalidatePath(`/admin/configuracion/staff/${formData.get("staffId")}`);
+  revalidatePath(`/admin/configuracion/staff/${staffIdForRedirect}`);
   revalidatePath("/reservar");
+  redirect(`/admin/configuracion/staff/${staffIdForRedirect}?msg=guardado`);
 }
 
 // ─── Métodos de pago ─────────────────────────────────────────────────────────
@@ -748,5 +914,59 @@ export async function refundPaymentAction(formData: FormData) {
 
   revalidatePath(`/admin/agenda/${appointmentId}`);
   revalidatePath("/admin/caja");
+}
+
+export async function deleteAppointmentAction(formData: FormData) {
+  await requireAdmin();
+  const appointmentId = requiredString(formData, "appointmentId");
+
+  await prisma.appointment.delete({ where: { id: appointmentId } });
+
+  revalidatePath("/admin/agenda");
+  revalidatePath("/admin/caja");
+  revalidatePath("/admin/clientes");
+  redirect("/admin/agenda?msg=eliminado");
+}
+
+// ─── Cambio de contraseña admin ──────────────────────────────────────────────
+
+export async function changeAdminPasswordAction(formData: FormData) {
+  await requireAdmin();
+
+  const { hashPassword, checkPassword } = await import("@/lib/auth");
+
+  const currentPassword = requiredString(formData, "currentPassword");
+  const newPassword = requiredString(formData, "newPassword");
+  const confirmPassword = requiredString(formData, "confirmPassword");
+
+  if (newPassword !== confirmPassword) {
+    redirect("/admin/configuracion?msg=error_mismatch");
+  }
+
+  const isValid = await checkPassword(currentPassword);
+  if (!isValid) {
+    redirect("/admin/configuracion?msg=error_password");
+  }
+
+  const newHash = hashPassword(newPassword);
+
+  await prisma.salonSettings.update({
+    where: { id: "default" },
+    data: { adminPasswordHash: newHash }
+  });
+
+  const { cookies } = await import("next/headers");
+  const cookieStore = await cookies();
+  const { COOKIE_NAME } = await import("@/lib/auth");
+  cookieStore.set(COOKIE_NAME, newHash, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    path: "/",
+    maxAge: 60 * 60 * 24 * 30
+  });
+
+  revalidatePath("/admin/configuracion");
+  redirect("/admin/configuracion?msg=guardado");
 }
 
