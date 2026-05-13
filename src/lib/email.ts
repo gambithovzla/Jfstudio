@@ -11,6 +11,23 @@ function getResend(): Resend {
 const FROM = process.env.EMAIL_FROM ?? "JF Studio <onboarding@resend.dev>";
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
 
+function getAdminEmail(): string | null {
+  const raw = process.env.ADMIN_EMAIL?.trim();
+  return raw || null;
+}
+
+/** Copia a Johanna (ADMIN_EMAIL) en correos al cliente; evita duplicar si es el mismo buzon. */
+function adminBccForPrimaryTo(primaryTo: string): string[] | undefined {
+  const admin = getAdminEmail();
+  if (!admin) return undefined;
+  if (admin.toLowerCase() === primaryTo.trim().toLowerCase()) return undefined;
+  return [admin];
+}
+
+function adminNotificationTo(): string {
+  return process.env.ADMIN_EMAIL?.trim() || FROM.replace(/^[^<]*<|>$/g, "");
+}
+
 type BookingEmailData = {
   to: string;
   clientName: string;
@@ -184,7 +201,10 @@ async function safeSend(args: Parameters<ReturnType<typeof getResend>["emails"][
   }
 
   const recipient = Array.isArray(args.to) ? args.to.join(",") : args.to;
-  console.log("[email] enviando a:", recipient, "| asunto:", args.subject);
+  const bccLog = args.bcc
+    ? ` | bcc: ${Array.isArray(args.bcc) ? args.bcc.join(",") : args.bcc}`
+    : "";
+  console.log("[email] enviando a:", recipient, bccLog, "| asunto:", args.subject);
   try {
     const result = await getResend().emails.send(args);
     if (result.error) {
@@ -198,27 +218,33 @@ async function safeSend(args: Parameters<ReturnType<typeof getResend>["emails"][
 }
 
 export async function sendBookingConfirmation(data: BookingEmailData) {
+  const bcc = adminBccForPrimaryTo(data.to);
   await safeSend({
     from: FROM,
     to: data.to,
+    ...(bcc ? { bcc } : {}),
     subject: `Reserva confirmada · ${data.dateLabel} ${data.timeLabel} · JF Studio`,
     html: bookingHtml(data)
   });
 }
 
 export async function sendBookingReminder(data: BookingEmailData) {
+  const bcc = adminBccForPrimaryTo(data.to);
   await safeSend({
     from: FROM,
     to: data.to,
+    ...(bcc ? { bcc } : {}),
     subject: `Recordatorio: tu cita es manana · ${data.timeLabel} · JF Studio`,
     html: reminderHtml(data)
   });
 }
 
 export async function sendBookingCancellation(data: CancellationEmailData) {
+  const bcc = adminBccForPrimaryTo(data.to);
   await safeSend({
     from: FROM,
     to: data.to,
+    ...(bcc ? { bcc } : {}),
     subject: `Cita cancelada · JF Studio`,
     html: cancellationHtml(data)
   });
@@ -232,9 +258,11 @@ export async function sendForceMajeureCancellation(data: {
   timeLabel: string;
   reason: string;
 }) {
+  const bcc = adminBccForPrimaryTo(data.to);
   await safeSend({
     from: FROM,
     to: data.to,
+    ...(bcc ? { bcc } : {}),
     subject: `Tu cita fue reprogramada por causa de fuerza mayor · JF Studio`,
     html: `<!DOCTYPE html>
 <html lang="es">
@@ -269,7 +297,7 @@ export async function sendForceMajeureCancellation(data: {
 }
 
 export async function sendLowStockAlert(products: { name: string; stock: number; unit: string; threshold: number }[]) {
-  const to = process.env.ADMIN_EMAIL ?? FROM.replace(/^[^<]*<|>$/g, "");
+  const to = adminNotificationTo();
   await safeSend({
     from: FROM,
     to,
@@ -286,7 +314,7 @@ export async function sendNewBookingNotification(data: {
   dateLabel: string;
   timeLabel: string;
 }) {
-  const to = process.env.ADMIN_EMAIL ?? FROM.replace(/^[^<]*<|>$/g, "");
+  const to = adminNotificationTo();
   console.log("[email] notif admin → ADMIN_EMAIL:", process.env.ADMIN_EMAIL ?? "(no definido, usando FROM)");
   await safeSend({
     from: FROM,
@@ -354,10 +382,55 @@ function birthdayHtml({ clientName, discountPercent, code, expiresLabel }: Birth
 }
 
 export async function sendBirthdayBonus(data: BirthdayBonusEmailData) {
+  const bcc = adminBccForPrimaryTo(data.to);
   await safeSend({
     from: FROM,
     to: data.to,
+    ...(bcc ? { bcc } : {}),
     subject: `Feliz cumpleanos ${data.clientName} · Tu regalo de JF Studio 🎉`,
     html: birthdayHtml(data)
+  });
+}
+
+/** Cliente sin email: avisar solo al admin de una cita cancelada al reagendar (misma info que al cliente). */
+export async function sendAdminRescheduleCancellationNotice(data: {
+  clientName: string;
+  clientPhone: string;
+  serviceName: string;
+  staffName: string;
+  dateLabel: string;
+  timeLabel: string;
+}) {
+  const to = adminNotificationTo();
+  await safeSend({
+    from: FROM,
+    to,
+    subject: `Cita cancelada (reagendamiento): ${data.clientName} · ${data.dateLabel} ${data.timeLabel}`,
+    html: `<!DOCTYPE html>
+<html lang="es">
+<head><meta charset="utf-8"><title>Cita cancelada por reagendamiento</title></head>
+<body style="margin:0;padding:0;background:#fbfaf7;font-family:sans-serif;color:#1f2933;">
+  <table width="100%" cellpadding="0" cellspacing="0">
+    <tr><td align="center" style="padding:32px 16px;">
+      <table width="560" style="max-width:100%;background:#fff;border-radius:12px;border:1px solid #e5e7eb;padding:32px;">
+        <tr><td>
+          <p style="margin:0 0 8px;font-size:0.72rem;font-weight:800;text-transform:uppercase;color:#c4587a;">JF Studio · Panel</p>
+          <h1 style="margin:0 0 18px;font-size:1.35rem;color:#1a1a1a;">Cita cancelada (reagendamiento web)</h1>
+          <p style="margin:0 0 14px;font-size:0.95rem;color:#374151;">La clienta reagendó: la cita anterior quedó cancelada automáticamente.</p>
+          <table width="100%" style="background:#f5f2ed;border-radius:10px;padding:14px 18px;font-size:0.9rem;">
+            <tr><td style="padding:3px 0;"><strong>Clienta:</strong> ${data.clientName}</td></tr>
+            <tr><td style="padding:3px 0;"><strong>Telefono:</strong> ${data.clientPhone}</td></tr>
+            <tr><td style="padding:3px 0;"><strong>Servicio:</strong> ${data.serviceName}</td></tr>
+            <tr><td style="padding:3px 0;"><strong>Estilista:</strong> ${data.staffName}</td></tr>
+            <tr><td style="padding:3px 0;"><strong>Fecha (cancelada):</strong> ${data.dateLabel}</td></tr>
+            <tr><td style="padding:3px 0;"><strong>Hora (cancelada):</strong> ${data.timeLabel}</td></tr>
+          </table>
+          <p style="margin:18px 0 0;font-size:0.82rem;color:#9ca3af;">La nueva cita aparece en el panel y en el correo de nueva reserva.</p>
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`
   });
 }
