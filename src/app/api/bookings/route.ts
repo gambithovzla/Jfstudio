@@ -2,7 +2,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 
 import { createBooking, getSalonSettings } from "@/lib/data";
-import { sendNewBookingNotification } from "@/lib/email";
+import {
+  sendAdminRescheduleCancellationNotice,
+  sendBookingCancellation,
+  sendNewBookingNotification
+} from "@/lib/email";
 import { formatDateInZone, formatTimeInZone } from "@/lib/time";
 import { prisma } from "@/lib/prisma";
 
@@ -87,6 +91,40 @@ export async function POST(request: NextRequest) {
         where: { id: cancelAppointmentId },
         data: { status: "CANCELED" }
       });
+
+      const canceled = await prisma.appointment.findUnique({
+        where: { id: cancelAppointmentId },
+        include: { client: true, staff: true, services: true }
+      });
+
+      if (canceled) {
+        const settingsCanceled = await getSalonSettings();
+        const serviceNames = canceled.services.map((s) => s.serviceNameSnapshot).join(", ");
+        const dateLabel = formatDateInZone(canceled.startAt, settingsCanceled.timezone);
+        const timeLabel = formatTimeInZone(canceled.startAt, settingsCanceled.timezone);
+        try {
+          if (canceled.client.email) {
+            await sendBookingCancellation({
+              to: canceled.client.email,
+              clientName: canceled.client.name,
+              serviceName: serviceNames,
+              dateLabel,
+              timeLabel
+            });
+          } else {
+            await sendAdminRescheduleCancellationNotice({
+              clientName: canceled.client.name,
+              clientPhone: canceled.client.phone ?? "",
+              serviceName: serviceNames,
+              staffName: canceled.staff.name,
+              dateLabel,
+              timeLabel
+            });
+          }
+        } catch (err) {
+          console.error("[email] cancelacion por reagendamiento fallo:", err);
+        }
+      }
     }
 
     // Notificar al admin
