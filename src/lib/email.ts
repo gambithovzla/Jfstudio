@@ -16,12 +16,15 @@ function getAdminEmail(): string | null {
   return raw || null;
 }
 
-/** Copia a Johanna (ADMIN_EMAIL) en correos al cliente; evita duplicar si es el mismo buzon. */
-function adminBccForPrimaryTo(primaryTo: string): string[] | undefined {
+/**
+ * Copia al admin como segundo envío con `to:` (no BCC). Resend da OK con BCC pero Gmail
+ * a menudo no entrega esa copia; el correo directo a ADMIN_EMAIL sí llega (p. ej. nueva reserva).
+ */
+async function sendClientEmailWithAdminCopy(clientTo: string, email: { subject: string; html: string }) {
+  await safeSend({ from: FROM, to: clientTo, subject: email.subject, html: email.html });
   const admin = getAdminEmail();
-  if (!admin) return undefined;
-  if (admin.toLowerCase() === primaryTo.trim().toLowerCase()) return undefined;
-  return [admin];
+  if (!admin || admin.toLowerCase() === clientTo.trim().toLowerCase()) return;
+  await safeSend({ from: FROM, to: admin, subject: email.subject, html: email.html });
 }
 
 function adminNotificationTo(): string {
@@ -201,10 +204,7 @@ async function safeSend(args: Parameters<ReturnType<typeof getResend>["emails"][
   }
 
   const recipient = Array.isArray(args.to) ? args.to.join(",") : args.to;
-  const bccLog = args.bcc
-    ? ` | bcc: ${Array.isArray(args.bcc) ? args.bcc.join(",") : args.bcc}`
-    : "";
-  console.log("[email] enviando a:", recipient, bccLog, "| asunto:", args.subject);
+  console.log("[email] enviando a:", recipient, "| asunto:", args.subject);
   try {
     const result = await getResend().emails.send(args);
     if (result.error) {
@@ -218,33 +218,21 @@ async function safeSend(args: Parameters<ReturnType<typeof getResend>["emails"][
 }
 
 export async function sendBookingConfirmation(data: BookingEmailData) {
-  const bcc = adminBccForPrimaryTo(data.to);
-  await safeSend({
-    from: FROM,
-    to: data.to,
-    ...(bcc ? { bcc } : {}),
+  await sendClientEmailWithAdminCopy(data.to, {
     subject: `Reserva confirmada · ${data.dateLabel} ${data.timeLabel} · JF Studio`,
     html: bookingHtml(data)
   });
 }
 
 export async function sendBookingReminder(data: BookingEmailData) {
-  const bcc = adminBccForPrimaryTo(data.to);
-  await safeSend({
-    from: FROM,
-    to: data.to,
-    ...(bcc ? { bcc } : {}),
+  await sendClientEmailWithAdminCopy(data.to, {
     subject: `Recordatorio: tu cita es manana · ${data.timeLabel} · JF Studio`,
     html: reminderHtml(data)
   });
 }
 
 export async function sendBookingCancellation(data: CancellationEmailData) {
-  const bcc = adminBccForPrimaryTo(data.to);
-  await safeSend({
-    from: FROM,
-    to: data.to,
-    ...(bcc ? { bcc } : {}),
+  await sendClientEmailWithAdminCopy(data.to, {
     subject: `Cita cancelada · JF Studio`,
     html: cancellationHtml(data)
   });
@@ -258,13 +246,8 @@ export async function sendForceMajeureCancellation(data: {
   timeLabel: string;
   reason: string;
 }) {
-  const bcc = adminBccForPrimaryTo(data.to);
-  await safeSend({
-    from: FROM,
-    to: data.to,
-    ...(bcc ? { bcc } : {}),
-    subject: `Tu cita fue reprogramada por causa de fuerza mayor · JF Studio`,
-    html: `<!DOCTYPE html>
+  const subject = `Tu cita fue reprogramada por causa de fuerza mayor · JF Studio`;
+  const html = `<!DOCTYPE html>
 <html lang="es">
 <head><meta charset="utf-8"><title>Cita reprogramada</title></head>
 <body style="margin:0;padding:0;background:#fbfaf7;font-family:sans-serif;color:#1f2933;">
@@ -284,7 +267,7 @@ export async function sendForceMajeureCancellation(data: {
           <div style="background:#fef3c7;border:1px solid #fcd34d;border-radius:10px;padding:14px 18px;margin-bottom:20px;">
             <p style="margin:0;font-size:0.9rem;color:#92400e;"><strong>Tu adelanto sera reembolsado en su totalidad</strong> o puedes reagendar sin penalizacion ni costo adicional. Nos comunicaremos contigo a la brevedad.</p>
           </div>
-          <p style="margin:0 0 16px;font-size:0.9rem;color:#374151;">Pedimos disculpas por los inconvenientes. Quedamos a tu disposicion por WhatsApp para coordinar tu nueva cita.</p>
+          <p style="margin:0 0 16px;font-size:0.95rem;color:#374151;">Pedimos disculpas por los inconvenientes. Quedamos a tu disposicion por WhatsApp para coordinar tu nueva cita.</p>
           <a href="${APP_URL}/reservar" style="display:inline-block;background:#c4587a;color:#fff;text-decoration:none;border-radius:8px;padding:12px 24px;font-weight:700;font-size:0.95rem;">Reservar nueva fecha</a>
           <p style="margin:24px 0 0;font-size:0.82rem;color:#9ca3af;">JF Studio · Gracias por tu comprension.</p>
         </td></tr>
@@ -292,8 +275,8 @@ export async function sendForceMajeureCancellation(data: {
     </td></tr>
   </table>
 </body>
-</html>`
-  });
+</html>`;
+  await sendClientEmailWithAdminCopy(data.to, { subject, html });
 }
 
 export async function sendLowStockAlert(products: { name: string; stock: number; unit: string; threshold: number }[]) {
@@ -382,11 +365,7 @@ function birthdayHtml({ clientName, discountPercent, code, expiresLabel }: Birth
 }
 
 export async function sendBirthdayBonus(data: BirthdayBonusEmailData) {
-  const bcc = adminBccForPrimaryTo(data.to);
-  await safeSend({
-    from: FROM,
-    to: data.to,
-    ...(bcc ? { bcc } : {}),
+  await sendClientEmailWithAdminCopy(data.to, {
     subject: `Feliz cumpleanos ${data.clientName} · Tu regalo de JF Studio 🎉`,
     html: birthdayHtml(data)
   });
