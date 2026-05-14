@@ -32,11 +32,6 @@ export function isSundaySalon(dateStr: string, timeZone: string): boolean {
   return salonWeekdaySun0(dateStr, timeZone) === 0;
 }
 
-export function isWeekendSalon(dateStr: string, timeZone: string): boolean {
-  const d = salonWeekdaySun0(dateStr, timeZone);
-  return d === 0 || d === 6;
-}
-
 export function localMinutesFromMidnightInZone(isoInstant: Date, timeZone: string): number {
   const parts = new Intl.DateTimeFormat("en-GB", {
     timeZone,
@@ -51,7 +46,7 @@ export function localMinutesFromMidnightInZone(isoInstant: Date, timeZone: strin
 
 /**
  * Ventana pública de inicio de cita (solo reserva web).
- * Sábado 07:00–13:00 · Domingo 07:00–09:00 (inicio a más tardar 9:00).
+ * Sábado 07:00–13:00 · Domingo 07:00–09:00 (inicio hasta las 9:00; la cita puede prolongarse según duración).
  */
 export function isPublicBookingStartInDayWindow(dateStr: string, startAt: Date, timeZone: string): boolean {
   const mins = localMinutesFromMidnightInZone(startAt, timeZone);
