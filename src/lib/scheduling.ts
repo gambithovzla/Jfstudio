@@ -1,4 +1,8 @@
-import { isSundaySalon } from "./booking-rules";
+import {
+  isSundaySalon,
+  PUBLIC_SUNDAY_WEB_CLOSE_LOCAL,
+  PUBLIC_SUNDAY_WEB_OPEN_LOCAL
+} from "./booking-rules";
 import { addMinutes, dayOfWeekForDate, formatTimeInZone, zonedTimeToUtc } from "./time";
 
 export type CalendarAppointment = {
@@ -68,19 +72,28 @@ export function buildAvailabilitySlots(input: {
 
     const staffBlocks = blocks.filter((b) => b.staffId === null || b.staffId === staffMember.id);
 
-    const workStart = zonedTimeToUtc(input.date, workingHour.startTime, input.timeZone);
-    const workEnd = zonedTimeToUtc(input.date, workingHour.endTime, input.timeZone);
+    const salonSunday = isSundaySalon(input.date, input.timeZone);
+    /**
+     * Los domingos el turno de reserva web es 07:00–09:00 (zona del salón), aunque en BD el horario
+     * siga el patrón 09:00–… de otros días.
+     */
+    const workStart = salonSunday
+      ? zonedTimeToUtc(input.date, PUBLIC_SUNDAY_WEB_OPEN_LOCAL, input.timeZone)
+      : zonedTimeToUtc(input.date, workingHour.startTime, input.timeZone);
+    const workEnd = salonSunday
+      ? zonedTimeToUtc(input.date, PUBLIC_SUNDAY_WEB_CLOSE_LOCAL, input.timeZone)
+      : zonedTimeToUtc(input.date, workingHour.endTime, input.timeZone);
     const breakStart =
-      workingHour.breakStart && workingHour.breakEnd
-        ? zonedTimeToUtc(input.date, workingHour.breakStart, input.timeZone)
-        : null;
+      salonSunday || !workingHour.breakStart || !workingHour.breakEnd
+        ? null
+        : zonedTimeToUtc(input.date, workingHour.breakStart, input.timeZone);
     const breakEnd =
-      workingHour.breakStart && workingHour.breakEnd
-        ? zonedTimeToUtc(input.date, workingHour.breakEnd, input.timeZone)
-        : null;
+      salonSunday || !workingHour.breakStart || !workingHour.breakEnd
+        ? null
+        : zonedTimeToUtc(input.date, workingHour.breakEnd, input.timeZone);
 
     /** Domingo: último inicio permitido es el cierre del turno; el servicio puede terminar después. */
-    const sundayStartOnlyThroughClose = isSundaySalon(input.date, input.timeZone);
+    const sundayStartOnlyThroughClose = salonSunday;
 
     for (
       let candidate = workStart;
