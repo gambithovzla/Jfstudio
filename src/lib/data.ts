@@ -561,13 +561,16 @@ export async function getClientsWithoutBirthday() {
   });
 }
 
+const CLIENT_APPOINTMENT_HISTORY_LIMIT = 200;
+
 export async function getClientById(id: string) {
-  const [client, settings] = await Promise.all([
+  const [client, settings, paymentSum, appointmentTotal] = await Promise.all([
     prisma.client.findUnique({
       where: { id },
       include: {
         appointments: {
           orderBy: { startAt: "desc" },
+          take: CLIENT_APPOINTMENT_HISTORY_LIMIT,
           include: {
             services: true,
             staff: true,
@@ -576,10 +579,30 @@ export async function getClientById(id: string) {
         }
       }
     }),
-    getSalonSettings()
+    getSalonSettings(),
+    prisma.payment.aggregate({
+      where: { appointment: { clientId: id } },
+      _sum: { amount: true }
+    }),
+    prisma.appointment.count({ where: { clientId: id } })
   ]);
 
-  return { client, settings };
+  return {
+    client,
+    settings,
+    totalSpentAllTime: Number(paymentSum._sum.amount ?? 0),
+    appointmentHistoryTruncated: appointmentTotal > CLIENT_APPOINTMENT_HISTORY_LIMIT
+  };
+}
+
+/** Perfil mínimo para edición: no carga el historial de citas (solo el conteo). */
+export async function getClientForEdit(id: string) {
+  return prisma.client.findUnique({
+    where: { id },
+    include: {
+      _count: { select: { appointments: true } }
+    }
+  });
 }
 
 export async function getServicesAdmin() {

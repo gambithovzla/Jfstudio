@@ -20,16 +20,13 @@ export default async function ClientDetailPage({
   const { id } = await params;
   const sp = searchParams ? await searchParams : {};
   const saved = sp.ok === "1";
-  const { client, settings } = await getClientById(id);
+  const { client, settings, totalSpentAllTime, appointmentHistoryTruncated } = await getClientById(id);
 
   if (!client) {
     notFound();
   }
 
-  const totalSpent = client.appointments.reduce(
-    (sum, apt) => sum + apt.payments.reduce((s, p) => s + Number(p.amount), 0),
-    0
-  );
+  const totalSpent = totalSpentAllTime;
 
   const lastAppointment = client.appointments[0] ?? null;
   const lastPaid = lastAppointment
@@ -162,6 +159,11 @@ export default async function ClientDetailPage({
 
         <section className="card">
           <h2 className="card-title" style={{ marginBottom: 14 }}>Historial de citas</h2>
+          {appointmentHistoryTruncated ? (
+            <p className="small muted" style={{ marginBottom: 12 }}>
+              Se muestran las {client.appointments.length} citas más recientes. El total acumulado incluye todas las visitas.
+            </p>
+          ) : null}
           {client.appointments.length === 0 ? (
             <div className="empty">Sin citas registradas.</div>
           ) : (

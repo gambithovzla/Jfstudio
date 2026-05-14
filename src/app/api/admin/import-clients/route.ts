@@ -8,6 +8,9 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
+const MAX_UPLOAD_BYTES = 12 * 1024 * 1024;
+const MAX_DATA_ROWS = 8000;
+
 function excelDateToJS(serial: unknown): Date | null {
   if (!serial || typeof serial !== "number") return null;
   const utcDays = Math.floor(serial - 25569);
@@ -47,10 +50,25 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "No se recibió ningún archivo" }, { status: 400 });
   }
 
-  const buffer = Buffer.from(await file.arrayBuffer());
+  const raw = await file.arrayBuffer();
+  if (raw.byteLength > MAX_UPLOAD_BYTES) {
+    return NextResponse.json(
+      { error: `El archivo supera el máximo permitido (${MAX_UPLOAD_BYTES / (1024 * 1024)} MB).` },
+      { status: 400 }
+    );
+  }
+
+  const buffer = Buffer.from(raw);
   const wb = XLSX.read(buffer, { type: "buffer" });
   const ws = wb.Sheets[wb.SheetNames[0]];
   const rows = XLSX.utils.sheet_to_json<Row>(ws);
+
+  if (rows.length > MAX_DATA_ROWS) {
+    return NextResponse.json(
+      { error: `El Excel tiene demasiadas filas (${rows.length}). Máximo ${MAX_DATA_ROWS}. Divide el archivo e importa por partes.` },
+      { status: 400 }
+    );
+  }
 
   let imported = 0;
   let updated = 0;
