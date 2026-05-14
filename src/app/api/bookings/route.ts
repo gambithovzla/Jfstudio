@@ -18,6 +18,30 @@ export const maxDuration = 60;
 
 const MAX_VOUCHER_BYTES = 5 * 1024 * 1024;
 
+/** Rate limit en la ruta (no en middleware) para no bufferizar multipart. */
+const BOOKING_POST_WINDOW_MS = 60_000;
+const BOOKING_POST_MAX = 8;
+const bookingPostIpStore = new Map<string, { count: number; resetAt: number }>();
+
+function clientIp(request: NextRequest): string {
+  return (
+    request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
+    request.headers.get("x-real-ip") ??
+    "unknown"
+  );
+}
+
+function isBookingPostRateLimited(ip: string): boolean {
+  const now = Date.now();
+  const entry = bookingPostIpStore.get(ip);
+  if (!entry || now > entry.resetAt) {
+    bookingPostIpStore.set(ip, { count: 1, resetAt: now + BOOKING_POST_WINDOW_MS });
+    return false;
+  }
+  entry.count += 1;
+  return entry.count > BOOKING_POST_MAX;
+}
+
 const bookingPayloadSchema = z.object({
   _trap: z.string().max(0).optional(),
   client: z.object({
@@ -37,6 +61,10 @@ const bookingPayloadSchema = z.object({
 });
 
 export async function POST(request: NextRequest) {
+  if (isBookingPostRateLimited(clientIp(request))) {
+    return NextResponse.json({ error: "Demasiadas solicitudes. Intenta en un momento." }, { status: 429 });
+  }
+
   const ct = request.headers.get("content-type") ?? "";
   if (!ct.includes("multipart/form-data")) {
     return NextResponse.json(

@@ -214,10 +214,23 @@ export function BookingForm({
         method: "POST",
         body: fd
       });
-      const data = await response.json();
+
+      const raw = await response.text();
+      let data: { error?: string; appointment?: BookingResult } = {};
+      if (raw.trim()) {
+        try {
+          data = JSON.parse(raw) as typeof data;
+        } catch {
+          throw new Error("Respuesta invalida del servidor. Intenta de nuevo.");
+        }
+      }
 
       if (!response.ok) {
         throw new Error(data.error ?? "No se pudo reservar.");
+      }
+
+      if (!data.appointment) {
+        throw new Error("Respuesta invalida del servidor. Intenta de nuevo.");
       }
 
       setResult(data.appointment);
