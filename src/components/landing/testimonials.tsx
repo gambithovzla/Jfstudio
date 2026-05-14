@@ -1,12 +1,22 @@
 import { Quote, Star } from "lucide-react";
 
-import { landingContent } from "@/content/landing";
+import { landingContent, type LandingTestimonial } from "@/content/landing";
+import type { ApprovedTestimonialCard } from "@/lib/data";
 import { ScrollReveal } from "./scroll-reveal";
 
-export function Testimonials() {
-  const { testimonials } = landingContent;
+type Props = {
+  /** Si hay testimonios aprobados en base de datos, sustituyen a los de ejemplo del contenido estático. */
+  dbItems?: ApprovedTestimonialCard[];
+};
 
-  if (testimonials.items.length === 0) return null;
+export function Testimonials({ dbItems = [] }: Props) {
+  const { testimonials } = landingContent;
+  const items: LandingTestimonial[] =
+    dbItems.length > 0
+      ? dbItems.map((d) => ({ quote: d.quote, author: d.author, detail: d.detail }))
+      : testimonials.items;
+
+  if (items.length === 0) return null;
 
   return (
     <section className="landing-section landing-testimonials">
@@ -17,8 +27,8 @@ export function Testimonials() {
         </div>
       </ScrollReveal>
       <div className="grid three landing-card-grid">
-        {testimonials.items.map((item, index) => (
-          <ScrollReveal key={item.author} delay={index < 3 ? (index + 1) as 1 | 2 | 3 : undefined}>
+        {items.map((item, index) => (
+          <ScrollReveal key={`${item.author}-${index}`} delay={index < 3 ? (index + 1) as 1 | 2 | 3 : undefined}>
             <blockquote className="testimonial-card">
               <div className="testimonial-stars">
                 {Array.from({ length: 5 }).map((_, i) => (

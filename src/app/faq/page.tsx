@@ -20,7 +20,7 @@ const FAQS = [
   },
   {
     q: "¿Cuánto tiempo dura cada servicio?",
-    a: "Los tiempos varían según el servicio: corte y peinado ~60 min, color global ~2–3 h, balayage ~3–4 h, keratina ~2–3 h, tratamientos ~90 min. Al reservar verás la duración exacta de cada opción."
+    a: "Los tiempos varían según el servicio: corte y peinado ~60 min, color global ~2–3 h, balayage ~3–4 h, laceado orgánico o mechas según técnica, tratamientos ~90 min. Al reservar verás la duración exacta de cada opción."
   },
   {
     q: "¿Qué métodos de pago aceptan?",

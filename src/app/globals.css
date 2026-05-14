@@ -542,8 +542,7 @@ textarea {
   border-left: 3px solid #22c55e;
   padding-left: 11px;
 }
-.table tr.row-canceled td:first-child,
-.table tr.row-no-show td:first-child {
+.table tr.row-canceled td:first-child {
   border-left: 3px solid #ef4444;
   padding-left: 11px;
 }
@@ -570,8 +569,7 @@ textarea {
   color: #166534;
 }
 
-.badge.canceled,
-.badge.no-show {
+.badge.canceled {
   background: #fee2e2;
   color: #991b1b;
 }

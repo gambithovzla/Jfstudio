@@ -17,7 +17,12 @@ enum AppointmentStatus {
   CONFIRMED
   COMPLETED
   CANCELED
-  NO_SHOW
+}
+
+enum TestimonialStatus {
+  PENDING
+  APPROVED
+  REJECTED
 }
 
 enum InventoryMovementType {
@@ -259,4 +264,16 @@ model TimeBlock {
 
   @@index([startAt, endAt])
   @@index([staffId])
+}
+
+model ClientTestimonial {
+  id         String            @id @default(cuid())
+  authorName String?
+  body       String
+  stars      Int               @default(5)
+  status     TestimonialStatus @default(PENDING)
+  createdAt  DateTime          @default(now())
+  reviewedAt DateTime?
+
+  @@index([status, createdAt])
 }

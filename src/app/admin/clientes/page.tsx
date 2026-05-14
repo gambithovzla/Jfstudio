@@ -105,7 +105,6 @@ export default async function ClientsPage({ searchParams }: PageProps) {
                         const statusClass = apt.status === "COMPLETED" ? "row-completed"
                           : apt.status === "CONFIRMED" ? "row-confirmed"
                           : apt.status === "CANCELED" ? "row-canceled"
-                          : apt.status === "NO_SHOW" ? "row-no-show"
                           : "";
                         return (
                           <tr key={apt.id} className={statusClass}>

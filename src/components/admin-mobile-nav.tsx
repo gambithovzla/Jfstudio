@@ -6,13 +6,13 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   Ban, CalendarDays, Cake, ClipboardList, CreditCard,
-  Menu, Package, Scissors, Settings, Upload, Users,
+  Menu, Package, Scissors, Settings, Star, Upload, Users,
   X, LogOut, type LucideIcon
 } from "lucide-react";
 
 const iconMap: Record<string, LucideIcon> = {
   CalendarDays, Users, Cake, Scissors, Package,
-  CreditCard, Settings, Ban, Upload, ClipboardList
+  CreditCard, Settings, Ban, Upload, ClipboardList, Star
 };
 
 export type AdminNavLink = {
