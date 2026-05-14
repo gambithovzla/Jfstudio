@@ -4,6 +4,7 @@ import { ArrowLeft, MessageCircle, Pencil, RotateCcw, Save, XCircle } from "luci
 
 import { ConfirmSubmitButton } from "@/components/confirm-submit-button";
 import { DeleteAppointmentButton } from "@/components/delete-appointment-button";
+import { FlashMessage } from "@/components/flash-message";
 import { StatusBadge } from "@/components/status-badge";
 import { cancelAppointmentAction, cancelForceMajeureAction, completeAppointmentAction, markDepositPaidAction, refundPaymentAction } from "@/lib/actions";
 import { getAppointmentForCheckout, getSalonSettings } from "@/lib/data";
@@ -14,10 +15,12 @@ export const dynamic = "force-dynamic";
 
 type PageProps = {
   params: Promise<{ id: string }>;
+  searchParams?: Promise<{ msg?: string }>;
 };
 
-export default async function AppointmentDetailPage({ params }: PageProps) {
+export default async function AppointmentDetailPage({ params, searchParams }: PageProps) {
   const { id } = await params;
+  const sp = searchParams ? await searchParams : {};
   const [{ appointment, methods }, settings] = await Promise.all([getAppointmentForCheckout(id), getSalonSettings()]);
 
   if (!appointment) {
@@ -64,6 +67,7 @@ export default async function AppointmentDetailPage({ params }: PageProps) {
 
   return (
     <>
+      <FlashMessage msg={sp.msg} />
       <div className="page-header">
         <div>
           <p className="eyebrow">Cita</p>
@@ -210,7 +214,7 @@ export default async function AppointmentDetailPage({ params }: PageProps) {
                 Cancelar por fuerza mayor y notificar
               </ConfirmSubmitButton>
             </form>
-            <form className="form-grid" action={completeAppointmentAction}>
+            <form className="form-grid" action={completeAppointmentAction} encType="multipart/form-data">
               <input type="hidden" name="appointmentId" value={appointment.id} />
               <div className="grid two">
                 <div className="field">
@@ -227,6 +231,27 @@ export default async function AppointmentDetailPage({ params }: PageProps) {
                     ))}
                   </select>
                 </div>
+              </div>
+
+              <div className="field">
+                <label htmlFor="careNote">Cuidados para la clienta (texto, opcional)</label>
+                <textarea
+                  className="textarea"
+                  id="careNote"
+                  name="careNote"
+                  rows={4}
+                  placeholder="Ej. no lavar en 48 h, usar protector térmico, evitar el mar…"
+                />
+                <p className="small muted" style={{ marginTop: 6 }}>
+                  Si la clienta tiene correo y escribes aquí o adjuntas un archivo, recibirá un email al completar la cita.
+                </p>
+              </div>
+              <div className="field">
+                <label htmlFor="careAttachment">Adjunto de cuidados (opcional: JPG, PNG, WebP o PDF, máx. 2 MB)</label>
+                <input className="input" id="careAttachment" name="careAttachment" type="file" accept="image/jpeg,image/png,image/webp,application/pdf" />
+                <p className="small muted" style={{ marginTop: 6 }}>
+                  Requiere el mismo almacenamiento S3 que los comprobantes de adelanto (variables DEPOSIT_S3_*).
+                </p>
               </div>
 
               {usage.size > 0 ? (
@@ -318,6 +343,32 @@ export default async function AppointmentDetailPage({ params }: PageProps) {
                 Registrar reembolso
               </button>
             </form>
+          </section>
+        ) : null}
+
+        {appointment.status === "COMPLETED" && (appointment.postVisitCareNote || appointment.postVisitAttachmentKey) ? (
+          <section className="card">
+            <div className="card-header">
+              <div>
+                <h2 className="card-title">Cuidados enviados a la clienta</h2>
+                <p className="small muted">Registro del correo enviado al completar la cita (si había email registrado).</p>
+              </div>
+            </div>
+            {appointment.postVisitCareNote ? (
+              <p style={{ whiteSpace: "pre-wrap", marginTop: 0 }}>{appointment.postVisitCareNote}</p>
+            ) : null}
+            {appointment.postVisitAttachmentKey ? (
+              <p style={{ marginTop: 12 }}>
+                <a
+                  className="btn secondary"
+                  href={`/api/admin/appointments/${id}/care-attachment`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  Ver adjunto de cuidados
+                </a>
+              </p>
+            ) : null}
           </section>
         ) : null}
       </div>

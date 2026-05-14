@@ -248,6 +248,75 @@ export async function sendBookingCancellation(data: CancellationEmailData) {
   });
 }
 
+function escapeEmailText(s: string): string {
+  return s
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+/** Solo clienta: cuidados tras completar la cita (texto y/o adjunto). */
+export async function sendPostVisitCareEmail(data: {
+  to: string;
+  clientName: string;
+  serviceNames: string;
+  careNotePlain: string | null;
+  attachment?: { filename: string; contentBase64: string };
+}) {
+  const escName = escapeEmailText(data.clientName);
+  const escServices = escapeEmailText(data.serviceNames);
+  const noteHtml = data.careNotePlain?.trim()
+    ? `<div style="margin:18px 0;padding:16px 18px;background:#f5f2ed;border-radius:10px;font-size:0.95rem;line-height:1.6;color:#1f2933;">${escapeEmailText(data.careNotePlain.trim()).replace(/\r?\n/g, "<br/>")}</div>`
+    : "";
+
+  const attachmentNote = data.attachment
+    ? `<p style="margin:12px 0 0;font-size:0.9rem;color:#374151;">Incluimos un archivo adjunto con indicaciones o material de referencia.</p>`
+    : "";
+
+  const html = `<!DOCTYPE html>
+<html lang="es">
+<head><meta charset="utf-8"><title>Cuidados después de tu visita</title></head>
+<body style="margin:0;padding:0;background:#fbfaf7;font-family:sans-serif;color:#1f2933;">
+  <table width="100%" cellpadding="0" cellspacing="0">
+    <tr><td align="center" style="padding:32px 16px;">
+      <table width="560" style="max-width:100%;background:#fff;border-radius:12px;border:1px solid #e5e7eb;padding:32px;">
+        <tr><td>
+          <p style="margin:0 0 8px;font-size:0.78rem;font-weight:800;text-transform:uppercase;color:#c4587a;">JF Studio</p>
+          <h1 style="margin:0 0 16px;font-size:1.45rem;color:#1a1a1a;">Gracias por tu visita, ${escName}</h1>
+          <p style="margin:0 0 14px;font-size:0.95rem;color:#374151;">Aquí tienes los cuidados y recomendaciones para después de tu servicio:</p>
+          <table width="100%" style="margin:0 0 16px;background:#f5f2ed;border-radius:10px;padding:12px 16px;font-size:0.9rem;">
+            <tr><td style="padding:4px 0;"><strong>Servicios:</strong> ${escServices}</td></tr>
+          </table>
+          ${noteHtml}
+          ${attachmentNote}
+          <p style="margin:22px 0 0;font-size:0.88rem;color:#6b7280;">Si tienes dudas, escríbenos por WhatsApp. ¡Que disfrutes tu nuevo look!</p>
+          <p style="margin:16px 0 0;font-size:0.82rem;color:#9ca3af;">JF Studio</p>
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`;
+
+  await safeSend({
+    from: FROM,
+    to: data.to,
+    subject: `Cuidados después de tu visita · JF Studio`,
+    html,
+    ...(data.attachment
+      ? {
+          attachments: [
+            {
+              filename: data.attachment.filename,
+              content: Buffer.from(data.attachment.contentBase64, "base64")
+            }
+          ]
+        }
+      : {})
+  });
+}
+
 export async function sendForceMajeureCancellation(data: {
   to: string;
   clientName: string;

@@ -7,7 +7,7 @@ import { submitTestimonialAction } from "@/lib/actions";
 
 export const metadata: Metadata = {
   title: "Dejar un testimonio",
-  description: "Comparte tu experiencia en Johanna Figueredo Studio. Los mensajes se publican tras revisión del equipo."
+  description: "Comparte tu experiencia en Johanna Figueredo Studio."
 };
 
 type PageProps = {
@@ -19,20 +19,82 @@ export default async function DejarTestimonioPage({ searchParams }: PageProps) {
 
   const banner =
     params.ok === "1" ? (
-      <p className="static-lead" style={{ background: "#dcfce7", border: "1px solid #86efac", borderRadius: 10, padding: "12px 16px", color: "#166534" }}>
-        Gracias. Recibimos tu mensaje; cuando el equipo lo apruebe podrá verse en la web.
+      <p
+        className="static-lead"
+        style={{
+          background: "#dcfce7",
+          border: "1px solid #86efac",
+          borderRadius: 10,
+          padding: "12px 16px",
+          color: "#166534"
+        }}
+      >
+        Gracias por compartir tu experiencia.
       </p>
     ) : params.err === "required" ? (
-      <p className="static-lead" style={{ background: "#fee2e2", border: "1px solid #fca5a5", borderRadius: 10, padding: "12px 16px", color: "#991b1b" }}>
+      <p
+        className="static-lead"
+        style={{
+          background: "#fee2e2",
+          border: "1px solid #fca5a5",
+          borderRadius: 10,
+          padding: "12px 16px",
+          color: "#991b1b"
+        }}
+      >
         Escribe tu testimonio antes de enviar.
       </p>
     ) : params.err === "long" ? (
-      <p className="static-lead" style={{ background: "#fee2e2", border: "1px solid #fca5a5", borderRadius: 10, padding: "12px 16px", color: "#991b1b" }}>
+      <p
+        className="static-lead"
+        style={{
+          background: "#fee2e2",
+          border: "1px solid #fca5a5",
+          borderRadius: 10,
+          padding: "12px 16px",
+          color: "#991b1b"
+        }}
+      >
         El texto es demasiado largo (máximo 2000 caracteres).
       </p>
     ) : params.err === "name" ? (
-      <p className="static-lead" style={{ background: "#fee2e2", border: "1px solid #fca5a5", borderRadius: 10, padding: "12px 16px", color: "#991b1b" }}>
+      <p
+        className="static-lead"
+        style={{
+          background: "#fee2e2",
+          border: "1px solid #fca5a5",
+          borderRadius: 10,
+          padding: "12px 16px",
+          color: "#991b1b"
+        }}
+      >
         El nombre indicado es demasiado largo.
+      </p>
+    ) : params.err === "name_required" ? (
+      <p
+        className="static-lead"
+        style={{
+          background: "#fee2e2",
+          border: "1px solid #fca5a5",
+          borderRadius: 10,
+          padding: "12px 16px",
+          color: "#991b1b"
+        }}
+      >
+        Indica tu nombre para enviar el testimonio.
+      </p>
+    ) : params.err === "rate" ? (
+      <p
+        className="static-lead"
+        style={{
+          background: "#fef3c7",
+          border: "1px solid #fcd34d",
+          borderRadius: 10,
+          padding: "12px 16px",
+          color: "#92400e"
+        }}
+      >
+        Has enviado varios mensajes en poco tiempo. Espera un momento e inténtalo de nuevo.
       </p>
     ) : null;
 
@@ -56,19 +118,28 @@ export default async function DejarTestimonioPage({ searchParams }: PageProps) {
             <h1 className="static-title">
               Cuéntanos cómo fue <em>tu visita</em>
             </h1>
-            <p className="static-lead">
-              Los testimonios se revisan antes de publicarse en la página principal. Puedes firmar con tu nombre o dejarlo en
-              anónimo.
-            </p>
+            <p className="static-lead">Indica tu nombre y cuéntanos cómo fue tu experiencia en el estudio.</p>
           </header>
 
           {banner}
 
           <div className="static-body">
             <form className="form-grid" action={submitTestimonialAction} style={{ maxWidth: 520 }}>
+              <div className="field" style={{ position: "absolute", left: "-9999px", width: 1, height: 1, overflow: "hidden" }} aria-hidden>
+                <label htmlFor="company">Empresa</label>
+                <input className="input" id="company" name="company" type="text" tabIndex={-1} autoComplete="off" />
+              </div>
               <div className="field">
-                <label htmlFor="authorName">Nombre (opcional)</label>
-                <input className="input" id="authorName" name="authorName" type="text" maxLength={120} placeholder="Ej. María G." />
+                <label htmlFor="authorName">Nombre</label>
+                <input
+                  className="input"
+                  id="authorName"
+                  name="authorName"
+                  type="text"
+                  maxLength={120}
+                  required
+                  placeholder="Ej. María G."
+                />
               </div>
               <div className="field">
                 <label htmlFor="stars">Valoración</label>

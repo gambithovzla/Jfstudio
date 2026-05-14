@@ -158,6 +158,10 @@ model Appointment {
   depositVoucherKey  String?
   depositVoucherFilename String?
   depositVoucherMime String?
+  postVisitCareNote          String?
+  postVisitAttachmentKey     String?
+  postVisitAttachmentFilename String?
+  postVisitAttachmentMime    String?
   birthdayBonusId    String?              @unique
   birthdayBonus      BirthdayBonus?       @relation("AppointmentBonus", fields: [birthdayBonusId], references: [id], onDelete: SetNull)
   createdAt          DateTime             @default(now())

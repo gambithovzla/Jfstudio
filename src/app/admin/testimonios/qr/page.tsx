@@ -5,7 +5,7 @@ export const dynamic = "force-dynamic";
 export default function TestimonialQrPrintPage() {
   const base = (process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000").replace(/\/$/, "");
   const formUrl = `${base}/dejar-testimonio`;
-  const qrSrc = `https://api.qrserver.com/v1/create-qr-code/?size=420x420&data=${encodeURIComponent(formUrl)}`;
+  const qrSrc = `/api/qr?url=${encodeURIComponent(formUrl)}`;
 
   return (
     <>
@@ -34,7 +34,7 @@ export default function TestimonialQrPrintPage() {
         </p>
         <h2 style={{ margin: "0 0 16px", fontSize: "1.35rem", lineHeight: 1.25 }}>Cuéntanos cómo fue tu visita</h2>
         <p className="small muted" style={{ marginBottom: 20 }}>
-          Escanea el código para dejar tu testimonio. Solo se publican mensajes aprobados por el equipo.
+          Escanea el código para dejar tu testimonio en JF Studio.
         </p>
         <img src={qrSrc} width={280} height={280} alt="Código QR al formulario de testimonios" style={{ display: "block", margin: "0 auto 16px" }} />
         <p style={{ margin: 0, fontSize: "0.78rem", wordBreak: "break-all", color: "#6b7280" }}>{formUrl}</p>
