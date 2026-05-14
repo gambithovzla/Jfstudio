@@ -44,6 +44,15 @@ export function localMinutesFromMidnightInZone(isoInstant: Date, timeZone: strin
   return hour * 60 + minute;
 }
 
+/** Inicio y fin locales del turno de reserva web los domingos (debe coincidir con slots en `buildAvailabilitySlots`). */
+export const PUBLIC_SUNDAY_WEB_OPEN_LOCAL = "07:00";
+export const PUBLIC_SUNDAY_WEB_CLOSE_LOCAL = "09:00";
+
+function localHmToMinutes(hm: string): number {
+  const [h, m = "0"] = hm.split(":").map((x) => Number(x));
+  return h * 60 + m;
+}
+
 /**
  * Ventana pública de inicio de cita (solo reserva web).
  * Sábado 07:00–13:00 · Domingo 07:00–09:00 (inicio hasta las 9:00; la cita puede prolongarse según duración).
@@ -54,7 +63,10 @@ export function isPublicBookingStartInDayWindow(dateStr: string, startAt: Date, 
     return mins >= 7 * 60 && mins <= 13 * 60;
   }
   if (isSundaySalon(dateStr, timeZone)) {
-    return mins >= 7 * 60 && mins <= 9 * 60;
+    return (
+      mins >= localHmToMinutes(PUBLIC_SUNDAY_WEB_OPEN_LOCAL) &&
+      mins <= localHmToMinutes(PUBLIC_SUNDAY_WEB_CLOSE_LOCAL)
+    );
   }
   return true;
 }

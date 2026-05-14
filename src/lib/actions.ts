@@ -692,14 +692,16 @@ export async function createStaffAction(formData: FormData) {
   });
 
   for (const dayOfWeek of [0, 1, 2, 3, 4, 5, 6]) {
+    const isSunday = dayOfWeek === 0;
+    const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
     await prisma.workingHour.create({
       data: {
         staffId: staff.id,
         dayOfWeek,
-        startTime: "09:00",
-        endTime: dayOfWeek === 0 || dayOfWeek === 6 ? "16:00" : "18:00",
-        breakStart: "13:00",
-        breakEnd: "14:00",
+        startTime: isSunday ? "07:00" : "09:00",
+        endTime: isSunday ? "09:00" : isWeekend ? "16:00" : "18:00",
+        breakStart: isSunday ? null : "13:00",
+        breakEnd: isSunday ? null : "14:00",
         isActive: true
       }
     });
@@ -760,14 +762,17 @@ export async function createWorkingHourAction(formData: FormData) {
     return;
   }
 
+  const isSunday = dayOfWeek === 0;
+  const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
+
   await prisma.workingHour.create({
     data: {
       staffId,
       dayOfWeek,
-      startTime: "09:00",
-      endTime: dayOfWeek === 0 || dayOfWeek === 6 ? "16:00" : "18:00",
-      breakStart: "13:00",
-      breakEnd: "14:00",
+      startTime: isSunday ? "07:00" : "09:00",
+      endTime: isSunday ? "09:00" : isWeekend ? "16:00" : "18:00",
+      breakStart: isSunday ? null : "13:00",
+      breakEnd: isSunday ? null : "14:00",
       isActive: true
     }
   });
