@@ -10,6 +10,7 @@ import { getAppointmentByToken, getSalonSettings } from "@/lib/data";
 import { prisma } from "@/lib/prisma";
 import { formatDateInZone, formatTimeInZone } from "@/lib/time";
 import { formatCurrency } from "@/lib/utils";
+import { ARRIVAL_TOLERANCE_MINUTES, WEB_DEPOSIT_AMOUNT_PEN } from "@/lib/booking-rules";
 
 export const dynamic = "force-dynamic";
 
@@ -136,7 +137,10 @@ export default async function PublicAppointmentPage({ params }: PageProps) {
                   Puedes cancelar o reagendar con al menos {CANCEL_WINDOW_HOURS} horas de anticipacion.
                 </p>
                 <div style={{ background: "#fef3c7", border: "1px solid #fcd34d", borderRadius: 8, padding: "10px 14px", marginBottom: 16, fontSize: "0.83rem", color: "#92400e" }}>
-                  Cancelaciones con menos de 24 horas o inasistencias: el adelanto queda retenido como compensacion.
+                  <strong>Adelanto S/ {WEB_DEPOSIT_AMOUNT_PEN}:</strong> si cancelas tu cita, el adelanto no se devuelve. Si reagendas, conservamos tu comprobante en la nueva fecha.
+                  <br />
+                  <br />
+                  <strong>Llegada:</strong> tienes {ARRIVAL_TOLERANCE_MINUTES} minutos de tolerancia desde la hora de tu cita. Sin presentarte en ese tiempo (y sin aviso), puede considerarse inasistencia.
                 </div>
                 <div className="button-row">
                   <Link className="btn" href={`/reserva/${token}/reagendar`}>
@@ -146,7 +150,7 @@ export default async function PublicAppointmentPage({ params }: PageProps) {
                     <ConfirmSubmitButton
                       className="btn danger"
                       type="submit"
-                      message="¿Confirmas que deseas cancelar tu cita? Recibirás un email de confirmación."
+                      message={`Si cancelas, el adelanto S/ ${WEB_DEPOSIT_AMOUNT_PEN} no se devuelve. ¿Confirmas que deseas cancelar tu cita? Recibirás un email de confirmación.`}
                     >
                       Cancelar cita
                     </ConfirmSubmitButton>
@@ -159,7 +163,7 @@ export default async function PublicAppointmentPage({ params }: PageProps) {
                   Ya no es posible modificar esta cita (menos de {CANCEL_WINDOW_HOURS} horas de anticipacion).
                 </p>
                 <div style={{ background: "#fee2e2", border: "1px solid #fca5a5", borderRadius: 8, padding: "10px 14px", fontSize: "0.83rem", color: "#991b1b" }}>
-                  Cancelaciones o inasistencias a esta altura retienen el adelanto como compensacion. Contactanos por WhatsApp si tienes alguna urgencia.
+                  Ya no puedes cancelar ni reagendar desde el enlace (menos de {CANCEL_WINDOW_HOURS} h). El adelanto de la reserva web (S/ {WEB_DEPOSIT_AMOUNT_PEN}) no se reembolsa si cancelas; por urgencias escribenos por WhatsApp.
                 </div>
               </>
             )}

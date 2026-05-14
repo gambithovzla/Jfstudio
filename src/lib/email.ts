@@ -1,5 +1,7 @@
 import { Resend } from "resend";
 
+import { ARRIVAL_TOLERANCE_MINUTES, WEB_DEPOSIT_AMOUNT_PEN } from "@/lib/booking-rules";
+
 let _resend: Resend | null = null;
 function getResend(): Resend {
   if (!_resend) {
@@ -87,7 +89,8 @@ function bookingHtml({
           </table>
           <p style="margin:0 0 12px;font-size:0.9rem;color:#374151;">Si necesitas cancelar o reagendar, hazlo desde el enlace a continuacion con al menos <strong>24 horas de anticipacion</strong>.</p>
           <div style="background:#fef3c7;border-left:3px solid #f59e0b;padding:10px 14px;border-radius:0 8px 8px 0;margin:0 0 16px;font-size:0.85rem;color:#92400e;">
-            Cancelaciones con menos de 24 horas o inasistencias: el adelanto queda retenido como compensacion.
+            <strong>Adelanto S/ ${WEB_DEPOSIT_AMOUNT_PEN}:</strong> si <strong>cancelas</strong> tu cita, el adelanto no se devuelve. Si <strong>reagendas</strong>, conservamos tu comprobante y el adelanto pasa a la nueva fecha.<br/><br/>
+            <strong>Llegada:</strong> tienes <strong>${ARRIVAL_TOLERANCE_MINUTES} minutos</strong> de tolerancia desde la hora de tu cita. Si no te presentas en ese margen sin aviso, puede considerarse inasistencia y el adelanto no aplica a devolucion.
           </div>
           <a href="${manageUrl}" style="display:inline-block;background:#0f766e;color:#fff;text-decoration:none;border-radius:8px;padding:12px 24px;font-weight:700;font-size:0.95rem;">Gestionar mi reserva</a>
           <p style="margin:24px 0 0;font-size:0.82rem;color:#9ca3af;">JF Studio · Cualquier consulta por WhatsApp.</p>
@@ -126,7 +129,10 @@ function reminderHtml({
             <tr><td style="padding:4px 0;font-size:0.9rem;"><strong>Fecha:</strong> ${dateLabel}</td></tr>
             <tr><td style="padding:4px 0;font-size:0.9rem;"><strong>Hora:</strong> ${timeLabel}</td></tr>
           </table>
-          <p style="margin:0 0 16px;font-size:0.9rem;color:#374151;">Si necesitas cancelar o reagendar, hazlo con al menos 4 horas de anticipacion.</p>
+          <p style="margin:0 0 12px;font-size:0.9rem;color:#374151;">Si necesitas cancelar o reagendar, hazlo desde el enlace con al menos <strong>24 horas de anticipacion</strong>.</p>
+          <div style="background:#fef3c7;border-left:3px solid #f59e0b;padding:10px 14px;border-radius:0 8px 8px 0;margin:0 0 16px;font-size:0.85rem;color:#92400e;">
+            Recuerda: tolerancia de llegada <strong>${ARRIVAL_TOLERANCE_MINUTES} minutos</strong> desde la hora de tu cita. Si cancelas, el adelanto S/ ${WEB_DEPOSIT_AMOUNT_PEN} no se reembolsa.
+          </div>
           <a href="${manageUrl}" style="display:inline-block;background:#0f766e;color:#fff;text-decoration:none;border-radius:8px;padding:12px 24px;font-weight:700;font-size:0.95rem;">Gestionar mi reserva</a>
           <p style="margin:24px 0 0;font-size:0.82rem;color:#9ca3af;">JF Studio · Cualquier consulta por WhatsApp.</p>
         </td></tr>
@@ -155,6 +161,7 @@ function cancellationHtml({ clientName, serviceName, dateLabel, timeLabel, note 
             <tr><td style="padding:4px 0;font-size:0.9rem;"><strong>Hora:</strong> ${timeLabel}</td></tr>
             ${note ? `<tr><td style="padding:8px 0 0;font-size:0.9rem;border-top:1px solid #ddd6cc;margin-top:6px;"><strong>Motivo:</strong> ${note}</td></tr>` : ""}
           </table>
+          <p style="margin:0 0 16px;font-size:0.88rem;color:#6b7280;">El adelanto de reserva en linea (S/ ${WEB_DEPOSIT_AMOUNT_PEN}) no se reembolsa cuando la cancelacion la solicita la clienta.</p>
           <a href="${APP_URL}/reservar" style="display:inline-block;background:#c4587a;color:#fff;text-decoration:none;border-radius:8px;padding:12px 24px;font-weight:700;font-size:0.95rem;">Hacer nueva reserva</a>
           <p style="margin:24px 0 0;font-size:0.82rem;color:#9ca3af;">JF Studio · Cualquier consulta por WhatsApp.</p>
         </td></tr>
@@ -321,7 +328,7 @@ export async function sendNewBookingNotification(data: {
             <tr><td style="padding:3px 0;"><strong>Fecha:</strong> ${data.dateLabel}</td></tr>
             <tr><td style="padding:3px 0;"><strong>Hora:</strong> ${data.timeLabel}</td></tr>
             <tr><td style="padding:3px 0;"><strong>Telefono:</strong> ${data.clientPhone}</td></tr>
-            <tr><td style="padding:8px 0 3px;border-top:1px solid #ddd6cc;"><strong>Adelanto web:</strong> S/ 50 — comprobante adjunto a este correo.</td></tr>
+            <tr><td style="padding:8px 0 3px;border-top:1px solid #ddd6cc;"><strong>Adelanto web:</strong> S/ ${WEB_DEPOSIT_AMOUNT_PEN} — comprobante adjunto a este correo.</td></tr>
           </table>
           <p style="margin:18px 0 0;font-size:0.82rem;color:#9ca3af;">Puedes ver y gestionar esta cita desde el panel de administracion.</p>
         </td></tr>

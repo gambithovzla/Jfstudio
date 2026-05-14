@@ -4,6 +4,9 @@ export const MIN_BOOKING_ADVANCE_HOURS = 12;
 export const WEB_DEPOSIT_AMOUNT_PEN = 50;
 export const SATURDAY_MAX_CONCURRENT_STARTS = 3;
 
+/** Minutos de gracia desde la hora de la cita para presentarse. */
+export const ARRIVAL_TOLERANCE_MINUTES = 15;
+
 const WEEKDAY_SHORT_TO_SUN0: Record<string, number> = {
   Sun: 0,
   Mon: 1,

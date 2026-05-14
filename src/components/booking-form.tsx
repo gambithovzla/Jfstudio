@@ -3,7 +3,7 @@
 import { Calendar, CheckCircle2, Loader2, Scissors } from "lucide-react";
 import { FormEvent, useEffect, useMemo, useState } from "react";
 
-import { isWeekendSalon } from "@/lib/booking-rules";
+import { ARRIVAL_TOLERANCE_MINUTES, isWeekendSalon } from "@/lib/booking-rules";
 import { formatCurrency } from "@/lib/utils";
 
 type Service = {
@@ -475,8 +475,11 @@ export function BookingForm({
             <label htmlFor="voucher" style={{ fontWeight: 700 }}>
               Comprobante de adelanto (obligatorio) — S/ 50
             </label>
-            <p className="small muted" style={{ margin: "6px 0 10px" }}>
-              Adjunta captura o PDF de tu pago (Yape, Plin o transferencia). El comprobante se envia al equipo y queda guardado con tu reserva.
+            <p className="small muted" style={{ margin: "6px 0 6px" }}>
+              Adjunta captura o PDF (Yape, Plin o transferencia). El comprobante se envia al equipo y queda guardado con tu reserva.
+            </p>
+            <p className="small muted" style={{ margin: "0 0 10px" }}>
+              Si cancelas tu cita, el adelanto no se reembolsa; si reagendas, se conserva. Llegada: {ARRIVAL_TOLERANCE_MINUTES} min de tolerancia desde la hora de la cita.
             </p>
             <input
               className="input"
