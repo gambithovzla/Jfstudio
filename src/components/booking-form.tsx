@@ -4,7 +4,7 @@ import { Calendar, CheckCircle2, Loader2, Scissors } from "lucide-react";
 import { FormEvent, useEffect, useMemo, useState } from "react";
 
 import { ARRIVAL_TOLERANCE_MINUTES, isSaturdaySalon } from "@/lib/booking-rules";
-import { laceadoTierChoiceLabel, partitionLaceadoServices } from "@/lib/laceado-services";
+import { laceadoTierChoiceLabel, isStandaloneLaceadoOrganicName, partitionLaceadoServices } from "@/lib/laceado-services";
 import { formatCurrency } from "@/lib/utils";
 
 type Service = {
@@ -44,6 +44,9 @@ function initialSelectedOthers(services: Service[], initialServiceIds?: string[]
   const { laceadoLengthTiers, laceadoAbundancia } = partitionLaceadoServices(services);
   const drop = new Set(laceadoLengthTiers.map((t) => t.id));
   if (laceadoAbundancia) drop.add(laceadoAbundancia.id);
+  for (const s of services) {
+    if (isStandaloneLaceadoOrganicName(s.name)) drop.add(s.id);
+  }
   return (initialServiceIds ?? []).filter((id) => !drop.has(id));
 }
 
@@ -321,6 +324,67 @@ export function BookingForm({
         </div>
 
         <div className="checkbox-list">
+          {laceadoLengthTiers.length > 0 ? (
+            <div
+              className="choice"
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "stretch",
+                gap: 10,
+                cursor: "default"
+              }}
+            >
+              <div style={{ display: "grid", gap: 4, width: "100%" }}>
+                <strong>Laceado orgánico</strong>
+                <span className="small muted">
+                  Elige el largo de tu cabello; el precio y los minutos son solo los de esa opción (no se suma nada extra).
+                </span>
+              </div>
+              <select
+                className="select"
+                id="laceadoLength"
+                value={laceadoLengthId}
+                onChange={(event) => {
+                  const v = event.target.value;
+                  setLaceadoLengthId(v);
+                  if (!v) setLaceadoAbundanciaOn(false);
+                }}
+              >
+                <option value="">Sin laceado orgánico</option>
+                {laceadoLengthTiers.map((tier) => (
+                  <option key={tier.id} value={tier.id}>
+                    {laceadoTierChoiceLabel(tier.name)} — {formatCurrency(tier.price, currency)} · {tier.durationMinutes}{" "}
+                    min
+                  </option>
+                ))}
+              </select>
+              {laceadoAbundanciaService ? (
+                <label
+                  className="small"
+                  style={{
+                    display: "flex",
+                    gap: 10,
+                    alignItems: "center",
+                    fontWeight: 500,
+                    cursor: laceadoLengthId ? "pointer" : "not-allowed",
+                    opacity: laceadoLengthId ? 1 : 0.55
+                  }}
+                >
+                  <input
+                    type="checkbox"
+                    checked={laceadoAbundanciaOn}
+                    disabled={!laceadoLengthId}
+                    onChange={(event) => setLaceadoAbundanciaOn(event.target.checked)}
+                  />
+                  <span>
+                    Suplemento por abundancia (+{formatCurrency(laceadoAbundanciaService.price, currency)} ·{" "}
+                    {laceadoAbundanciaService.durationMinutes} min)
+                  </span>
+                </label>
+              ) : null}
+            </div>
+          ) : null}
           {otherServices.map((service) => (
             <label className="choice" key={service.id}>
               <input
@@ -337,58 +401,6 @@ export function BookingForm({
             </label>
           ))}
         </div>
-
-        {laceadoLengthTiers.length > 0 ? (
-          <div className="field" style={{ marginTop: 4 }}>
-            <label htmlFor="laceadoLength">Laceado orgánico</label>
-            <select
-              className="select"
-              id="laceadoLength"
-              value={laceadoLengthId}
-              onChange={(event) => {
-                const v = event.target.value;
-                setLaceadoLengthId(v);
-                if (!v) setLaceadoAbundanciaOn(false);
-              }}
-            >
-              <option value="">No incluyo laceado orgánico</option>
-              {laceadoLengthTiers.map((tier) => (
-                <option key={tier.id} value={tier.id}>
-                  {laceadoTierChoiceLabel(tier.name)} — {formatCurrency(tier.price, currency)} · {tier.durationMinutes}{" "}
-                  min
-                </option>
-              ))}
-            </select>
-            {laceadoAbundanciaService ? (
-              <label
-                className="small"
-                style={{
-                  display: "flex",
-                  gap: 10,
-                  alignItems: "center",
-                  marginTop: 10,
-                  fontWeight: 500,
-                  cursor: laceadoLengthId ? "pointer" : "not-allowed",
-                  opacity: laceadoLengthId ? 1 : 0.55
-                }}
-              >
-                <input
-                  type="checkbox"
-                  checked={laceadoAbundanciaOn}
-                  disabled={!laceadoLengthId}
-                  onChange={(event) => setLaceadoAbundanciaOn(event.target.checked)}
-                />
-                <span>
-                  Suplemento por abundancia (+{formatCurrency(laceadoAbundanciaService.price, currency)} ·{" "}
-                  {laceadoAbundanciaService.durationMinutes} min)
-                </span>
-              </label>
-            ) : null}
-            <p className="small muted" style={{ marginTop: 8, marginBottom: 0 }}>
-              Si reservas laceado orgánico, elige el largo de tu cabello para calcular precio y duración.
-            </p>
-          </div>
-        ) : null}
 
         {isSaturdayDate ? (
           <div
