@@ -2,6 +2,13 @@
 const LACEADO_LENGTH_PREFIX = /^laceado\s+org[aá]nico\s+—\s+/i;
 const LACEADO_ABUNDANCIA = /^laceado\s+org[aá]nico\s+—\s+suplemento\s+abundancia/i;
 
+/** Servicio único legacy ("Laceado organico", "Laceado Organico", etc.): no se lista; el precio es solo el de la variante. */
+const LACEADO_STANDALONE = /^laceado\s+org[aá]nico$/i;
+
+export function isStandaloneLaceadoOrganicName(name: string): boolean {
+  return LACEADO_STANDALONE.test(name.trim());
+}
+
 export type LaceadoPartitionService = {
   id: string;
   name: string;
@@ -23,6 +30,9 @@ export function partitionLaceadoServices<T extends LaceadoPartitionService>(serv
     }
     if (LACEADO_LENGTH_PREFIX.test(n)) {
       laceadoLengthTiers.push(s);
+      continue;
+    }
+    if (LACEADO_STANDALONE.test(n)) {
       continue;
     }
     otherServices.push(s);

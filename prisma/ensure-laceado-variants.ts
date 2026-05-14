@@ -1,14 +1,30 @@
 import type { PrismaClient } from "@prisma/client";
 
+const STANDALONE_LACEADO = /^laceado\s+org[aá]nico$/i;
+
+/**
+ * Desactiva cualquier servicio "Laceado … orgánico" sin variante de largo (evita sumar 300 + 400).
+ */
+export async function deactivateStandaloneLaceadoServices(prisma: PrismaClient) {
+  const rows = await prisma.service.findMany({
+    select: { id: true, name: true }
+  });
+  for (const row of rows) {
+    if (STANDALONE_LACEADO.test(row.name.trim())) {
+      await prisma.service.update({
+        where: { id: row.id },
+        data: { isActive: false }
+      });
+    }
+  }
+}
+
 /**
  * Idempotente: desactiva el laceado legacy y asegura variantes + suplemento abundancia.
  * Usar desde seed y desde `scripts/ensure-laceado-services.ts` (producción).
  */
 export async function ensureLaceadoServiceVariants(prisma: PrismaClient) {
-  await prisma.service.updateMany({
-    where: { name: { in: ["Laceado organico", "Laceado orgánico"] } },
-    data: { isActive: false }
-  });
+  await deactivateStandaloneLaceadoServices(prisma);
 
   const laceadoDeposit = { requiresDeposit: true, depositAmount: 50 };
   const laceadoDesc = "Alisado orgánico con productos profesionales. El largo se elige al reservar.";
