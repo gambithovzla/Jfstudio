@@ -4,6 +4,7 @@ import { Calendar, CheckCircle2, Loader2, Scissors } from "lucide-react";
 import { FormEvent, useEffect, useMemo, useState } from "react";
 
 import { ARRIVAL_TOLERANCE_MINUTES, isSaturdaySalon } from "@/lib/booking-rules";
+import { laceadoTierChoiceLabel, partitionLaceadoServices } from "@/lib/laceado-services";
 import { formatCurrency } from "@/lib/utils";
 
 type Service = {
@@ -39,6 +40,23 @@ type BookingResult = {
   services: string[];
 };
 
+function initialSelectedOthers(services: Service[], initialServiceIds?: string[]) {
+  const { laceadoLengthTiers, laceadoAbundancia } = partitionLaceadoServices(services);
+  const drop = new Set(laceadoLengthTiers.map((t) => t.id));
+  if (laceadoAbundancia) drop.add(laceadoAbundancia.id);
+  return (initialServiceIds ?? []).filter((id) => !drop.has(id));
+}
+
+function initialLaceadoLengthId(services: Service[], initialServiceIds?: string[]) {
+  const { laceadoLengthTiers } = partitionLaceadoServices(services);
+  return laceadoLengthTiers.find((t) => initialServiceIds?.includes(t.id))?.id ?? "";
+}
+
+function initialLaceadoAbundanciaOn(services: Service[], initialServiceIds?: string[]) {
+  const { laceadoAbundancia } = partitionLaceadoServices(services);
+  return Boolean(laceadoAbundancia && initialServiceIds?.includes(laceadoAbundancia.id));
+}
+
 export function BookingForm({
   services,
   staff,
@@ -54,7 +72,18 @@ export function BookingForm({
   initialServiceIds?: string[];
   replaceToken?: string;
 }) {
-  const [selectedServices, setSelectedServices] = useState<string[]>(initialServiceIds ?? []);
+  const { laceadoLengthTiers, laceadoAbundancia: laceadoAbundanciaService, otherServices } = useMemo(
+    () => partitionLaceadoServices(services),
+    [services]
+  );
+
+  const [selectedOthers, setSelectedOthers] = useState<string[]>(() =>
+    initialSelectedOthers(services, initialServiceIds)
+  );
+  const [laceadoLengthId, setLaceadoLengthId] = useState(() => initialLaceadoLengthId(services, initialServiceIds));
+  const [laceadoAbundanciaOn, setLaceadoAbundanciaOn] = useState(() =>
+    initialLaceadoAbundanciaOn(services, initialServiceIds)
+  );
   const [staffId, setStaffId] = useState("any");
   const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [slots, setSlots] = useState<Slot[]>([]);
@@ -74,9 +103,16 @@ export function BookingForm({
       setStaffId("any");
     }
   }, [isSaturdayDate]);
+  const selectedServiceIds = useMemo(() => {
+    const ids = [...selectedOthers];
+    if (laceadoLengthId) ids.push(laceadoLengthId);
+    if (laceadoAbundanciaOn && laceadoAbundanciaService) ids.push(laceadoAbundanciaService.id);
+    return ids;
+  }, [selectedOthers, laceadoLengthId, laceadoAbundanciaOn, laceadoAbundanciaService]);
+
   const selectedServiceRows = useMemo(
-    () => services.filter((service) => selectedServices.includes(service.id)),
-    [selectedServices, services]
+    () => services.filter((service) => selectedServiceIds.includes(service.id)),
+    [selectedServiceIds, services]
   );
 
   const total = selectedServiceRows.reduce((sum, service) => sum + service.price, 0);
@@ -90,7 +126,7 @@ export function BookingForm({
       setSelectedSlotKey("");
       setError("");
 
-      if (selectedServices.length === 0 || !date) {
+      if (selectedServiceIds.length === 0 || !date) {
         setSlots([]);
         return;
       }
@@ -100,7 +136,7 @@ export function BookingForm({
       try {
         const params = new URLSearchParams({
           date,
-          serviceIds: selectedServices.join(","),
+          serviceIds: selectedServiceIds.join(","),
           staffId
         });
         if (replaceToken) {
@@ -130,7 +166,7 @@ export function BookingForm({
     loadSlots();
 
     return () => controller.abort();
-  }, [date, selectedServices, staffId, replaceToken]);
+  }, [date, selectedServiceIds, staffId, replaceToken]);
 
   async function checkBirthday(phone: string) {
     if (phone.length < 6) return;
@@ -143,8 +179,8 @@ export function BookingForm({
     }
   }
 
-  function toggleService(serviceId: string) {
-    setSelectedServices((current) =>
+  function toggleOtherService(serviceId: string) {
+    setSelectedOthers((current) =>
       current.includes(serviceId) ? current.filter((id) => id !== serviceId) : [...current, serviceId]
     );
   }
@@ -193,7 +229,7 @@ export function BookingForm({
             ? { documentNumber: documentNumberRaw, documentType: documentTypeRaw || "DNI" }
             : {})
         },
-        serviceIds: selectedServices,
+        serviceIds: selectedServiceIds,
         staffId: selectedSlot.staffId,
         startAt: selectedSlot.startAt,
         notes: String(formData.get("notes") ?? ""),
@@ -234,7 +270,9 @@ export function BookingForm({
       }
 
       setResult(data.appointment);
-      setSelectedServices([]);
+      setSelectedOthers([]);
+      setLaceadoLengthId("");
+      setLaceadoAbundanciaOn(false);
       setSlots([]);
       event.currentTarget.reset();
     } catch (submitError) {
@@ -283,12 +321,12 @@ export function BookingForm({
         </div>
 
         <div className="checkbox-list">
-          {services.map((service) => (
+          {otherServices.map((service) => (
             <label className="choice" key={service.id}>
               <input
                 type="checkbox"
-                checked={selectedServices.includes(service.id)}
-                onChange={() => toggleService(service.id)}
+                checked={selectedOthers.includes(service.id)}
+                onChange={() => toggleOtherService(service.id)}
               />
               <span style={{ display: "grid", gap: 2, width: "100%" }}>
                 <strong>{service.name}</strong>
@@ -299,6 +337,58 @@ export function BookingForm({
             </label>
           ))}
         </div>
+
+        {laceadoLengthTiers.length > 0 ? (
+          <div className="field" style={{ marginTop: 4 }}>
+            <label htmlFor="laceadoLength">Laceado orgánico</label>
+            <select
+              className="select"
+              id="laceadoLength"
+              value={laceadoLengthId}
+              onChange={(event) => {
+                const v = event.target.value;
+                setLaceadoLengthId(v);
+                if (!v) setLaceadoAbundanciaOn(false);
+              }}
+            >
+              <option value="">No incluyo laceado orgánico</option>
+              {laceadoLengthTiers.map((tier) => (
+                <option key={tier.id} value={tier.id}>
+                  {laceadoTierChoiceLabel(tier.name)} — {formatCurrency(tier.price, currency)} · {tier.durationMinutes}{" "}
+                  min
+                </option>
+              ))}
+            </select>
+            {laceadoAbundanciaService ? (
+              <label
+                className="small"
+                style={{
+                  display: "flex",
+                  gap: 10,
+                  alignItems: "center",
+                  marginTop: 10,
+                  fontWeight: 500,
+                  cursor: laceadoLengthId ? "pointer" : "not-allowed",
+                  opacity: laceadoLengthId ? 1 : 0.55
+                }}
+              >
+                <input
+                  type="checkbox"
+                  checked={laceadoAbundanciaOn}
+                  disabled={!laceadoLengthId}
+                  onChange={(event) => setLaceadoAbundanciaOn(event.target.checked)}
+                />
+                <span>
+                  Suplemento por abundancia (+{formatCurrency(laceadoAbundanciaService.price, currency)} ·{" "}
+                  {laceadoAbundanciaService.durationMinutes} min)
+                </span>
+              </label>
+            ) : null}
+            <p className="small muted" style={{ marginTop: 8, marginBottom: 0 }}>
+              Si reservas laceado orgánico, elige el largo de tu cabello para calcular precio y duración.
+            </p>
+          </div>
+        ) : null}
 
         {isSaturdayDate ? (
           <div

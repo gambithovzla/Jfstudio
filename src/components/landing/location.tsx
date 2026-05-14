@@ -30,10 +30,14 @@ export function Location() {
         <p className="lead lead-soft">
           <MapPin size={18} aria-hidden style={{ verticalAlign: "-3px", marginRight: 6 }} />
           {location.address}
-          <br />
-          <span className="small" style={{ fontWeight: 600 }}>
-            {location.suiteLine}
-          </span>
+          {location.suiteLine ? (
+            <>
+              <br />
+              <span className="small" style={{ fontWeight: 600 }}>
+                {location.suiteLine}
+              </span>
+            </>
+          ) : null}
         </p>
         <div className="hours-list">
           <p className="field-label">

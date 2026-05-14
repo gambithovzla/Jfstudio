@@ -1,4 +1,4 @@
-import { SALON_FLOOR_OFFICE, SALON_STREET_ADDRESS } from "@/lib/salon-address";
+import { SALON_STREET_ADDRESS } from "@/lib/salon-address";
 
 export type LandingService = {
   title: string;
@@ -185,7 +185,8 @@ export const landingContent: LandingContent = {
   location: {
     title: "Visítanos",
     address: SALON_STREET_ADDRESS,
-    suiteLine: SALON_FLOOR_OFFICE,
+    /** Piso/oficina solo por correo al confirmar reserva; no en web pública. */
+    suiteLine: "",
     mapsEmbedUrl:
       "https://www.openstreetmap.org/export/embed.html?bbox=-77.0321%2C-12.1289%2C-77.0261%2C-12.1229&layer=mapnik&marker=-12.1259%2C-77.0291",
     coordinates: { lat: -12.1259, lon: -77.0291 },

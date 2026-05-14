@@ -1,5 +1,7 @@
 import { PrismaClient, UserRole } from "@prisma/client";
 
+import { ensureLaceadoServiceVariants } from "./ensure-laceado-variants";
+
 const prisma = new PrismaClient();
 
 async function main() {
@@ -99,18 +101,7 @@ async function main() {
     }
   });
 
-  await prisma.service.upsert({
-    where: { name: "Laceado organico" },
-    update: { requiresDeposit: true, depositAmount: 50 },
-    create: {
-      name: "Laceado organico",
-      description: "Alisado organico con productos profesionales.",
-      durationMinutes: 180,
-      price: 280,
-      requiresDeposit: true,
-      depositAmount: 50
-    }
-  });
+  await ensureLaceadoServiceVariants(prisma);
 
   await prisma.service.upsert({
     where: { name: "Mechas" },
