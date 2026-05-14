@@ -93,7 +93,7 @@ export default async function AppointmentDetailPage({ params }: PageProps) {
                 Marcar adelanto recibido
               </button>
             </form>
-          ) : requiresDeposit ? (
+          ) : requiresDeposit || appointment.depositPaid ? (
             <span className="badge" style={{ background: "#dcfce7", color: "#166534" }}>Adelanto recibido</span>
           ) : null}
         </div>
@@ -105,6 +105,22 @@ export default async function AppointmentDetailPage({ params }: PageProps) {
             <div>
               <h2 className="card-title">Detalle</h2>
               <p className="small muted">{appointment.client.phone ?? "Sin telefono"}</p>
+              {appointment.depositVoucherKey ? (
+                <p className="small" style={{ marginTop: 8 }}>
+                  <a
+                    className="btn secondary"
+                    href={`/api/admin/appointments/${id}/deposit-voucher`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{ display: "inline-flex", alignItems: "center", gap: 8, fontSize: "0.85rem" }}
+                  >
+                    Ver comprobante de adelanto
+                    {appointment.depositAmountPen != null
+                      ? ` (S/ ${Number(appointment.depositAmountPen).toFixed(2)})`
+                      : ""}
+                  </a>
+                </p>
+              ) : null}
               {appointment.client.dni ? (
                 <p className="small muted">
                   {appointment.client.documentType === "CE"

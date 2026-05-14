@@ -47,9 +47,12 @@ export function buildAvailabilitySlots(input: {
   staff: StaffSchedule[];
   timeBlocks?: TimeBlockEntry[];
   now?: Date;
+  /** Si se define, no se ofrecen slots que empiecen antes de esta marca de tiempo (UTC). */
+  earliestStartUtc?: Date;
 }) {
   const dayOfWeek = dayOfWeekForDate(input.date);
   const now = input.now ?? new Date();
+  const earliest = input.earliestStartUtc;
   const blocks = input.timeBlocks ?? [];
   const slots: AvailabilitySlot[] = [];
 
@@ -93,6 +96,10 @@ export function buildAvailabilitySlots(input: {
       );
 
       if (candidate <= now || hitsBreak || hitsAppointment || hitsBlock) {
+        continue;
+      }
+
+      if (earliest && candidate < earliest) {
         continue;
       }
 

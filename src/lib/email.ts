@@ -296,6 +296,8 @@ export async function sendNewBookingNotification(data: {
   staffName: string;
   dateLabel: string;
   timeLabel: string;
+  /** Adjunto solo al correo del admin (Resend). */
+  adminAttachment?: { filename: string; contentBase64: string };
 }) {
   const to = adminNotificationTo();
   console.log("[email] notif admin → ADMIN_EMAIL:", process.env.ADMIN_EMAIL ?? "(no definido, usando FROM)");
@@ -319,6 +321,7 @@ export async function sendNewBookingNotification(data: {
             <tr><td style="padding:3px 0;"><strong>Fecha:</strong> ${data.dateLabel}</td></tr>
             <tr><td style="padding:3px 0;"><strong>Hora:</strong> ${data.timeLabel}</td></tr>
             <tr><td style="padding:3px 0;"><strong>Telefono:</strong> ${data.clientPhone}</td></tr>
+            <tr><td style="padding:8px 0 3px;border-top:1px solid #ddd6cc;"><strong>Adelanto web:</strong> S/ 50 — comprobante adjunto a este correo.</td></tr>
           </table>
           <p style="margin:18px 0 0;font-size:0.82rem;color:#9ca3af;">Puedes ver y gestionar esta cita desde el panel de administracion.</p>
         </td></tr>
@@ -326,7 +329,17 @@ export async function sendNewBookingNotification(data: {
     </td></tr>
   </table>
 </body>
-</html>`
+</html>`,
+    ...(data.adminAttachment
+      ? {
+          attachments: [
+            {
+              filename: data.adminAttachment.filename,
+              content: Buffer.from(data.adminAttachment.contentBase64, "base64")
+            }
+          ]
+        }
+      : {})
   });
 }
 
