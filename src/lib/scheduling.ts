@@ -1,3 +1,4 @@
+import { isSundaySalon } from "./booking-rules";
 import { addMinutes, dayOfWeekForDate, formatTimeInZone, zonedTimeToUtc } from "./time";
 
 export type CalendarAppointment = {
@@ -78,9 +79,14 @@ export function buildAvailabilitySlots(input: {
         ? zonedTimeToUtc(input.date, workingHour.breakEnd, input.timeZone)
         : null;
 
+    /** Domingo: último inicio permitido es el cierre del turno; el servicio puede terminar después. */
+    const sundayStartOnlyThroughClose = isSundaySalon(input.date, input.timeZone);
+
     for (
       let candidate = workStart;
-      addMinutes(candidate, input.durationMinutes) <= workEnd;
+      sundayStartOnlyThroughClose
+        ? candidate <= workEnd
+        : addMinutes(candidate, input.durationMinutes) <= workEnd;
       candidate = addMinutes(candidate, input.intervalMinutes)
     ) {
       const candidateEnd = addMinutes(candidate, input.durationMinutes);

@@ -4,7 +4,6 @@ import {
   earliestPublicBookingInstant,
   isPublicBookingStartInDayWindow,
   isSaturdaySalon,
-  isWeekendSalon,
   MIN_BOOKING_ADVANCE_HOURS,
   SATURDAY_MAX_CONCURRENT_STARTS,
   WEB_DEPOSIT_AMOUNT_PEN
@@ -221,9 +220,9 @@ export async function getAvailabilityForServices(input: {
   const morningSlots = windowed.filter((s) => parseInt(fmt.format(new Date(s.startAt)), 10) < 13);
   const merged: AvailabilitySlot[] = morningSlots.length > 0 ? morningSlots : windowed;
 
-  const weekendTeam = !input.staffId && isWeekendSalon(input.date, settings.timezone);
+  const saturdayTeamMode = !input.staffId && isSaturdaySalon(input.date, settings.timezone);
 
-  if (weekendTeam && isSaturdaySalon(input.date, settings.timezone)) {
+  if (saturdayTeamMode) {
     const existing = await prisma.appointment.findMany({
       where: {
         status: { in: [AppointmentStatus.CONFIRMED, AppointmentStatus.COMPLETED] },
@@ -248,25 +247,12 @@ export async function getAvailabilityForServices(input: {
       if ((countByStart.get(slot.startAt) ?? 0) < SATURDAY_MAX_CONCURRENT_STARTS) {
         out.push({
           ...slot,
-          staffName: "Equipo fin de semana"
+          staffName: "Equipo JF Studio"
         });
       }
     }
     out.sort((a, b) => a.startAt.localeCompare(b.startAt));
     return out;
-  }
-
-  if (weekendTeam && !isSaturdaySalon(input.date, settings.timezone)) {
-    const byStart = new Map<string, AvailabilitySlot>();
-    for (const slot of merged) {
-      if (!byStart.has(slot.startAt)) {
-        byStart.set(slot.startAt, {
-          ...slot,
-          staffName: "Equipo fin de semana"
-        });
-      }
-    }
-    return Array.from(byStart.values()).sort((a, b) => a.startAt.localeCompare(b.startAt));
   }
 
   return merged;

@@ -3,7 +3,7 @@
 import { Calendar, CheckCircle2, Loader2, Scissors } from "lucide-react";
 import { FormEvent, useEffect, useMemo, useState } from "react";
 
-import { ARRIVAL_TOLERANCE_MINUTES, isWeekendSalon } from "@/lib/booking-rules";
+import { ARRIVAL_TOLERANCE_MINUTES, isSaturdaySalon } from "@/lib/booking-rules";
 import { formatCurrency } from "@/lib/utils";
 
 type Service = {
@@ -67,13 +67,13 @@ export function BookingForm({
   const [birthday, setBirthday] = useState("");
   const [documentType, setDocumentType] = useState<"DNI" | "CE" | "PASSPORT">("DNI");
 
-  const isWeekendDate = useMemo(() => isWeekendSalon(date, salonTimezone), [date, salonTimezone]);
+  const isSaturdayDate = useMemo(() => isSaturdaySalon(date, salonTimezone), [date, salonTimezone]);
 
   useEffect(() => {
-    if (isWeekendDate) {
+    if (isSaturdayDate) {
       setStaffId("any");
     }
-  }, [isWeekendDate]);
+  }, [isSaturdayDate]);
   const selectedServiceRows = useMemo(
     () => services.filter((service) => selectedServices.includes(service.id)),
     [selectedServices, services]
@@ -82,7 +82,6 @@ export function BookingForm({
   const total = selectedServiceRows.reduce((sum, service) => sum + service.price, 0);
   const duration = selectedServiceRows.reduce((sum, service) => sum + service.durationMinutes, 0);
   const selectedSlot = slots.find((slot) => `${slot.staffId}:${slot.startAt}` === selectedSlotKey);
-  const requiresDeposit = selectedServiceRows.some((s) => s.requiresDeposit);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -288,7 +287,7 @@ export function BookingForm({
           ))}
         </div>
 
-        {isWeekendDate ? (
+        {isSaturdayDate ? (
           <div
             style={{
               background: "linear-gradient(135deg, #fdf4f8, #f5f2ed)",
@@ -299,13 +298,13 @@ export function BookingForm({
             }}
           >
             <p className="field-label" style={{ marginBottom: 6 }}>
-              Fin de semana
+              Sábado
             </p>
             <p style={{ margin: 0, fontSize: "0.95rem", fontWeight: 600, color: "#1a1a1a" }}>
               Equipo JF Studio
             </p>
             <p className="small muted" style={{ margin: "8px 0 0" }}>
-              Los sabados y domingos el equipo atiende en conjunto; te asignamos un horario disponible sin elegir estilista.
+              Los sábados el equipo atiende en conjunto; te asignamos un horario disponible sin elegir estilista.
             </p>
           </div>
         ) : (
@@ -495,12 +494,6 @@ export function BookingForm({
             Ya registramos tu adelanto en la reserva anterior; no necesitas volver a adjuntar el comprobante.
           </p>
         )}
-
-        {requiresDeposit ? (
-          <div style={{ background: "#fefce8", border: "1px solid #fde047", borderRadius: 8, padding: "10px 14px", fontSize: "0.88rem" }}>
-            <strong>Esta cita requiere un adelanto.</strong> Te contactaremos por WhatsApp para coordinar el pago antes de confirmar tu reserva.
-          </div>
-        ) : null}
 
         {error ? <p className="small" style={{ color: "var(--danger)" }}>{error}</p> : null}
 
