@@ -3,6 +3,7 @@ import ExcelJS from "exceljs";
 
 import { requireAdmin } from "@/lib/auth";
 import { getCashReport } from "@/lib/data";
+import { salonAddressPlain } from "@/lib/salon-address";
 import { formatDateInZone, formatTimeInZone } from "@/lib/time";
 
 export const dynamic = "force-dynamic";
@@ -33,7 +34,7 @@ export async function GET(request: NextRequest) {
   const { payments, settings } = await getCashReport(isRange ? { from, to } : { date });
 
   const ruc         = process.env.SALON_RUC ?? "";
-  const address     = process.env.SALON_ADDRESS ?? "Lima, Peru";
+  const address     = process.env.SALON_ADDRESS ?? salonAddressPlain();
   const businessName = process.env.SALON_BUSINESS_NAME ?? "Johanna Figueredo Studio E.I.R.L.";
   const periodo   = isRange ? `${from} al ${to}` : (date ?? new Date().toISOString().slice(0, 10));
   const generado  = new Date().toLocaleDateString("es-PE", { year: "numeric", month: "long", day: "numeric" });

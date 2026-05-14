@@ -140,7 +140,7 @@ export default async function PublicAppointmentPage({ params }: PageProps) {
                   <strong>Adelanto S/ {WEB_DEPOSIT_AMOUNT_PEN}:</strong> si cancelas tu cita, el adelanto no se devuelve. Si reagendas, conservamos tu comprobante en la nueva fecha.
                   <br />
                   <br />
-                  <strong>Llegada:</strong> tienes {ARRIVAL_TOLERANCE_MINUTES} minutos de tolerancia desde la hora de tu cita. Sin presentarte en ese tiempo (y sin aviso), puede considerarse inasistencia.
+                  <strong>Llegada:</strong> por favor llega puntual; contamos con {ARRIVAL_TOLERANCE_MINUTES} minutos de tolerancia desde la hora acordada.
                 </div>
                 <div className="button-row">
                   <Link className="btn" href={`/reserva/${token}/reagendar`}>

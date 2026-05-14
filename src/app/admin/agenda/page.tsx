@@ -4,7 +4,7 @@ import { CalendarPlus, Eye } from "lucide-react";
 import { AgendaCalendar } from "@/components/agenda-calendar";
 import { InlineCancelForm } from "@/components/inline-cancel-form";
 import { StatusBadge } from "@/components/status-badge";
-import { createAdminAppointmentAction, markNoShowAction } from "@/lib/actions";
+import { createAdminAppointmentAction } from "@/lib/actions";
 import { getAgenda, getAgendaRange } from "@/lib/data";
 import { formatTimeInZone } from "@/lib/time";
 import { formatCurrency } from "@/lib/utils";
@@ -177,15 +177,7 @@ export default async function AgendaPage({ searchParams }: PageProps) {
                       Ver
                     </Link>
                     {appointment.status === "CONFIRMED" ? (
-                      <>
-                        <InlineCancelForm appointmentId={appointment.id} />
-                        <form action={markNoShowAction}>
-                          <input type="hidden" name="appointmentId" value={appointment.id} />
-                          <button className="btn secondary" type="submit">
-                            No asistio
-                          </button>
-                        </form>
-                      </>
+                      <InlineCancelForm appointmentId={appointment.id} />
                     ) : null}
                   </div>
                 </article>

@@ -7,6 +7,8 @@ const MESSAGES: Record<string, { text: string; type: "success" | "error" }> = {
   guardado: { text: "✓ Cambios guardados correctamente.", type: "success" },
   creado: { text: "✓ Creado correctamente.", type: "success" },
   eliminado: { text: "✓ Eliminado correctamente.", type: "success" },
+  aprobado: { text: "✓ Testimonio aprobado y visible en la web.", type: "success" },
+  rechazado: { text: "✓ Testimonio rechazado.", type: "success" },
   error: { text: "✗ Ocurrió un error. Intenta de nuevo.", type: "error" },
   error_password: { text: "✗ Contraseña actual incorrecta.", type: "error" },
   error_mismatch: { text: "✗ Las contraseñas nuevas no coinciden.", type: "error" },

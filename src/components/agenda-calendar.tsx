@@ -51,7 +51,7 @@ export function AgendaCalendar({
   const events = useMemo<CalendarEvent[]>(
     () =>
       appointments
-        .filter((appt) => appt.status !== "CANCELED" && appt.status !== "NO_SHOW")
+        .filter((appt) => appt.status !== "CANCELED")
         .map((appt) => ({
           id: appt.id,
           title: appt.status === "COMPLETED"

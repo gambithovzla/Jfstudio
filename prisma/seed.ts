@@ -99,6 +99,32 @@ async function main() {
     }
   });
 
+  await prisma.service.upsert({
+    where: { name: "Laceado organico" },
+    update: { requiresDeposit: true, depositAmount: 50 },
+    create: {
+      name: "Laceado organico",
+      description: "Alisado organico con productos profesionales.",
+      durationMinutes: 180,
+      price: 280,
+      requiresDeposit: true,
+      depositAmount: 50
+    }
+  });
+
+  await prisma.service.upsert({
+    where: { name: "Mechas" },
+    update: { requiresDeposit: true, depositAmount: 50 },
+    create: {
+      name: "Mechas",
+      description: "Mechas californianas, balayage o reflejos según evaluacion.",
+      durationMinutes: 180,
+      price: 260,
+      requiresDeposit: true,
+      depositAmount: 50
+    }
+  });
+
   const hidratacion = await prisma.service.upsert({
     where: { name: "Hidratacion profunda" },
     update: {},

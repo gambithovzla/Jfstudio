@@ -67,7 +67,7 @@ export default function CancelacionPage() {
                 La hora de tu cita es el momento acordado para comenzar. Cuentas con <strong>{ARRIVAL_TOLERANCE_MINUTES} minutos</strong> de tolerancia <strong>a partir de esa hora</strong> para presentarte en el salón.
               </p>
               <p>
-                Si <strong>no llegas</strong> dentro de ese margen de {ARRIVAL_TOLERANCE_MINUTES} minutos y sin aviso previo, la cita puede tratarse como <strong>inasistencia</strong>; en ese caso el adelanto de la reserva web no se reembolsa.
+                Si llegas fuera de ese margen, escríbenos por WhatsApp para ver si aún podemos atenderte en el tiempo disponible.
               </p>
             </section>
 
@@ -81,7 +81,7 @@ export default function CancelacionPage() {
             <section className="static-section">
               <h2>Depósito en servicios largos (panel / presencial)</h2>
               <p>
-                Para algunos servicios muy largos (por ejemplo color completo o keratina), el salón puede pedir un depósito distinto al de la web. Esas condiciones se te comunican al coordinar la cita.
+                Para algunos servicios muy largos (por ejemplo laceado orgánico, mechas o color completo), el salón puede pedir un depósito distinto al de la web. Esas condiciones se te comunican al coordinar la cita.
               </p>
             </section>
 

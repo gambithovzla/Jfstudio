@@ -1,3 +1,5 @@
+import { SALON_FLOOR_OFFICE, SALON_STREET_ADDRESS } from "@/lib/salon-address";
+
 export type LandingService = {
   title: string;
   description: string;
@@ -59,6 +61,8 @@ export type LandingContent = {
   location: {
     title: string;
     address: string;
+    /** Línea adicional (piso / oficina). */
+    suiteLine: string;
     mapsEmbedUrl: string | null;
     coordinates?: { lat: number; lon: number };
     hours: string[];
@@ -126,7 +130,7 @@ export const landingContent: LandingContent = {
       {
         title: "Tratamientos capilares",
         description:
-          "Hidratación profunda, keratina, bótox capilar y nutrición para cabellos secos o dañados.",
+          "Hidratación profunda, bótox capilar, nutrición y reparación para cabellos secos o dañados.",
         highlight: "75 min"
       }
     ]
@@ -180,7 +184,8 @@ export const landingContent: LandingContent = {
   },
   location: {
     title: "Visítanos",
-    address: "Av. José Larco 345, Miraflores, Lima",
+    address: SALON_STREET_ADDRESS,
+    suiteLine: SALON_FLOOR_OFFICE,
     mapsEmbedUrl:
       "https://www.openstreetmap.org/export/embed.html?bbox=-77.0321%2C-12.1289%2C-77.0261%2C-12.1229&layer=mapnik&marker=-12.1259%2C-77.0291",
     coordinates: { lat: -12.1259, lon: -77.0291 },

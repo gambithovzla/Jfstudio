@@ -1,4 +1,4 @@
-import { AppointmentStatus, Prisma } from "@prisma/client";
+import { AppointmentStatus, Prisma, TestimonialStatus } from "@prisma/client";
 
 import {
   earliestPublicBookingInstant,
@@ -136,6 +136,44 @@ export async function getBookingBootstrap() {
     })),
     staff
   };
+}
+
+export type ApprovedTestimonialCard = {
+  quote: string;
+  author: string;
+  detail?: string;
+};
+
+export async function getApprovedTestimonials(): Promise<ApprovedTestimonialCard[]> {
+  assertDatabaseConfigured();
+
+  const rows = await prisma.clientTestimonial.findMany({
+    where: { status: TestimonialStatus.APPROVED },
+    orderBy: { reviewedAt: "desc" },
+    take: 12,
+    select: { body: true, authorName: true, stars: true }
+  });
+
+  return rows.map((r) => ({
+    quote: r.body,
+    author: r.authorName?.trim() || "Clienta",
+    detail: r.stars ? `${r.stars}/5 · testimonio verificado` : "Testimonio verificado"
+  }));
+}
+
+export async function getTestimonialsForAdmin() {
+  assertDatabaseConfigured();
+
+  const rows = await prisma.clientTestimonial.findMany({
+    orderBy: { createdAt: "desc" },
+    take: 150
+  });
+
+  return [...rows].sort((a, b) => {
+    if (a.status === TestimonialStatus.PENDING && b.status !== TestimonialStatus.PENDING) return -1;
+    if (a.status !== TestimonialStatus.PENDING && b.status === TestimonialStatus.PENDING) return 1;
+    return b.createdAt.getTime() - a.createdAt.getTime();
+  });
 }
 
 export async function getAvailabilityForServices(input: {

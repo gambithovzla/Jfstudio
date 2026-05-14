@@ -1,6 +1,13 @@
 "use server";
 
-import { AppointmentStatus, DocumentType, InventoryMovementType, Prisma, UserRole } from "@prisma/client";
+import {
+  AppointmentStatus,
+  DocumentType,
+  InventoryMovementType,
+  Prisma,
+  TestimonialStatus,
+  UserRole
+} from "@prisma/client";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
@@ -212,18 +219,6 @@ export async function cancelForceMajeureAction(formData: FormData) {
   }
 
   redirect("/admin/agenda");
-}
-
-export async function markNoShowAction(formData: FormData) {
-  await requireAdmin();
-  const appointmentId = requiredString(formData, "appointmentId");
-
-  await prisma.appointment.update({
-    where: { id: appointmentId },
-    data: { status: AppointmentStatus.NO_SHOW }
-  });
-
-  revalidatePath("/admin/agenda");
 }
 
 export async function completeAppointmentAction(formData: FormData) {
@@ -991,5 +986,67 @@ export async function changeAdminPasswordAction(formData: FormData) {
 
   revalidatePath("/admin/configuracion");
   redirect("/admin/configuracion?msg=guardado");
+}
+
+// ─── Testimonios (público + admin) ───────────────────────────────────────────
+
+export async function submitTestimonialAction(formData: FormData) {
+  const bodyRaw = formData.get("body");
+  const body = typeof bodyRaw === "string" ? bodyRaw.trim() : "";
+  if (!body) {
+    redirect("/dejar-testimonio?err=required");
+  }
+  if (body.length > 2000) {
+    redirect("/dejar-testimonio?err=long");
+  }
+
+  const authorName = optionalString(formData, "authorName");
+  if (authorName && authorName.length > 120) {
+    redirect("/dejar-testimonio?err=name");
+  }
+
+  const starsRaw = formData.get("stars");
+  const starsParsed = typeof starsRaw === "string" ? Number(starsRaw) : 5;
+  const stars = Number.isInteger(starsParsed) && starsParsed >= 1 && starsParsed <= 5 ? starsParsed : 5;
+
+  await prisma.clientTestimonial.create({
+    data: {
+      body,
+      authorName,
+      stars,
+      status: TestimonialStatus.PENDING
+    }
+  });
+
+  revalidatePath("/");
+  revalidatePath("/admin/testimonios");
+  redirect("/dejar-testimonio?ok=1");
+}
+
+export async function approveTestimonialAction(formData: FormData) {
+  await requireAdmin();
+  const id = requiredString(formData, "id");
+
+  await prisma.clientTestimonial.update({
+    where: { id },
+    data: { status: TestimonialStatus.APPROVED, reviewedAt: new Date() }
+  });
+
+  revalidatePath("/");
+  revalidatePath("/admin/testimonios");
+  redirect("/admin/testimonios?msg=aprobado");
+}
+
+export async function rejectTestimonialAction(formData: FormData) {
+  await requireAdmin();
+  const id = requiredString(formData, "id");
+
+  await prisma.clientTestimonial.update({
+    where: { id },
+    data: { status: TestimonialStatus.REJECTED, reviewedAt: new Date() }
+  });
+
+  revalidatePath("/admin/testimonios");
+  redirect("/admin/testimonios?msg=rechazado");
 }
 

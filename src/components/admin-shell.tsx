@@ -8,6 +8,7 @@ import {
   Package,
   Scissors,
   Settings,
+  Star,
   Upload,
   Users,
   type LucideIcon
@@ -27,7 +28,8 @@ const iconMap: Record<string, LucideIcon> = {
   Settings,
   Ban,
   Upload,
-  ClipboardList
+  ClipboardList,
+  Star
 };
 
 const navLinks: AdminNavLink[] = [
@@ -37,6 +39,7 @@ const navLinks: AdminNavLink[] = [
   { href: "/admin/servicios", label: "Servicios", iconName: "Scissors" },
   { href: "/admin/productos", label: "Productos", iconName: "Package" },
   { href: "/admin/caja", label: "Caja", iconName: "CreditCard" },
+  { href: "/admin/testimonios", label: "Testimonios", iconName: "Star" },
   { href: "/admin/configuracion", label: "Configuración", iconName: "Settings" },
   { href: "/admin/configuracion/bloqueos", label: "Bloqueos", iconName: "Ban" },
   { href: "/admin/importar", label: "Importar Excel", iconName: "Upload" }
