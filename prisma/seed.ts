@@ -90,10 +90,10 @@ async function main() {
 
   const color = await prisma.service.upsert({
     where: { name: "Color completo" },
-    update: {},
+    update: { description: "Coloración completa con lavado." },
     create: {
       name: "Color completo",
-      description: "Coloracion completa con lavado.",
+      description: "Coloración completa con lavado.",
       durationMinutes: 150,
       price: 220,
       requiresDeposit: true,
@@ -105,10 +105,14 @@ async function main() {
 
   await prisma.service.upsert({
     where: { name: "Mechas" },
-    update: { requiresDeposit: true, depositAmount: 50 },
+    update: {
+      requiresDeposit: true,
+      depositAmount: 50,
+      description: "Mechas californianas, balayage o reflejos según evaluación."
+    },
     create: {
       name: "Mechas",
-      description: "Mechas californianas, balayage o reflejos según evaluacion.",
+      description: "Mechas californianas, balayage o reflejos según evaluación.",
       durationMinutes: 180,
       price: 260,
       requiresDeposit: true,
@@ -118,7 +122,7 @@ async function main() {
 
   const hidratacion = await prisma.service.upsert({
     where: { name: "Hidratacion profunda" },
-    update: {},
+    update: { description: "Tratamiento capilar hidratante." },
     create: {
       name: "Hidratacion profunda",
       description: "Tratamiento capilar hidratante.",

@@ -5,7 +5,7 @@ import { FormEvent, useEffect, useMemo, useState } from "react";
 
 import { ARRIVAL_TOLERANCE_MINUTES, isSaturdaySalon } from "@/lib/booking-rules";
 import { laceadoTierChoiceLabel, isStandaloneLaceadoOrganicName, partitionLaceadoServices } from "@/lib/laceado-services";
-import { formatCurrency } from "@/lib/utils";
+import { formatDesdeCurrency, polishServiceDescription, polishServiceTitle } from "@/lib/public-service-copy";
 
 type Service = {
   id: string;
@@ -336,9 +336,11 @@ export function BookingForm({
               }}
             >
               <div style={{ display: "grid", gap: 4, width: "100%" }}>
-                <strong>Laceado orgánico</strong>
+                <strong>Laceado Orgánico</strong>
                 <span className="small muted">
-                  Elige el largo de tu cabello; el precio y los minutos son solo los de esa opción (no se suma nada extra).
+                  {polishServiceDescription(
+                    "Elige el largo de tu cabello; el precio y los minutos son solo los de esa opción (no se suma nada extra)."
+                  )}
                 </span>
               </div>
               <select
@@ -354,8 +356,8 @@ export function BookingForm({
                 <option value="">Sin laceado orgánico</option>
                 {laceadoLengthTiers.map((tier) => (
                   <option key={tier.id} value={tier.id}>
-                    {laceadoTierChoiceLabel(tier.name)} — {formatCurrency(tier.price, currency)} · {tier.durationMinutes}{" "}
-                    min
+                    {polishServiceTitle(laceadoTierChoiceLabel(tier.name))} — {formatDesdeCurrency(tier.price, currency)} ·{" "}
+                    {tier.durationMinutes} min
                   </option>
                 ))}
               </select>
@@ -378,7 +380,7 @@ export function BookingForm({
                     onChange={(event) => setLaceadoAbundanciaOn(event.target.checked)}
                   />
                   <span>
-                    Suplemento por abundancia (+{formatCurrency(laceadoAbundanciaService.price, currency)} ·{" "}
+                    Suplemento por abundancia ({formatDesdeCurrency(laceadoAbundanciaService.price, currency)} ·{" "}
                     {laceadoAbundanciaService.durationMinutes} min)
                   </span>
                 </label>
@@ -393,9 +395,9 @@ export function BookingForm({
                 onChange={() => toggleOtherService(service.id)}
               />
               <span style={{ display: "grid", gap: 2, width: "100%" }}>
-                <strong>{service.name}</strong>
+                <strong>{polishServiceTitle(service.name)}</strong>
                 <span className="small muted">
-                  {service.durationMinutes} min · {formatCurrency(service.price, currency)}
+                  {service.durationMinutes} min · {formatDesdeCurrency(service.price, currency)}
                 </span>
               </span>
             </label>
@@ -444,7 +446,7 @@ export function BookingForm({
         <div className="card" style={{ background: "var(--surface-soft)" }}>
           <div className="button-row" style={{ justifyContent: "space-between" }}>
             <span className="small muted">Total estimado</span>
-            <strong>{formatCurrency(total, currency)}</strong>
+            <strong>{formatDesdeCurrency(total, currency)}</strong>
           </div>
           <div className="button-row" style={{ justifyContent: "space-between", marginTop: 6 }}>
             <span className="small muted">Duracion</span>

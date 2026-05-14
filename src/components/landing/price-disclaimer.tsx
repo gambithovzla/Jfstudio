@@ -4,7 +4,7 @@ import { Info } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
 const TOOLTIP_TEXT =
-  "Los precios son referenciales y pueden variar según las características de cada cliente.";
+  "Los precios con «Desde» son referenciales y pueden variar según tu cabello, el tiempo real y la valoración en salón.";
 
 export function PriceDisclaimer() {
   const [open, setOpen] = useState(false);
