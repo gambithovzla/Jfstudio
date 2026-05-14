@@ -49,7 +49,9 @@ export const PUBLIC_SUNDAY_WEB_OPEN_LOCAL = "07:00";
 export const PUBLIC_SUNDAY_WEB_CLOSE_LOCAL = "09:00";
 
 function localHmToMinutes(hm: string): number {
-  const [h, m = "0"] = hm.split(":").map((x) => Number(x));
+  const parts = hm.split(":");
+  const h = Number(parts[0] ?? 0);
+  const m = Number(parts[1] ?? 0);
   return h * 60 + m;
 }
 
