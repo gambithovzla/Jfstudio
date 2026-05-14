@@ -219,7 +219,7 @@ export async function getAvailabilityForServices(input: {
   // Once morning is fully booked, all slots are shown.
   const fmt = new Intl.DateTimeFormat("es", { timeZone: settings.timezone, hour: "numeric", hour12: false });
   const morningSlots = windowed.filter((s) => parseInt(fmt.format(new Date(s.startAt)), 10) < 13);
-  let merged: AvailabilitySlot[] = morningSlots.length > 0 ? morningSlots : windowed;
+  const merged: AvailabilitySlot[] = morningSlots.length > 0 ? morningSlots : windowed;
 
   const weekendTeam = !input.staffId && isWeekendSalon(input.date, settings.timezone);
 
