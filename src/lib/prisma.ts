@@ -4,12 +4,13 @@ const globalForPrisma = globalThis as unknown as {
   prisma?: PrismaClient;
 };
 
-export const prisma =
+const prismaClient =
   globalForPrisma.prisma ??
   new PrismaClient({
     log: process.env.NODE_ENV === "development" ? ["error", "warn"] : ["error"]
   });
 
-if (process.env.NODE_ENV !== "production") {
-  globalForPrisma.prisma = prisma;
-}
+// Reuse one client per Node process (dev HMR and Next.js prod edge cases).
+globalForPrisma.prisma = prismaClient;
+
+export const prisma = prismaClient;

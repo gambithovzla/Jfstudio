@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { Cake, Mail, MessageCircle, Settings } from "lucide-react";
 
+import { Prisma } from "@prisma/client";
+
 import { markBirthdayBonusWhatsappSentAction } from "@/lib/actions";
 import { getBirthdayBonusesForToday, getBirthdayBonusSettings, getSalonSettings } from "@/lib/data";
 import { prisma } from "@/lib/prisma";
@@ -31,21 +33,36 @@ export default async function BirthdaysPage({ searchParams }: { searchParams?: S
   const monthFilter = Number(params.mes ?? now.getMonth() + 1);
   const validMonth = Number.isFinite(monthFilter) && monthFilter >= 1 && monthFilter <= 12 ? monthFilter : now.getMonth() + 1;
 
-  const allBirthdays = await prisma.client.findMany({
-    where: { birthday: { not: null } },
-    include: {
-      birthdayBonuses: {
-        where: {
-          generatedAt: {
-            gte: new Date(Date.UTC(now.getUTCFullYear(), 0, 1)),
-            lt: new Date(Date.UTC(now.getUTCFullYear() + 1, 0, 1))
+  const yearStart = new Date(Date.UTC(now.getUTCFullYear(), 0, 1));
+  const yearEnd = new Date(Date.UTC(now.getUTCFullYear() + 1, 0, 1));
+
+  const monthClientIds = await prisma.$queryRaw<Array<{ id: string }>>(
+    Prisma.sql`
+      SELECT c.id
+      FROM "Client" c
+      WHERE c.birthday IS NOT NULL
+        AND EXTRACT(MONTH FROM c.birthday)::int = ${validMonth}
+    `
+  );
+
+  const allBirthdays =
+    monthClientIds.length === 0
+      ? []
+      : await prisma.client.findMany({
+          where: { id: { in: monthClientIds.map((r) => r.id) } },
+          include: {
+            birthdayBonuses: {
+              where: {
+                generatedAt: {
+                  gte: yearStart,
+                  lt: yearEnd
+                }
+              },
+              orderBy: { generatedAt: "desc" },
+              take: 1
+            }
           }
-        },
-        orderBy: { generatedAt: "desc" },
-        take: 1
-      }
-    }
-  });
+        });
 
   const monthBirthdays = allBirthdays
     .filter((c) => c.birthday && c.birthday.getUTCMonth() + 1 === validMonth)

@@ -3,7 +3,7 @@ import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 
 import { deleteClientAction, updateClientAction } from "@/lib/actions";
-import { getClientById } from "@/lib/data";
+import { getClientForEdit } from "@/lib/data";
 
 export const dynamic = "force-dynamic";
 
@@ -13,13 +13,13 @@ type PageProps = {
 
 export default async function EditClientPage({ params }: PageProps) {
   const { id } = await params;
-  const { client } = await getClientById(id);
+  const client = await getClientForEdit(id);
 
   if (!client) {
     notFound();
   }
 
-  const hasAppointments = client.appointments.length > 0;
+  const hasAppointments = client._count.appointments > 0;
 
   return (
     <>
