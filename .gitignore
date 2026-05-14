@@ -12,3 +12,6 @@ dev-server.err.log
 *.tsbuildinfo
 
 .claude/
+
+public/uploads/gallery/*
+!public/uploads/gallery/.gitkeep

@@ -4,6 +4,7 @@ import {
   Cake,
   ClipboardList,
   CreditCard,
+  Images,
   LogOut,
   Package,
   Scissors,
@@ -29,7 +30,8 @@ const iconMap: Record<string, LucideIcon> = {
   Ban,
   Upload,
   ClipboardList,
-  Star
+  Star,
+  Images
 };
 
 const navLinks: AdminNavLink[] = [
@@ -40,6 +42,7 @@ const navLinks: AdminNavLink[] = [
   { href: "/admin/productos", label: "Productos", iconName: "Package" },
   { href: "/admin/caja", label: "Caja", iconName: "CreditCard" },
   { href: "/admin/testimonios", label: "Testimonios", iconName: "Star" },
+  { href: "/admin/galeria", label: "Galería web", iconName: "Images" },
   { href: "/admin/configuracion", label: "Configuración", iconName: "Settings" },
   { href: "/admin/configuracion/bloqueos", label: "Bloqueos", iconName: "Ban" },
   { href: "/admin/importar", label: "Importar Excel", iconName: "Upload" }

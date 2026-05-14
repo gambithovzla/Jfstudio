@@ -8,7 +8,12 @@ import { SiteFooter } from "@/components/landing/site-footer";
 import { SiteHeader } from "@/components/landing/site-header";
 import { StudioSpace } from "@/components/landing/studio-space";
 import { Testimonials } from "@/components/landing/testimonials";
-import { getApprovedTestimonials, getBookingBootstrap, type ApprovedTestimonialCard } from "@/lib/data";
+import {
+  getApprovedTestimonials,
+  getBookingBootstrap,
+  getLandingGalleryPublic,
+  type ApprovedTestimonialCard
+} from "@/lib/data";
 
 export const dynamic = "force-dynamic";
 
@@ -16,6 +21,7 @@ export default async function HomePage() {
   let services: Awaited<ReturnType<typeof getBookingBootstrap>>["services"] = [];
   let currency = "PEN";
   let approvedTestimonials: ApprovedTestimonialCard[] = [];
+  const cmsGallery = await getLandingGalleryPublic();
 
   try {
     const bootstrap = await getBookingBootstrap();
@@ -33,7 +39,7 @@ export default async function HomePage() {
         <Hero />
         <ServicesShowcase services={services} currency={currency} />
         <About />
-        <Gallery />
+        <Gallery cmsImages={cmsGallery} />
         <StudioSpace />
         <Testimonials dbItems={approvedTestimonials} />
         <Location />

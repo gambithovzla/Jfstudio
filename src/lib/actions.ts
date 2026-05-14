@@ -26,6 +26,12 @@ import {
   sendLowStockAlert,
   sendPostVisitCareEmail
 } from "@/lib/email";
+import {
+  assertSafeGallerySrcPath,
+  defaultLandingGallerySeed,
+  removeGalleryFileIfManaged,
+  saveGalleryUpload
+} from "@/lib/gallery-upload";
 import { prisma } from "@/lib/prisma";
 import { isTestimonialRateLimited } from "@/lib/testimonial-rate-limit";
 import { addMinutes, formatDateInZone, formatTimeInZone } from "@/lib/time";
@@ -1164,5 +1170,108 @@ export async function rejectTestimonialAction(formData: FormData) {
 
   revalidatePath("/admin/testimonios");
   redirect("/admin/testimonios?msg=rechazado");
+}
+
+// ─── Galería landing (Trabajos recientes) ───────────────────────────────────
+
+export async function seedLandingGalleryFromTemplateAction() {
+  await requireAdmin();
+  const count = await prisma.landingGalleryImage.count();
+  if (count > 0) {
+    redirect("/admin/galeria?msg=error_galeria_import");
+  }
+  const seed = defaultLandingGallerySeed();
+  await prisma.landingGalleryImage.createMany({ data: seed });
+  revalidatePath("/");
+  revalidatePath("/admin/galeria");
+  redirect("/admin/galeria?msg=galeria_importada");
+}
+
+export async function addLandingGalleryUploadAction(formData: FormData) {
+  await requireAdmin();
+  try {
+    const file = formData.get("file");
+    if (!(file instanceof File) || file.size === 0) {
+      redirect("/admin/galeria?msg=error_galeria_archivo");
+    }
+    const buffer = Buffer.from(await file.arrayBuffer());
+    const mime = file.type || "application/octet-stream";
+    const src = await saveGalleryUpload({ buffer, mime });
+    const alt = optionalString(formData, "alt") || "Trabajo realizado en JF Studio";
+    const agg = await prisma.landingGalleryImage.aggregate({ _max: { sortOrder: true } });
+    const sortOrder = (agg._max.sortOrder ?? -1) + 1;
+    await prisma.landingGalleryImage.create({ data: { src, alt, sortOrder } });
+    revalidatePath("/");
+    revalidatePath("/admin/galeria");
+    redirect("/admin/galeria?msg=galeria_foto_agregada");
+  } catch {
+    redirect("/admin/galeria?msg=error_galeria");
+  }
+}
+
+export async function addLandingGalleryPathAction(formData: FormData) {
+  await requireAdmin();
+  try {
+    const src = assertSafeGallerySrcPath(requiredString(formData, "srcPath"));
+    const alt = optionalString(formData, "altPath") || "Trabajo realizado en JF Studio";
+    const agg = await prisma.landingGalleryImage.aggregate({ _max: { sortOrder: true } });
+    const sortOrder = (agg._max.sortOrder ?? -1) + 1;
+    await prisma.landingGalleryImage.create({ data: { src, alt, sortOrder } });
+    revalidatePath("/");
+    revalidatePath("/admin/galeria");
+    redirect("/admin/galeria?msg=galeria_foto_agregada");
+  } catch {
+    redirect("/admin/galeria?msg=error_galeria_ruta");
+  }
+}
+
+export async function updateLandingGalleryAltAction(formData: FormData) {
+  await requireAdmin();
+  const id = requiredString(formData, "id");
+  const alt = requiredString(formData, "alt");
+  await prisma.landingGalleryImage.update({ where: { id }, data: { alt } });
+  revalidatePath("/");
+  revalidatePath("/admin/galeria");
+  redirect("/admin/galeria?msg=galeria_actualizada");
+}
+
+export async function deleteLandingGalleryImageAction(formData: FormData) {
+  await requireAdmin();
+  const id = requiredString(formData, "id");
+  const row = await prisma.landingGalleryImage.findUnique({ where: { id } });
+  if (row) {
+    await removeGalleryFileIfManaged(row.src);
+    await prisma.landingGalleryImage.delete({ where: { id } });
+  }
+  revalidatePath("/");
+  revalidatePath("/admin/galeria");
+  redirect("/admin/galeria?msg=galeria_eliminada");
+}
+
+export async function moveLandingGalleryImageAction(formData: FormData) {
+  await requireAdmin();
+  const id = requiredString(formData, "id");
+  const direction = requiredString(formData, "direction");
+  if (direction !== "up" && direction !== "down") {
+    redirect("/admin/galeria");
+  }
+  const rows = await prisma.landingGalleryImage.findMany({
+    orderBy: [{ sortOrder: "asc" }, { id: "asc" }]
+  });
+  const idx = rows.findIndex((r) => r.id === id);
+  const delta = direction === "up" ? -1 : direction === "down" ? 1 : 0;
+  const j = idx >= 0 ? idx + delta : -1;
+  if (idx < 0 || j < 0 || j >= rows.length || delta === 0) {
+    redirect("/admin/galeria");
+  }
+  const a = rows[idx];
+  const b = rows[j];
+  await prisma.$transaction([
+    prisma.landingGalleryImage.update({ where: { id: a.id }, data: { sortOrder: b.sortOrder } }),
+    prisma.landingGalleryImage.update({ where: { id: b.id }, data: { sortOrder: a.sortOrder } })
+  ]);
+  revalidatePath("/");
+  revalidatePath("/admin/galeria");
+  redirect("/admin/galeria?msg=galeria_orden");
 }
 

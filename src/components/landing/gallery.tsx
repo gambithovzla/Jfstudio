@@ -8,17 +8,27 @@ import { landingContent } from "@/content/landing";
 import { ScrollReveal } from "./scroll-reveal";
 import { GalleryLightbox } from "./gallery-lightbox";
 
-export function Gallery() {
+export type LandingGalleryCmsItem = { id: string; src: string; alt: string };
+
+type Props = {
+  /** Si hay al menos una imagen en BD, sustituye por completo a las estáticas de `landing.ts`. */
+  cmsImages?: LandingGalleryCmsItem[];
+};
+
+export function Gallery({ cmsImages = [] }: Props) {
   const { gallery } = landingContent;
+  const displayImages =
+    cmsImages.length > 0 ? cmsImages.map(({ src, alt }) => ({ src, alt })) : gallery.images;
   const placeholders = Array.from({ length: 6 });
-  const hasImages = gallery.images.length > 0;
+  const hasImages = displayImages.length > 0;
 
   const [lbIndex, setLbIndex] = useState<number | null>(null);
 
   const open = (i: number) => setLbIndex(i);
   const close = () => setLbIndex(null);
-  const prev = () => setLbIndex((i) => (i === null || i === 0 ? gallery.images.length - 1 : i - 1));
-  const next = () => setLbIndex((i) => (i === null ? 0 : (i + 1) % gallery.images.length));
+  const prev = () =>
+    setLbIndex((i) => (i === null || i === 0 ? displayImages.length - 1 : i - 1));
+  const next = () => setLbIndex((i) => (i === null ? 0 : (i + 1) % displayImages.length));
 
   return (
     <section className="landing-section" id="galeria">
@@ -31,10 +41,10 @@ export function Gallery() {
       <ScrollReveal>
         <div className="gallery-grid">
           {hasImages
-            ? gallery.images.map((image, i) => (
+            ? displayImages.map((image, i) => (
                 <figure
                   className="gallery-item"
-                  key={image.src}
+                  key={cmsImages.length > 0 ? (cmsImages[i]?.id ?? `${image.src}-${i}`) : image.src}
                   onClick={() => open(i)}
                   role="button"
                   tabIndex={0}
@@ -65,7 +75,7 @@ export function Gallery() {
       ) : null}
 
       <GalleryLightbox
-        images={gallery.images}
+        images={displayImages}
         index={lbIndex}
         onClose={close}
         onPrev={prev}

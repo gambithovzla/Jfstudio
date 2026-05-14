@@ -22,7 +22,16 @@ const MESSAGES: Record<string, { text: string; type: "success" | "error" }> = {
   error_s3: {
     text: "✗ No hay almacenamiento S3 configurado para adjuntos. Añade texto o configura DEPOSIT_S3_*.",
     type: "error"
-  }
+  },
+  galeria_importada: { text: "✓ Fotos por defecto importadas a la galería editable.", type: "success" },
+  galeria_foto_agregada: { text: "✓ Foto añadida a la galería pública.", type: "success" },
+  galeria_actualizada: { text: "✓ Texto alternativo actualizado.", type: "success" },
+  galeria_eliminada: { text: "✓ Foto eliminada de la galería.", type: "success" },
+  galeria_orden: { text: "✓ Orden actualizado.", type: "success" },
+  error_galeria: { text: "✗ No se pudo completar la acción de galería (revisa formato o permisos de disco).", type: "error" },
+  error_galeria_archivo: { text: "✗ Debes elegir un archivo de imagen válido.", type: "error" },
+  error_galeria_ruta: { text: "✗ Ruta no válida. Usa /images/... o /uploads/gallery/...", type: "error" },
+  error_galeria_import: { text: "✗ La importación solo está disponible cuando la galería CMS está vacía.", type: "error" }
 };
 
 export function FlashMessage({ msg }: { msg: string | null | undefined }) {
