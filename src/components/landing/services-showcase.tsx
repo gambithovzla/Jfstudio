@@ -3,7 +3,7 @@ import { Scissors, Paintbrush, Sparkles } from "lucide-react";
 
 import { landingContent } from "@/content/landing";
 import { isLaceadoPartitioned, partitionLaceadoServices } from "@/lib/laceado-services";
-import { formatCurrency } from "@/lib/utils";
+import { formatDesdeCurrency, polishServiceDescription, polishServiceTitle } from "@/lib/public-service-copy";
 import { PriceDisclaimer } from "./price-disclaimer";
 import { ScrollReveal } from "./scroll-reveal";
 
@@ -59,20 +59,22 @@ export function ServicesShowcase({ services, currency }: Props) {
                         <div className="service-card-icon">
                           <Icon size={22} aria-hidden />
                         </div>
-                        <h3 className="card-title">Laceado orgánico</h3>
+                        <h3 className="card-title">Laceado Orgánico</h3>
                         <p className="small muted">
-                          Alisado orgánico con productos profesionales. Elige el largo de tu cabello al reservar.
+                          {polishServiceDescription(
+                            "Alisado orgánico con productos profesionales. Elige el largo de tu cabello al reservar."
+                          )}
                         </p>
                         <div className="service-card-meta">
                           <span className="badge">{maxLaceadoMin} min</span>
                           <span className="price-with-disclaimer">
                             <PriceDisclaimer />
-                            <strong>Desde {formatCurrency(minLaceadoPrice, currency)}</strong>
+                            <strong>{formatDesdeCurrency(minLaceadoPrice, currency)}</strong>
                           </span>
                         </div>
                         {laceadoAbundancia ? (
                           <p className="small muted" style={{ marginTop: 8, marginBottom: 0 }}>
-                            Suplemento por abundancia +{formatCurrency(laceadoAbundancia.price, currency)} (opcional).
+                            Suplemento por abundancia {formatDesdeCurrency(laceadoAbundancia.price, currency)} (opcional).
                           </p>
                         ) : null}
                       </article>
@@ -86,15 +88,15 @@ export function ServicesShowcase({ services, currency }: Props) {
                       <div className="service-card-icon">
                         <Icon size={22} aria-hidden />
                       </div>
-                      <h3 className="card-title">{service.name}</h3>
+                      <h3 className="card-title">{polishServiceTitle(service.name)}</h3>
                       {service.description ? (
-                        <p className="small muted">{service.description}</p>
+                        <p className="small muted">{polishServiceDescription(service.description)}</p>
                       ) : null}
                       <div className="service-card-meta">
                         <span className="badge">{service.durationMinutes} min</span>
                         <span className="price-with-disclaimer">
                           <PriceDisclaimer />
-                          <strong>{formatCurrency(service.price, currency)}</strong>
+                          <strong>{formatDesdeCurrency(service.price, currency)}</strong>
                         </span>
                       </div>
                     </article>
