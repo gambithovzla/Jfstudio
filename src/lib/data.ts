@@ -978,3 +978,30 @@ export async function getAppointmentByToken(token: string) {
     }
   });
 }
+
+export type LandingGalleryAdminRow = {
+  id: string;
+  src: string;
+  alt: string;
+  sortOrder: number;
+};
+
+export async function getLandingGalleryForAdmin(): Promise<LandingGalleryAdminRow[]> {
+  assertDatabaseConfigured();
+  return prisma.landingGalleryImage.findMany({
+    orderBy: { sortOrder: "asc" },
+    select: { id: true, src: true, alt: true, sortOrder: true }
+  });
+}
+
+/** Imágenes CMS de "Trabajos recientes"; vacío si no hay DB o tabla sin filas. */
+export async function getLandingGalleryPublic(): Promise<Array<{ id: string; src: string; alt: string }>> {
+  try {
+    return await prisma.landingGalleryImage.findMany({
+      orderBy: { sortOrder: "asc" },
+      select: { id: true, src: true, alt: true }
+    });
+  } catch {
+    return [];
+  }
+}
