@@ -19,6 +19,7 @@ import {
   isDepositStorageConfigured,
   uploadPostVisitCareFile
 } from "@/lib/deposit-storage";
+import { MAX_POST_VISIT_ATTACHMENT_BYTES } from "@/lib/appointment-care";
 import {
   sendBookingCancellation,
   sendForceMajeureCancellation,
@@ -249,7 +250,7 @@ export async function completeAppointmentAction(formData: FormData) {
   let careAttachmentMime: string | null = null;
 
   if (fileEntry instanceof File && fileEntry.size > 0) {
-    if (fileEntry.size > 2 * 1024 * 1024) {
+    if (fileEntry.size > MAX_POST_VISIT_ATTACHMENT_BYTES) {
       redirect(`/admin/agenda/${appointmentId}?msg=error_adjunto_grande`);
     }
     if (!isDepositStorageConfigured()) {

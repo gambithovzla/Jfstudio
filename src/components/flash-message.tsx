@@ -17,7 +17,7 @@ const MESSAGES: Record<string, { text: string; type: "success" | "error" }> = {
     text: "✗ No se puede eliminar: hay citas históricas con este servicio. Desactívalo en su lugar.",
     type: "error"
   },
-  error_adjunto_grande: { text: "✗ El archivo de cuidados supera 2 MB.", type: "error" },
+  error_adjunto_grande: { text: "✗ El archivo de cuidados supera el tamaño máximo permitido (8 MB).", type: "error" },
   error_adjunto_tipo: { text: "✗ Formato no permitido. Usa JPG, PNG, WebP o PDF.", type: "error" },
   error_s3: {
     text: "✗ No hay almacenamiento S3 configurado para adjuntos. Añade texto o configura DEPOSIT_S3_*.",

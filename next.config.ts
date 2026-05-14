@@ -25,8 +25,8 @@ const nextConfig: NextConfig = {
   output: "standalone",
   experimental: {
     serverActions: {
-      /** Adjuntos en "Completar y cobrar" (multipart); el límite global debe superar archivo + overhead. */
-      bodySizeLimit: "8mb"
+      /** Multipart en "Completar y cobrar"; archivo hasta 8 MB + overhead del formulario. */
+      bodySizeLimit: "12mb"
     }
   },
   async headers() {

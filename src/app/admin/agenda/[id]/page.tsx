@@ -247,7 +247,7 @@ export default async function AppointmentDetailPage({ params, searchParams }: Pa
                 </p>
               </div>
               <div className="field">
-                <label htmlFor="careAttachment">Adjunto de cuidados (opcional: JPG, PNG, WebP o PDF, máx. 2 MB)</label>
+                <label htmlFor="careAttachment">Adjunto de cuidados (opcional: JPG, PNG, WebP o PDF, máx. 8 MB)</label>
                 <input className="input" id="careAttachment" name="careAttachment" type="file" accept="image/jpeg,image/png,image/webp,application/pdf" />
                 <p className="small muted" style={{ marginTop: 6 }}>
                   Requiere el mismo almacenamiento S3 que los comprobantes de adelanto (variables DEPOSIT_S3_*).
