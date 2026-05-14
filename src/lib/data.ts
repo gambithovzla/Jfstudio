@@ -45,18 +45,30 @@ export async function getBirthdayBonusesForToday(timezone: string) {
   const yearStart = new Date(Date.UTC(yearOfBonus, 0, 1));
   const yearEnd = new Date(Date.UTC(yearOfBonus + 1, 0, 1));
 
-  const candidates = await prisma.client.findMany({
-    where: {
-      birthday: { not: null }
-    },
-    include: {
-      birthdayBonuses: {
-        where: { generatedAt: { gte: yearStart, lt: yearEnd } },
-        orderBy: { generatedAt: "desc" },
-        take: 1
-      }
-    }
-  });
+  // Solo clientas con cumpleaños hoy (mes/día en calendario), no toda la base.
+  const todayIds = await prisma.$queryRaw<Array<{ id: string }>>(
+    Prisma.sql`
+      SELECT c.id
+      FROM "Client" c
+      WHERE c.birthday IS NOT NULL
+        AND EXTRACT(MONTH FROM c.birthday)::int = ${month}
+        AND EXTRACT(DAY FROM c.birthday)::int = ${day}
+    `
+  );
+
+  const candidates =
+    todayIds.length === 0
+      ? []
+      : await prisma.client.findMany({
+          where: { id: { in: todayIds.map((r) => r.id) } },
+          include: {
+            birthdayBonuses: {
+              where: { generatedAt: { gte: yearStart, lt: yearEnd } },
+              orderBy: { generatedAt: "desc" },
+              take: 1
+            }
+          }
+        });
 
   return {
     today,
@@ -64,11 +76,7 @@ export async function getBirthdayBonusesForToday(timezone: string) {
     day,
     startUtc,
     endUtc,
-    candidates: candidates.filter((client) => {
-      if (!client.birthday) return false;
-      const b = client.birthday;
-      return b.getUTCMonth() + 1 === month && b.getUTCDate() === day;
-    })
+    candidates
   };
 }
 
