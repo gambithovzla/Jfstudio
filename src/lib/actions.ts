@@ -9,12 +9,24 @@ import {
   UserRole
 } from "@prisma/client";
 import { revalidatePath } from "next/cache";
+import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 
 import { requireAdmin } from "@/lib/auth";
 import { createBookingFromLocalTime, getSalonSettings } from "@/lib/data";
-import { sendBookingCancellation, sendForceMajeureCancellation, sendLowStockAlert } from "@/lib/email";
+import {
+  assertAllowedVoucherMime,
+  isDepositStorageConfigured,
+  uploadPostVisitCareFile
+} from "@/lib/deposit-storage";
+import {
+  sendBookingCancellation,
+  sendForceMajeureCancellation,
+  sendLowStockAlert,
+  sendPostVisitCareEmail
+} from "@/lib/email";
 import { prisma } from "@/lib/prisma";
+import { isTestimonialRateLimited } from "@/lib/testimonial-rate-limit";
 import { addMinutes, formatDateInZone, formatTimeInZone } from "@/lib/time";
 import { normalizePhone } from "@/lib/utils";
 
@@ -227,6 +239,32 @@ export async function completeAppointmentAction(formData: FormData) {
   const amount = decimalFromForm(formData, "amount");
   const method = requiredString(formData, "method");
   const note = optionalString(formData, "note");
+  const careNoteRaw = optionalString(formData, "careNote");
+  const careNote =
+    careNoteRaw && careNoteRaw.length > 8000 ? careNoteRaw.slice(0, 8000) : careNoteRaw;
+
+  const fileEntry = formData.get("careAttachment");
+  let careAttachmentBuf: Buffer | null = null;
+  let careAttachmentFilename: string | null = null;
+  let careAttachmentMime: string | null = null;
+
+  if (fileEntry instanceof File && fileEntry.size > 0) {
+    if (fileEntry.size > 2 * 1024 * 1024) {
+      redirect(`/admin/agenda/${appointmentId}?msg=error_adjunto_grande`);
+    }
+    if (!isDepositStorageConfigured()) {
+      redirect(`/admin/agenda/${appointmentId}?msg=error_s3`);
+    }
+    const mime = fileEntry.type.split(";")[0].trim();
+    try {
+      assertAllowedVoucherMime(mime);
+    } catch {
+      redirect(`/admin/agenda/${appointmentId}?msg=error_adjunto_tipo`);
+    }
+    careAttachmentBuf = Buffer.from(await fileEntry.arrayBuffer());
+    careAttachmentFilename = fileEntry.name.replace(/[^\w.\-áéíóúÁÉÍÓÚñÑ ]/g, "_").slice(0, 120) || "adjunto";
+    careAttachmentMime = mime;
+  }
 
   const productUsage = Array.from(formData.entries())
     .filter(([key]) => key.startsWith("product:"))
@@ -235,6 +273,16 @@ export async function completeAppointmentAction(formData: FormData) {
       quantity: typeof value === "string" ? Number(value) : 0
     }))
     .filter((usage) => Number.isFinite(usage.quantity) && usage.quantity > 0);
+
+  let uploadedKey: string | null = null;
+  if (careAttachmentBuf && careAttachmentMime && careAttachmentFilename) {
+    const { key } = await uploadPostVisitCareFile({
+      buffer: careAttachmentBuf,
+      mime: careAttachmentMime,
+      originalFilename: careAttachmentFilename
+    });
+    uploadedKey = key;
+  }
 
   await prisma.$transaction(async (tx) => {
     const appointment = await tx.appointment.findUnique({
@@ -277,16 +325,44 @@ export async function completeAppointmentAction(formData: FormData) {
       data: {
         status: AppointmentStatus.COMPLETED,
         totalPrice: amount,
-        completedAt: new Date()
+        completedAt: new Date(),
+        postVisitCareNote: careNote?.trim() ? careNote.trim() : null,
+        postVisitAttachmentKey: uploadedKey,
+        postVisitAttachmentFilename: uploadedKey ? careAttachmentFilename : null,
+        postVisitAttachmentMime: uploadedKey ? careAttachmentMime : null
       }
     });
   });
 
   revalidatePath("/admin/agenda");
+  revalidatePath(`/admin/agenda/${appointmentId}`);
   revalidatePath("/admin/productos");
   revalidatePath("/admin/caja");
 
   checkAndAlertLowStock().catch((err) => console.error("[stock-alert]", err));
+
+  const aptForEmail = await prisma.appointment.findUnique({
+    where: { id: appointmentId },
+    include: { client: true, services: { select: { serviceNameSnapshot: true } } }
+  });
+
+  const emailTo = aptForEmail?.client.email?.trim();
+  const hasCareContent =
+    Boolean(careNote?.trim()) || Boolean(uploadedKey && careAttachmentBuf && careAttachmentFilename);
+
+  if (emailTo && hasCareContent && aptForEmail) {
+    const serviceNames = aptForEmail.services.map((s) => s.serviceNameSnapshot).join(", ");
+    sendPostVisitCareEmail({
+      to: emailTo,
+      clientName: aptForEmail.client.name,
+      serviceNames,
+      careNotePlain: careNote?.trim() ? careNote.trim() : null,
+      attachment:
+        careAttachmentBuf && careAttachmentFilename
+          ? { filename: careAttachmentFilename, contentBase64: careAttachmentBuf.toString("base64") }
+          : undefined
+    }).catch((err) => console.error("[email] post-visita:", err));
+  }
 
   redirect("/admin/agenda");
 }
@@ -358,6 +434,26 @@ export async function toggleServiceAction(formData: FormData) {
   });
 
   revalidatePath("/admin/servicios");
+}
+
+export async function deleteServiceAction(formData: FormData) {
+  await requireAdmin();
+  const serviceId = requiredString(formData, "serviceId");
+
+  const usageCount = await prisma.appointmentService.count({
+    where: { serviceId }
+  });
+
+  if (usageCount > 0) {
+    redirect("/admin/servicios?msg=error_servicio_citas");
+  }
+
+  await prisma.service.delete({
+    where: { id: serviceId }
+  });
+
+  revalidatePath("/admin/servicios");
+  redirect("/admin/servicios?msg=eliminado_servicio");
 }
 
 export async function addServiceProductAction(formData: FormData) {
@@ -991,6 +1087,21 @@ export async function changeAdminPasswordAction(formData: FormData) {
 // ─── Testimonios (público + admin) ───────────────────────────────────────────
 
 export async function submitTestimonialAction(formData: FormData) {
+  const trap = formData.get("company");
+  if (typeof trap === "string" && trap.trim()) {
+    redirect("/dejar-testimonio?ok=1");
+  }
+
+  const h = await headers();
+  const ip =
+    h.get("x-forwarded-for")?.split(",")[0]?.trim() ??
+    h.get("x-real-ip")?.trim() ??
+    "unknown";
+
+  if (isTestimonialRateLimited(ip)) {
+    redirect("/dejar-testimonio?err=rate");
+  }
+
   const bodyRaw = formData.get("body");
   const body = typeof bodyRaw === "string" ? bodyRaw.trim() : "";
   if (!body) {
@@ -1000,8 +1111,12 @@ export async function submitTestimonialAction(formData: FormData) {
     redirect("/dejar-testimonio?err=long");
   }
 
-  const authorName = optionalString(formData, "authorName");
-  if (authorName && authorName.length > 120) {
+  const authorRaw = formData.get("authorName");
+  const authorName = typeof authorRaw === "string" ? authorRaw.trim() : "";
+  if (!authorName) {
+    redirect("/dejar-testimonio?err=name_required");
+  }
+  if (authorName.length > 120) {
     redirect("/dejar-testimonio?err=name");
   }
 

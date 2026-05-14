@@ -42,6 +42,24 @@ export async function uploadDepositVoucher(params: {
   mime: string;
   originalFilename: string;
 }): Promise<{ key: string }> {
+  return uploadPrivateSalonFile({ ...params, prefix: "vouchers" });
+}
+
+/** Adjunto de cuidados post-visita (mismas reglas MIME que comprobantes). */
+export async function uploadPostVisitCareFile(params: {
+  buffer: Buffer;
+  mime: string;
+  originalFilename: string;
+}): Promise<{ key: string }> {
+  return uploadPrivateSalonFile({ ...params, prefix: "post-visit" });
+}
+
+async function uploadPrivateSalonFile(params: {
+  buffer: Buffer;
+  mime: string;
+  originalFilename: string;
+  prefix: "vouchers" | "post-visit";
+}): Promise<{ key: string }> {
   if (!isDepositStorageConfigured()) {
     throw new Error(
       "Almacenamiento de comprobantes no configurado. Define DEPOSIT_S3_BUCKET y credenciales S3 (o R2)."
@@ -51,7 +69,7 @@ export async function uploadDepositVoucher(params: {
   const bucket = process.env.DEPOSIT_S3_BUCKET!.trim();
   const ext = path.extname(params.originalFilename).slice(0, 10) || ".bin";
   const safeExt = /^\.[a-z0-9]+$/i.test(ext) ? ext : ".bin";
-  const key = `vouchers/${new Date().getUTCFullYear()}/${randomUUID()}${safeExt}`;
+  const key = `${params.prefix}/${new Date().getUTCFullYear()}/${randomUUID()}${safeExt}`;
 
   await getClient().send(
     new PutObjectCommand({

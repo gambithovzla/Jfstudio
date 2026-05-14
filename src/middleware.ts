@@ -9,7 +9,8 @@ type RateLimitRule = { windowMs: number; max: number };
 const RATE_LIMITS: Record<string, RateLimitRule> = {
   "/api/auth/login":    { windowMs: 60_000, max: 10 },   // 10 attempts/min
   "/api/bookings":      { windowMs: 60_000, max: 8 },    // 8 bookings/min per IP
-  "/api/availability":  { windowMs: 60_000, max: 60 }    // 60 availability checks/min
+  "/api/availability":  { windowMs: 60_000, max: 60 },   // 60 availability checks/min
+  "/api/qr":            { windowMs: 60_000, max: 45 }    // QR generation (evita abuso del endpoint)
 };
 
 function getIp(request: NextRequest): string {
@@ -85,5 +86,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/admin/:path*", "/api/auth/login", "/api/bookings", "/api/availability"]
+  matcher: ["/admin/:path*", "/api/auth/login", "/api/bookings", "/api/availability", "/api/qr"]
 };

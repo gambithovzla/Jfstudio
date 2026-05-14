@@ -1,7 +1,8 @@
 import Link from "next/link";
-import { Pencil, Power, Scissors } from "lucide-react";
+import { Pencil, Power, Scissors, Trash2 } from "lucide-react";
 
-import { createServiceAction, toggleServiceAction } from "@/lib/actions";
+import { ConfirmSubmitButton } from "@/components/confirm-submit-button";
+import { createServiceAction, deleteServiceAction, toggleServiceAction } from "@/lib/actions";
 import { getServicesAdmin, getSalonSettings } from "@/lib/data";
 import { formatCurrency } from "@/lib/utils";
 import { FlashMessage } from "@/components/flash-message";
@@ -96,6 +97,17 @@ export default async function ServicesPage({ searchParams }: PageProps) {
                     <Power size={15} aria-hidden />
                     {service.isActive ? "Desactivar" : "Activar"}
                   </button>
+                </form>
+                <form action={deleteServiceAction}>
+                  <input type="hidden" name="serviceId" value={service.id} />
+                  <ConfirmSubmitButton
+                    className="btn danger"
+                    type="submit"
+                    message="¿Eliminar este servicio del catálogo? Solo es posible si nunca se usó en una cita."
+                  >
+                    <Trash2 size={15} aria-hidden />
+                    Eliminar
+                  </ConfirmSubmitButton>
                 </form>
               </div>
             </article>

@@ -7,11 +7,22 @@ const MESSAGES: Record<string, { text: string; type: "success" | "error" }> = {
   guardado: { text: "✓ Cambios guardados correctamente.", type: "success" },
   creado: { text: "✓ Creado correctamente.", type: "success" },
   eliminado: { text: "✓ Eliminado correctamente.", type: "success" },
+  eliminado_servicio: { text: "✓ Servicio eliminado del catálogo.", type: "success" },
   aprobado: { text: "✓ Testimonio aprobado y visible en la web.", type: "success" },
   rechazado: { text: "✓ Testimonio rechazado.", type: "success" },
   error: { text: "✗ Ocurrió un error. Intenta de nuevo.", type: "error" },
   error_password: { text: "✗ Contraseña actual incorrecta.", type: "error" },
   error_mismatch: { text: "✗ Las contraseñas nuevas no coinciden.", type: "error" },
+  error_servicio_citas: {
+    text: "✗ No se puede eliminar: hay citas históricas con este servicio. Desactívalo en su lugar.",
+    type: "error"
+  },
+  error_adjunto_grande: { text: "✗ El archivo de cuidados supera 2 MB.", type: "error" },
+  error_adjunto_tipo: { text: "✗ Formato no permitido. Usa JPG, PNG, WebP o PDF.", type: "error" },
+  error_s3: {
+    text: "✗ No hay almacenamiento S3 configurado para adjuntos. Añade texto o configura DEPOSIT_S3_*.",
+    type: "error"
+  }
 };
 
 export function FlashMessage({ msg }: { msg: string | null | undefined }) {
