@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { useRouter, usePathname, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 
 const MESSAGES: Record<string, { text: string; type: "success" | "error" }> = {
   guardado: { text: "✓ Cambios guardados correctamente.", type: "success" },
@@ -27,24 +27,24 @@ const MESSAGES: Record<string, { text: string; type: "success" | "error" }> = {
 
 export function FlashMessage({ msg }: { msg: string | null | undefined }) {
   const router = useRouter();
-  const pathname = usePathname();
-  const searchParams = useSearchParams();
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     if (!msg) return;
 
     timerRef.current = setTimeout(() => {
-      const params = new URLSearchParams(searchParams.toString());
-      params.delete("msg");
-      const newUrl = params.size > 0 ? `${pathname}?${params}` : pathname;
-      router.replace(newUrl);
+      if (typeof window === "undefined") return;
+      const url = new URL(window.location.href);
+      if (!url.searchParams.has("msg")) return;
+      url.searchParams.delete("msg");
+      const qs = url.searchParams.toString();
+      router.replace(`${url.pathname}${qs ? `?${qs}` : ""}`);
     }, 3500);
 
     return () => {
       if (timerRef.current) clearTimeout(timerRef.current);
     };
-  }, [msg, pathname, router, searchParams]);
+  }, [msg, router]);
 
   if (!msg) return null;
   const entry = MESSAGES[msg];

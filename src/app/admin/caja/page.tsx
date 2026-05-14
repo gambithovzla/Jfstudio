@@ -111,7 +111,11 @@ export default async function CashPage({ searchParams }: PageProps) {
                 {summary.byMethod.map((row) => (
                   <tr key={row.method}>
                     <td>
-                      <span className={`method-tag ${row.method.toLowerCase().replace(/\s+/g, "")}`}>
+                      <span
+                        className={`method-tag ${String(row.method ?? "")
+                          .toLowerCase()
+                          .replace(/\s+/g, "")}`}
+                      >
                         {row.method}
                       </span>
                     </td>
@@ -193,7 +197,11 @@ export default async function CashPage({ searchParams }: PageProps) {
                     </td>
                     <td style={{ fontWeight: 600 }}>{payment.appointment.client.name}</td>
                     <td>
-                      <span className={`method-tag ${payment.method.toLowerCase().replace(/\s+/g, "")}`}>
+                      <span
+                        className={`method-tag ${String(payment.method ?? "")
+                          .toLowerCase()
+                          .replace(/\s+/g, "")}`}
+                      >
                         {payment.method}
                       </span>
                     </td>
