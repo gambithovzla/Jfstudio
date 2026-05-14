@@ -18,7 +18,12 @@ export default async function BookingPage() {
       <>
         <SiteHeader />
         <main className="booking-page">
-          <BookingForm services={services} staff={staff} currency={settings.currency} />
+          <BookingForm
+            services={services}
+            staff={staff}
+            currency={settings.currency}
+            salonTimezone={settings.timezone}
+          />
         </main>
         <SiteFooter />
       </>

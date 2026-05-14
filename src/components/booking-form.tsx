@@ -3,6 +3,7 @@
 import { Calendar, CheckCircle2, Loader2, Scissors } from "lucide-react";
 import { FormEvent, useEffect, useMemo, useState } from "react";
 
+import { ARRIVAL_TOLERANCE_MINUTES, isWeekendSalon } from "@/lib/booking-rules";
 import { formatCurrency } from "@/lib/utils";
 
 type Service = {
@@ -42,12 +43,14 @@ export function BookingForm({
   services,
   staff,
   currency,
+  salonTimezone,
   initialServiceIds,
   replaceToken
 }: {
   services: Service[];
   staff: Staff[];
   currency: string;
+  salonTimezone: string;
   initialServiceIds?: string[];
   replaceToken?: string;
 }) {
@@ -64,6 +67,13 @@ export function BookingForm({
   const [birthday, setBirthday] = useState("");
   const [documentType, setDocumentType] = useState<"DNI" | "CE" | "PASSPORT">("DNI");
 
+  const isWeekendDate = useMemo(() => isWeekendSalon(date, salonTimezone), [date, salonTimezone]);
+
+  useEffect(() => {
+    if (isWeekendDate) {
+      setStaffId("any");
+    }
+  }, [isWeekendDate]);
   const selectedServiceRows = useMemo(
     () => services.filter((service) => selectedServices.includes(service.id)),
     [selectedServices, services]
@@ -94,6 +104,9 @@ export function BookingForm({
           serviceIds: selectedServices.join(","),
           staffId
         });
+        if (replaceToken) {
+          params.set("replaceToken", replaceToken);
+        }
         const response = await fetch(`/api/availability?${params.toString()}`, {
           signal: controller.signal
         });
@@ -118,7 +131,7 @@ export function BookingForm({
     loadSlots();
 
     return () => controller.abort();
-  }, [date, selectedServices, staffId]);
+  }, [date, selectedServices, staffId, replaceToken]);
 
   async function checkBirthday(phone: string) {
     if (phone.length < 6) return;
@@ -146,6 +159,15 @@ export function BookingForm({
       return;
     }
 
+    if (!replaceToken) {
+      const voucherInput = event.currentTarget.querySelector<HTMLInputElement>('input[name="voucher"]');
+      const f = voucherInput?.files?.[0];
+      if (!f || f.size === 0) {
+        setError("Adjunta el comprobante de pago del adelanto (S/ 50).");
+        return;
+      }
+    }
+
     const formData = new FormData(event.currentTarget);
 
     // Honeypot: bots fill hidden fields, humans don't
@@ -161,26 +183,37 @@ export function BookingForm({
       const birthdayRaw = String(formData.get("birthday") ?? "").trim();
       const documentNumberRaw = String(formData.get("documentNumber") ?? "").trim();
       const documentTypeRaw = String(formData.get("documentType") ?? "").trim();
+
+      const payload = {
+        client: {
+          name: String(formData.get("name") ?? ""),
+          phone: String(formData.get("phone") ?? ""),
+          email: String(formData.get("email") ?? ""),
+          ...(birthdayRaw ? { birthday: birthdayRaw } : {}),
+          ...(documentNumberRaw
+            ? { documentNumber: documentNumberRaw, documentType: documentTypeRaw || "DNI" }
+            : {})
+        },
+        serviceIds: selectedServices,
+        staffId: selectedSlot.staffId,
+        startAt: selectedSlot.startAt,
+        notes: String(formData.get("notes") ?? ""),
+        ...(bonusCodeRaw ? { bonusCode: bonusCodeRaw } : {}),
+        ...(replaceToken ? { replaceToken } : {})
+      };
+
+      const fd = new FormData();
+      fd.set("_trap", String(formData.get("_trap") ?? ""));
+      fd.set("payload", JSON.stringify(payload));
+      if (!replaceToken) {
+        const voucherInput = event.currentTarget.querySelector<HTMLInputElement>('input[name="voucher"]');
+        const f = voucherInput?.files?.[0];
+        if (f) fd.set("voucher", f);
+      }
+
       const response = await fetch("/api/bookings", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          client: {
-            name: String(formData.get("name") ?? ""),
-            phone: String(formData.get("phone") ?? ""),
-            email: String(formData.get("email") ?? ""),
-            ...(birthdayRaw ? { birthday: birthdayRaw } : {}),
-            ...(documentNumberRaw
-              ? { documentNumber: documentNumberRaw, documentType: documentTypeRaw || "DNI" }
-              : {})
-          },
-          serviceIds: selectedServices,
-          staffId: selectedSlot.staffId,
-          startAt: selectedSlot.startAt,
-          notes: String(formData.get("notes") ?? ""),
-          ...(bonusCodeRaw ? { bonusCode: bonusCodeRaw } : {}),
-          ...(replaceToken ? { replaceToken } : {})
-        })
+        body: fd
       });
       const data = await response.json();
 
@@ -255,7 +288,27 @@ export function BookingForm({
           ))}
         </div>
 
-        <div className="grid two">
+        {isWeekendDate ? (
+          <div
+            style={{
+              background: "linear-gradient(135deg, #fdf4f8, #f5f2ed)",
+              border: "1px solid var(--border)",
+              borderRadius: 12,
+              padding: "14px 16px",
+              marginBottom: 4
+            }}
+          >
+            <p className="field-label" style={{ marginBottom: 6 }}>
+              Fin de semana
+            </p>
+            <p style={{ margin: 0, fontSize: "0.95rem", fontWeight: 600, color: "#1a1a1a" }}>
+              Equipo JF Studio
+            </p>
+            <p className="small muted" style={{ margin: "8px 0 0" }}>
+              Los sabados y domingos el equipo atiende en conjunto; te asignamos un horario disponible sin elegir estilista.
+            </p>
+          </div>
+        ) : (
           <div className="field">
             <label htmlFor="staffId">Estilista</label>
             <select className="select" id="staffId" value={staffId} onChange={(event) => setStaffId(event.target.value)}>
@@ -267,10 +320,11 @@ export function BookingForm({
               ))}
             </select>
           </div>
-          <div className="field">
-            <label htmlFor="date">Fecha</label>
-            <input className="input" id="date" type="date" value={date} onChange={(event) => setDate(event.target.value)} />
-          </div>
+        )}
+
+        <div className="field">
+          <label htmlFor="date">Fecha</label>
+          <input className="input" id="date" type="date" value={date} onChange={(event) => setDate(event.target.value)} />
         </div>
 
         <div className="card" style={{ background: "var(--surface-soft)" }}>
@@ -407,6 +461,40 @@ export function BookingForm({
           <label htmlFor="notes">Notas</label>
           <textarea className="textarea" id="notes" name="notes" />
         </div>
+
+        {!replaceToken ? (
+          <div
+            className="field"
+            style={{
+              background: "#f0fdf4",
+              border: "1px solid #86efac",
+              borderRadius: 12,
+              padding: "14px 16px"
+            }}
+          >
+            <label htmlFor="voucher" style={{ fontWeight: 700 }}>
+              Comprobante de adelanto (obligatorio) — S/ 50
+            </label>
+            <p className="small muted" style={{ margin: "6px 0 6px" }}>
+              Adjunta captura o PDF (Yape, Plin o transferencia). El comprobante se envia al equipo y queda guardado con tu reserva.
+            </p>
+            <p className="small muted" style={{ margin: "0 0 10px" }}>
+              Si cancelas tu cita, el adelanto no se reembolsa; si reagendas, se conserva. Llegada: {ARRIVAL_TOLERANCE_MINUTES} min de tolerancia desde la hora de la cita.
+            </p>
+            <input
+              className="input"
+              id="voucher"
+              name="voucher"
+              type="file"
+              accept="image/jpeg,image/png,image/webp,application/pdf"
+              required
+            />
+          </div>
+        ) : (
+          <p className="small muted" style={{ margin: 0 }}>
+            Ya registramos tu adelanto en la reserva anterior; no necesitas volver a adjuntar el comprobante.
+          </p>
+        )}
 
         {requiresDeposit ? (
           <div style={{ background: "#fefce8", border: "1px solid #fde047", borderRadius: 8, padding: "10px 14px", fontSize: "0.88rem" }}>

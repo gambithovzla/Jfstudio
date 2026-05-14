@@ -149,6 +149,10 @@ model Appointment {
   accessToken        String               @unique @default(cuid())
   reminderSentAt     DateTime?
   depositPaid        Boolean              @default(false)
+  depositAmountPen   Decimal?             @db.Decimal(10, 2)
+  depositVoucherKey  String?
+  depositVoucherFilename String?
+  depositVoucherMime String?
   birthdayBonusId    String?              @unique
   birthdayBonus      BirthdayBonus?       @relation("AppointmentBonus", fields: [birthdayBonusId], references: [id], onDelete: SetNull)
   createdAt          DateTime             @default(now())

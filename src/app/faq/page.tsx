@@ -52,7 +52,7 @@ const FAQS = [
   },
   {
     q: "¿Cómo cancelo o reagendo mi cita?",
-    a: "Usa el enlace de tu confirmación por email o escríbenos por WhatsApp. Recuerda hacerlo con al menos 24 horas de anticipación para evitar cargos. Más detalles en nuestra política de cancelación."
+    a: "Usa el enlace de tu confirmación por email o escríbenos por WhatsApp. El adelanto de la reserva web (S/ 50) no se devuelve si cancelas tú la cita; si reagendas, se mantiene. Puedes gestionar cambios con al menos 24 h de anticipación cuando el enlace lo permita. Más detalles en la política de cancelación."
   },
 ];
 

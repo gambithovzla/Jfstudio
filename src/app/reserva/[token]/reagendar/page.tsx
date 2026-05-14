@@ -7,7 +7,7 @@ import { getAppointmentByToken, getBookingBootstrap } from "@/lib/data";
 
 export const dynamic = "force-dynamic";
 
-const CANCEL_WINDOW_HOURS = 4;
+const CANCEL_WINDOW_HOURS = 12;
 
 type PageProps = { params: Promise<{ token: string }> };
 
@@ -48,6 +48,7 @@ export default async function ReschedulePublicPage({ params }: PageProps) {
           services={services}
           staff={staff}
           currency={settings.currency}
+          salonTimezone={settings.timezone}
           initialServiceIds={currentServiceIds}
           replaceToken={token}
         />

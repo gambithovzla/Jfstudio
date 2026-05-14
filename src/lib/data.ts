@@ -1,9 +1,18 @@
 import { AppointmentStatus, Prisma } from "@prisma/client";
 
+import {
+  earliestPublicBookingInstant,
+  isPublicBookingStartInDayWindow,
+  isSaturdaySalon,
+  isWeekendSalon,
+  MIN_BOOKING_ADVANCE_HOURS,
+  SATURDAY_MAX_CONCURRENT_STARTS,
+  WEB_DEPOSIT_AMOUNT_PEN
+} from "@/lib/booking-rules";
 import { summarizePayments } from "@/lib/cash";
 import { sendBookingConfirmation } from "@/lib/email";
 import { prisma } from "@/lib/prisma";
-import { buildAvailabilitySlots } from "@/lib/scheduling";
+import { buildAvailabilitySlots, type AvailabilitySlot, type StaffWorkingHour } from "@/lib/scheduling";
 import {
   addMinutes,
   endOfSalonDayUtc,
@@ -185,12 +194,15 @@ export async function getAvailabilityForServices(input: {
     })
   ]);
 
+  const earliest = earliestPublicBookingInstant();
+
   const allSlots = buildAvailabilitySlots({
     date: input.date,
     timeZone: settings.timezone,
     durationMinutes,
     intervalMinutes: settings.appointmentIntervalMinutes,
     timeBlocks,
+    earliestStartUtc: earliest,
     staff: staff.map((staffMember) => ({
       id: staffMember.id,
       name: staffMember.name,
@@ -199,11 +211,117 @@ export async function getAvailabilityForServices(input: {
     }))
   });
 
+  const windowed = allSlots.filter((s) =>
+    isPublicBookingStartInDayWindow(input.date, new Date(s.startAt), settings.timezone)
+  );
+
   // Morning-first rule: if any slot starts before 13:00 local time, only show those.
   // Once morning is fully booked, all slots are shown.
   const fmt = new Intl.DateTimeFormat("es", { timeZone: settings.timezone, hour: "numeric", hour12: false });
-  const morningSlots = allSlots.filter((s) => parseInt(fmt.format(new Date(s.startAt)), 10) < 13);
-  return morningSlots.length > 0 ? morningSlots : allSlots;
+  const morningSlots = windowed.filter((s) => parseInt(fmt.format(new Date(s.startAt)), 10) < 13);
+  let merged: AvailabilitySlot[] = morningSlots.length > 0 ? morningSlots : windowed;
+
+  const weekendTeam = !input.staffId && isWeekendSalon(input.date, settings.timezone);
+
+  if (weekendTeam && isSaturdaySalon(input.date, settings.timezone)) {
+    const existing = await prisma.appointment.findMany({
+      where: {
+        status: { in: [AppointmentStatus.CONFIRMED, AppointmentStatus.COMPLETED] },
+        startAt: { gte: dayStart, lt: dayEnd },
+        ...(input.excludeAppointmentId ? { id: { not: input.excludeAppointmentId } } : {})
+      },
+      select: { startAt: true }
+    });
+    const countByStart = new Map<string, number>();
+    for (const row of existing) {
+      const k = row.startAt.toISOString();
+      countByStart.set(k, (countByStart.get(k) ?? 0) + 1);
+    }
+    const byStart = new Map<string, AvailabilitySlot>();
+    for (const slot of merged) {
+      if (!byStart.has(slot.startAt)) {
+        byStart.set(slot.startAt, slot);
+      }
+    }
+    const out: AvailabilitySlot[] = [];
+    for (const slot of byStart.values()) {
+      if ((countByStart.get(slot.startAt) ?? 0) < SATURDAY_MAX_CONCURRENT_STARTS) {
+        out.push({
+          ...slot,
+          staffName: "Equipo fin de semana"
+        });
+      }
+    }
+    out.sort((a, b) => a.startAt.localeCompare(b.startAt));
+    return out;
+  }
+
+  if (weekendTeam && !isSaturdaySalon(input.date, settings.timezone)) {
+    const byStart = new Map<string, AvailabilitySlot>();
+    for (const slot of merged) {
+      if (!byStart.has(slot.startAt)) {
+        byStart.set(slot.startAt, {
+          ...slot,
+          staffName: "Equipo fin de semana"
+        });
+      }
+    }
+    return Array.from(byStart.values()).sort((a, b) => a.startAt.localeCompare(b.startAt));
+  }
+
+  return merged;
+}
+
+export type WebBookingDeposit = {
+  voucherKey: string;
+  voucherFilename: string;
+  voucherMime: string;
+  amountPen: number;
+};
+
+async function pickStaffForPublicSaturdaySlot(
+  tx: Prisma.TransactionClient,
+  input: {
+    dateStr: string;
+    timeZone: string;
+    startAt: Date;
+    durationMinutes: number;
+    intervalMinutes: number;
+    timeBlocks: { staffId: string | null; startAt: Date; endAt: Date }[];
+  }
+) {
+  const staffList = await tx.staff.findMany({
+    where: { isActive: true },
+    orderBy: { name: "asc" },
+    include: { workingHours: true }
+  });
+
+  const earliest = earliestPublicBookingInstant();
+
+  for (const s of staffList) {
+    const slots = buildAvailabilitySlots({
+      date: input.dateStr,
+      timeZone: input.timeZone,
+      durationMinutes: input.durationMinutes,
+      intervalMinutes: input.intervalMinutes,
+      timeBlocks: input.timeBlocks,
+      earliestStartUtc: earliest,
+      staff: [
+        {
+          id: s.id,
+          name: s.name,
+          workingHours: s.workingHours,
+          appointments: []
+        }
+      ],
+      now: new Date()
+    });
+    if (slots.some((slot) => slot.startAt === input.startAt.toISOString())) {
+      return s;
+    }
+  }
+
+  return null;
 }
 
 export async function createBooking(input: {
@@ -220,13 +338,26 @@ export async function createBooking(input: {
   startAt: Date;
   notes?: string | null;
   bonusCode?: string | null;
+  bookingSource?: "public_web" | "admin_panel";
+  webDeposit?: WebBookingDeposit | null;
+  excludeAppointmentId?: string | null;
 }) {
   const settings = await getSalonSettings();
   const serviceIds = Array.from(new Set(input.serviceIds.filter(Boolean)));
   const phone = normalizePhone(input.client.phone);
+  const bookingSource = input.bookingSource ?? "admin_panel";
+  const isPublic = bookingSource === "public_web";
 
   if (!input.client.name.trim() || !phone || serviceIds.length === 0) {
     throw new Error("Faltan datos para crear la reserva.");
+  }
+
+  if (isPublic && !input.webDeposit) {
+    throw new Error("Falta el comprobante de adelanto.");
+  }
+
+  if (input.webDeposit && Number(input.webDeposit.amountPen) !== WEB_DEPOSIT_AMOUNT_PEN) {
+    throw new Error("El monto del adelanto no es valido.");
   }
 
   const bonusCodeInput = input.bonusCode?.trim().toUpperCase() || null;
@@ -242,34 +373,11 @@ export async function createBooking(input: {
         throw new Error("Selecciona servicios activos.");
       }
 
-      const staff = await tx.staff.findFirst({
-        where: { id: input.staffId, isActive: true },
-        include: { workingHours: true }
-      });
-
-      if (!staff) {
-        throw new Error("La estilista seleccionada no esta disponible.");
-      }
-
       const durationMinutes = services.reduce((total, service) => total + service.durationMinutes, 0);
       const endAt = addMinutes(input.startAt, durationMinutes);
 
       if (input.startAt <= new Date()) {
         throw new Error("El horario seleccionado ya paso.");
-      }
-
-      const overlappingAppointment = await tx.appointment.findFirst({
-        where: {
-          staffId: staff.id,
-          status: { in: [AppointmentStatus.CONFIRMED, AppointmentStatus.COMPLETED] },
-          startAt: { lt: endAt },
-          endAt: { gt: input.startAt }
-        },
-        select: { id: true }
-      });
-
-      if (overlappingAppointment) {
-        throw new Error("Ese horario ya fue tomado.");
       }
 
       const dateInSalon = new Intl.DateTimeFormat("en-CA", {
@@ -279,6 +387,84 @@ export async function createBooking(input: {
         day: "2-digit"
       }).format(input.startAt);
 
+      const dayStart = startOfSalonDayUtc(dateInSalon, settings.timezone);
+      const dayEnd = endOfSalonDayUtc(dateInSalon, settings.timezone);
+
+      const timeBlocks = await tx.timeBlock.findMany({
+        where: {
+          startAt: { lt: dayEnd },
+          endAt: { gt: dayStart }
+        },
+        select: { staffId: true, startAt: true, endAt: true }
+      });
+
+      if (isPublic) {
+        if (input.startAt.getTime() < earliestPublicBookingInstant().getTime()) {
+          throw new Error(
+            `Las reservas en linea requieren al menos ${MIN_BOOKING_ADVANCE_HOURS} horas de anticipacion.`
+          );
+        }
+        if (!isPublicBookingStartInDayWindow(dateInSalon, input.startAt, settings.timezone)) {
+          throw new Error("Ese horario no esta disponible para reservas en linea en ese dia.");
+        }
+      }
+
+      const isSaturday = isSaturdaySalon(dateInSalon, settings.timezone);
+
+      let staff: { id: string; name: string; workingHours: StaffWorkingHour[] };
+
+      if (isPublic && isSaturday) {
+        const sameStartCount = await tx.appointment.count({
+          where: {
+            startAt: input.startAt,
+            status: { in: [AppointmentStatus.CONFIRMED, AppointmentStatus.COMPLETED] },
+            ...(input.excludeAppointmentId ? { id: { not: input.excludeAppointmentId } } : {})
+          }
+        });
+        if (sameStartCount >= SATURDAY_MAX_CONCURRENT_STARTS) {
+          throw new Error("Ese horario ya tiene el maximo de reservas permitidas para sabado.");
+        }
+
+        const picked = await pickStaffForPublicSaturdaySlot(tx, {
+          dateStr: dateInSalon,
+          timeZone: settings.timezone,
+          startAt: input.startAt,
+          durationMinutes,
+          intervalMinutes: settings.appointmentIntervalMinutes,
+          timeBlocks
+        });
+        if (!picked) {
+          throw new Error("Ese horario no esta disponible.");
+        }
+        staff = picked;
+      } else {
+        const s = await tx.staff.findFirst({
+          where: { id: input.staffId, isActive: true },
+          include: { workingHours: true }
+        });
+
+        if (!s) {
+          throw new Error("La estilista seleccionada no esta disponible.");
+        }
+        staff = s;
+
+        const overlappingAppointment = await tx.appointment.findFirst({
+          where: {
+            staffId: staff.id,
+            status: { in: [AppointmentStatus.CONFIRMED, AppointmentStatus.COMPLETED] },
+            startAt: { lt: endAt },
+            endAt: { gt: input.startAt },
+            ...(input.excludeAppointmentId ? { id: { not: input.excludeAppointmentId } } : {})
+          },
+          select: { id: true }
+        });
+
+        if (overlappingAppointment) {
+          throw new Error("Ese horario ya fue tomado.");
+        }
+      }
+
+      const earliestSlot = isPublic ? earliestPublicBookingInstant() : undefined;
       const slots = buildAvailabilitySlots({
         date: dateInSalon,
         timeZone: settings.timezone,
@@ -292,7 +478,9 @@ export async function createBooking(input: {
             appointments: []
           }
         ],
-        now: new Date()
+        timeBlocks,
+        now: new Date(),
+        earliestStartUtc: earliestSlot
       });
 
       if (!slots.some((slot) => slot.startAt === input.startAt.toISOString())) {
@@ -351,6 +539,8 @@ export async function createBooking(input: {
         totalPrice = Math.round(subtotal * (1 - bonus.discountPercent / 100) * 100) / 100;
       }
 
+      const wd = input.webDeposit;
+
       const created = await tx.appointment.create({
         data: {
           clientId: client.id,
@@ -361,6 +551,11 @@ export async function createBooking(input: {
           notes: input.notes?.trim() || null,
           totalPrice,
           birthdayBonusId: bonusToRedeem?.id ?? null,
+          depositPaid: Boolean(wd),
+          depositAmountPen: wd?.amountPen ?? null,
+          depositVoucherKey: wd?.voucherKey ?? null,
+          depositVoucherFilename: wd?.voucherFilename ?? null,
+          depositVoucherMime: wd?.voucherMime ?? null,
           services: {
             create: services.map((service) => ({
               serviceId: service.id,
@@ -376,6 +571,17 @@ export async function createBooking(input: {
           services: true
         }
       });
+
+      if (wd && !input.excludeAppointmentId) {
+        await tx.payment.create({
+          data: {
+            appointmentId: created.id,
+            amount: wd.amountPen,
+            method: "Yape/Plin — adelanto (voucher web)",
+            note: `Comprobante: ${wd.voucherFilename}`
+          }
+        });
+      }
 
       if (bonusToRedeem) {
         await tx.birthdayBonus.update({
@@ -421,7 +627,8 @@ export async function createBookingFromLocalTime(input: {
   const settings = await getSalonSettings();
   return createBooking({
     ...input,
-    startAt: localDateTimeToUtc(input.localDateTime, settings.timezone)
+    startAt: localDateTimeToUtc(input.localDateTime, settings.timezone),
+    bookingSource: "admin_panel"
   });
 }
 
