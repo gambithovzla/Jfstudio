@@ -1,6 +1,7 @@
 import { PrismaClient, UserRole } from "@prisma/client";
 
 import { ensureLaceadoServiceVariants } from "./ensure-laceado-variants";
+import { ensureBotoxServiceVariants } from "./ensure-botox-variants";
 
 const prisma = new PrismaClient();
 
@@ -102,6 +103,7 @@ async function main() {
   });
 
   await ensureLaceadoServiceVariants(prisma);
+  await ensureBotoxServiceVariants(prisma);
 
   await prisma.service.upsert({
     where: { name: "Mechas" },

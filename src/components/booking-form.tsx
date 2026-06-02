@@ -5,6 +5,7 @@ import { FormEvent, useEffect, useMemo, useState } from "react";
 
 import { ARRIVAL_TOLERANCE_MINUTES, isSaturdaySalon } from "@/lib/booking-rules";
 import { laceadoTierChoiceLabel, isStandaloneLaceadoOrganicName, partitionLaceadoServices } from "@/lib/laceado-services";
+import { botoxTierChoiceLabel, isStandaloneBotoxOrganicName, partitionBotoxServices } from "@/lib/botox-services";
 import { formatDesdeCurrency, polishServiceDescription, polishServiceTitle } from "@/lib/public-service-copy";
 
 type Service = {
@@ -41,11 +42,14 @@ type BookingResult = {
 };
 
 function initialSelectedOthers(services: Service[], initialServiceIds?: string[]) {
-  const { laceadoLengthTiers, laceadoAbundancia } = partitionLaceadoServices(services);
-  const drop = new Set(laceadoLengthTiers.map((t) => t.id));
-  if (laceadoAbundancia) drop.add(laceadoAbundancia.id);
+  const laceadoPartition = partitionLaceadoServices(services);
+  const botoxPartition = partitionBotoxServices(laceadoPartition.otherServices);
+  const drop = new Set([
+    ...laceadoPartition.laceadoLengthTiers.map((t) => t.id),
+    ...botoxPartition.botoxLengthTiers.map((t) => t.id)
+  ]);
   for (const s of services) {
-    if (isStandaloneLaceadoOrganicName(s.name)) drop.add(s.id);
+    if (isStandaloneLaceadoOrganicName(s.name) || isStandaloneBotoxOrganicName(s.name)) drop.add(s.id);
   }
   return (initialServiceIds ?? []).filter((id) => !drop.has(id));
 }
@@ -55,9 +59,10 @@ function initialLaceadoLengthId(services: Service[], initialServiceIds?: string[
   return laceadoLengthTiers.find((t) => initialServiceIds?.includes(t.id))?.id ?? "";
 }
 
-function initialLaceadoAbundanciaOn(services: Service[], initialServiceIds?: string[]) {
-  const { laceadoAbundancia } = partitionLaceadoServices(services);
-  return Boolean(laceadoAbundancia && initialServiceIds?.includes(laceadoAbundancia.id));
+function initialBotoxLengthId(services: Service[], initialServiceIds?: string[]) {
+  const laceadoPartition = partitionLaceadoServices(services);
+  const { botoxLengthTiers } = partitionBotoxServices(laceadoPartition.otherServices);
+  return botoxLengthTiers.find((t) => initialServiceIds?.includes(t.id))?.id ?? "";
 }
 
 export function BookingForm({
@@ -75,18 +80,19 @@ export function BookingForm({
   initialServiceIds?: string[];
   replaceToken?: string;
 }) {
-  const { laceadoLengthTiers, laceadoAbundancia: laceadoAbundanciaService, otherServices } = useMemo(
-    () => partitionLaceadoServices(services),
-    [services]
+  const laceadoPartition = useMemo(() => partitionLaceadoServices(services), [services]);
+  const botoxPartition = useMemo(
+    () => partitionBotoxServices(laceadoPartition.otherServices),
+    [laceadoPartition.otherServices]
   );
+  const { laceadoLengthTiers } = laceadoPartition;
+  const { botoxLengthTiers, otherServices } = botoxPartition;
 
   const [selectedOthers, setSelectedOthers] = useState<string[]>(() =>
     initialSelectedOthers(services, initialServiceIds)
   );
   const [laceadoLengthId, setLaceadoLengthId] = useState(() => initialLaceadoLengthId(services, initialServiceIds));
-  const [laceadoAbundanciaOn, setLaceadoAbundanciaOn] = useState(() =>
-    initialLaceadoAbundanciaOn(services, initialServiceIds)
-  );
+  const [botoxLengthId, setBotoxLengthId] = useState(() => initialBotoxLengthId(services, initialServiceIds));
   const [staffId, setStaffId] = useState("any");
   const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [slots, setSlots] = useState<Slot[]>([]);
@@ -109,9 +115,9 @@ export function BookingForm({
   const selectedServiceIds = useMemo(() => {
     const ids = [...selectedOthers];
     if (laceadoLengthId) ids.push(laceadoLengthId);
-    if (laceadoAbundanciaOn && laceadoAbundanciaService) ids.push(laceadoAbundanciaService.id);
+    if (botoxLengthId) ids.push(botoxLengthId);
     return ids;
-  }, [selectedOthers, laceadoLengthId, laceadoAbundanciaOn, laceadoAbundanciaService]);
+  }, [selectedOthers, laceadoLengthId, botoxLengthId]);
 
   const selectedServiceRows = useMemo(
     () => services.filter((service) => selectedServiceIds.includes(service.id)),
@@ -275,7 +281,7 @@ export function BookingForm({
       setResult(data.appointment);
       setSelectedOthers([]);
       setLaceadoLengthId("");
-      setLaceadoAbundanciaOn(false);
+      setBotoxLengthId("");
       setSlots([]);
       event.currentTarget.reset();
     } catch (submitError) {
@@ -347,11 +353,7 @@ export function BookingForm({
                 className="select"
                 id="laceadoLength"
                 value={laceadoLengthId}
-                onChange={(event) => {
-                  const v = event.target.value;
-                  setLaceadoLengthId(v);
-                  if (!v) setLaceadoAbundanciaOn(false);
-                }}
+                onChange={(event) => setLaceadoLengthId(event.target.value)}
               >
                 <option value="">Sin laceado orgánico</option>
                 {laceadoLengthTiers.map((tier) => (
@@ -361,30 +363,41 @@ export function BookingForm({
                   </option>
                 ))}
               </select>
-              {laceadoAbundanciaService ? (
-                <label
-                  className="small"
-                  style={{
-                    display: "flex",
-                    gap: 10,
-                    alignItems: "center",
-                    fontWeight: 500,
-                    cursor: laceadoLengthId ? "pointer" : "not-allowed",
-                    opacity: laceadoLengthId ? 1 : 0.55
-                  }}
-                >
-                  <input
-                    type="checkbox"
-                    checked={laceadoAbundanciaOn}
-                    disabled={!laceadoLengthId}
-                    onChange={(event) => setLaceadoAbundanciaOn(event.target.checked)}
-                  />
-                  <span>
-                    Suplemento por abundancia ({formatDesdeCurrency(laceadoAbundanciaService.price, currency)} ·{" "}
-                    {laceadoAbundanciaService.durationMinutes} min)
-                  </span>
-                </label>
-              ) : null}
+            </div>
+          ) : null}
+          {botoxLengthTiers.length > 0 ? (
+            <div
+              className="choice"
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "stretch",
+                gap: 10,
+                cursor: "default"
+              }}
+            >
+              <div style={{ display: "grid", gap: 4, width: "100%" }}>
+                <strong>Botox Orgánico</strong>
+                <span className="small muted">
+                  {polishServiceDescription(
+                    "Elige el largo de tu cabello; el precio y los minutos son solo los de esa opción (no se suma nada extra)."
+                  )}
+                </span>
+              </div>
+              <select
+                className="select"
+                id="botoxLength"
+                value={botoxLengthId}
+                onChange={(event) => setBotoxLengthId(event.target.value)}
+              >
+                <option value="">Sin botox orgánico</option>
+                {botoxLengthTiers.map((tier) => (
+                  <option key={tier.id} value={tier.id}>
+                    {polishServiceTitle(botoxTierChoiceLabel(tier.name))} — {formatDesdeCurrency(tier.price, currency)} ·{" "}
+                    {tier.durationMinutes} min
+                  </option>
+                ))}
+              </select>
             </div>
           ) : null}
           {otherServices.map((service) => (

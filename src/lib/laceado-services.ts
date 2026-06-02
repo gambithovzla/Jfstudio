@@ -1,5 +1,6 @@
 /** Prefijo en nombres de `Service` para variantes de laceado (grupo en UI / reserva). */
 const LACEADO_LENGTH_PREFIX = /^laceado\s+org[aá]nico\s+—\s+/i;
+/** Legacy: ya no se ofrece; se oculta de la UI si sigue en la BD. */
 const LACEADO_ABUNDANCIA = /^laceado\s+org[aá]nico\s+—\s+suplemento\s+abundancia/i;
 
 /** Servicio único legacy ("Laceado organico", "Laceado Organico", etc.): no se lista; el precio es solo el de la variante. */
@@ -19,13 +20,11 @@ export type LaceadoPartitionService = {
 
 export function partitionLaceadoServices<T extends LaceadoPartitionService>(services: T[]) {
   const laceadoLengthTiers: T[] = [];
-  let laceadoAbundancia: T | null = null;
   const otherServices: T[] = [];
 
   for (const s of services) {
     const n = s.name.trim();
     if (LACEADO_ABUNDANCIA.test(n)) {
-      laceadoAbundancia = s;
       continue;
     }
     if (LACEADO_LENGTH_PREFIX.test(n)) {
@@ -40,7 +39,7 @@ export function partitionLaceadoServices<T extends LaceadoPartitionService>(serv
 
   laceadoLengthTiers.sort((a, b) => a.price - b.price);
 
-  return { laceadoLengthTiers, laceadoAbundancia, otherServices };
+  return { laceadoLengthTiers, otherServices };
 }
 
 export function isLaceadoPartitioned<T extends LaceadoPartitionService>(partition: {

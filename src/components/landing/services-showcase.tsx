@@ -3,6 +3,7 @@ import { Scissors, Paintbrush, Sparkles } from "lucide-react";
 
 import { landingContent } from "@/content/landing";
 import { isLaceadoPartitioned, partitionLaceadoServices } from "@/lib/laceado-services";
+import { isBotoxPartitioned, partitionBotoxServices } from "@/lib/botox-services";
 import { formatDesdeCurrency, polishServiceDescription, polishServiceTitle } from "@/lib/public-service-copy";
 import { PriceDisclaimer } from "./price-disclaimer";
 import { ScrollReveal } from "./scroll-reveal";
@@ -37,18 +38,25 @@ export function ServicesShowcase({ services, currency }: Props) {
       <div className="grid three landing-card-grid">
         {showDb
           ? (() => {
-              const partition = partitionLaceadoServices(services);
-              const { laceadoLengthTiers, laceadoAbundancia, otherServices } = partition;
-              const hasLaceadoGroup = isLaceadoPartitioned(partition);
+              const laceadoPartition = partitionLaceadoServices(services);
+              const botoxPartition = partitionBotoxServices(laceadoPartition.otherServices);
+              const { laceadoLengthTiers } = laceadoPartition;
+              const { botoxLengthTiers, otherServices } = botoxPartition;
+              const hasLaceadoGroup = isLaceadoPartitioned(laceadoPartition);
+              const hasBotoxGroup = isBotoxPartitioned(botoxPartition);
 
-              type RowItem = { kind: "laceado" } | { kind: "svc"; service: Service };
+              type RowItem = { kind: "laceado" } | { kind: "botox" } | { kind: "svc"; service: Service };
               const rows: RowItem[] = [];
               if (hasLaceadoGroup) rows.push({ kind: "laceado" });
+              if (hasBotoxGroup) rows.push({ kind: "botox" });
               for (const s of otherServices) rows.push({ kind: "svc", service: s });
 
               const maxLaceadoMin =
                 laceadoLengthTiers.length > 0 ? Math.max(...laceadoLengthTiers.map((t) => t.durationMinutes)) : 0;
               const minLaceadoPrice = laceadoLengthTiers[0]?.price ?? 0;
+              const maxBotoxMin =
+                botoxLengthTiers.length > 0 ? Math.max(...botoxLengthTiers.map((t) => t.durationMinutes)) : 0;
+              const minBotoxPrice = botoxLengthTiers[0]?.price ?? 0;
 
               return rows.slice(0, 6).map((item, i) => {
                 const Icon = SERVICE_ICONS[i % SERVICE_ICONS.length];
@@ -72,11 +80,30 @@ export function ServicesShowcase({ services, currency }: Props) {
                             <strong>{formatDesdeCurrency(minLaceadoPrice, currency)}</strong>
                           </span>
                         </div>
-                        {laceadoAbundancia ? (
-                          <p className="small muted" style={{ marginTop: 8, marginBottom: 0 }}>
-                            Suplemento por abundancia {formatDesdeCurrency(laceadoAbundancia.price, currency)} (opcional).
-                          </p>
-                        ) : null}
+                      </article>
+                    </ScrollReveal>
+                  );
+                }
+                if (item.kind === "botox") {
+                  return (
+                    <ScrollReveal key="botox-org-group" delay={i < 3 ? ((i + 1) as 1 | 2 | 3) : undefined}>
+                      <article className="card service-card">
+                        <div className="service-card-icon">
+                          <Icon size={22} aria-hidden />
+                        </div>
+                        <h3 className="card-title">Botox Orgánico</h3>
+                        <p className="small muted">
+                          {polishServiceDescription(
+                            "Tratamiento botox orgánico. Elige el largo de tu cabello al reservar."
+                          )}
+                        </p>
+                        <div className="service-card-meta">
+                          <span className="badge">{maxBotoxMin} min</span>
+                          <span className="price-with-disclaimer">
+                            <PriceDisclaimer />
+                            <strong>{formatDesdeCurrency(minBotoxPrice, currency)}</strong>
+                          </span>
+                        </div>
                       </article>
                     </ScrollReveal>
                   );

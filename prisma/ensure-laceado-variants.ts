@@ -1,6 +1,7 @@
 import type { PrismaClient } from "@prisma/client";
 
 const STANDALONE_LACEADO = /^laceado\s+org[aá]nico$/i;
+const LACEADO_ABUNDANCIA_NAME = "Laceado orgánico — suplemento abundancia";
 
 /**
  * Desactiva cualquier servicio "Laceado … orgánico" sin variante de largo (evita sumar 300 + 400).
@@ -19,12 +20,27 @@ export async function deactivateStandaloneLaceadoServices(prisma: PrismaClient) 
   }
 }
 
+/** Desactiva el suplemento por abundancia (ya no se ofrece). */
+export async function deactivateLaceadoAbundanciaService(prisma: PrismaClient) {
+  const row = await prisma.service.findUnique({
+    where: { name: LACEADO_ABUNDANCIA_NAME },
+    select: { id: true }
+  });
+  if (row) {
+    await prisma.service.update({
+      where: { id: row.id },
+      data: { isActive: false }
+    });
+  }
+}
+
 /**
- * Idempotente: desactiva el laceado legacy y asegura variantes + suplemento abundancia.
+ * Idempotente: desactiva el laceado legacy y asegura variantes por largo de cabello.
  * Usar desde seed y desde `scripts/ensure-laceado-services.ts` (producción).
  */
 export async function ensureLaceadoServiceVariants(prisma: PrismaClient) {
   await deactivateStandaloneLaceadoServices(prisma);
+  await deactivateLaceadoAbundanciaService(prisma);
 
   const laceadoDeposit = { requiresDeposit: true, depositAmount: 50 };
   const laceadoDesc = "Alisado orgánico con productos profesionales. El largo se elige al reservar.";
@@ -55,22 +71,4 @@ export async function ensureLaceadoServiceVariants(prisma: PrismaClient) {
       }
     });
   }
-
-  await prisma.service.upsert({
-    where: { name: "Laceado orgánico — suplemento abundancia" },
-    update: {
-      ...laceadoDeposit,
-      price: 80,
-      durationMinutes: 30,
-      description: "Extra por abundancia de cabello (solo junto a laceado orgánico).",
-      isActive: true
-    },
-    create: {
-      name: "Laceado orgánico — suplemento abundancia",
-      description: "Extra por abundancia de cabello (solo junto a laceado orgánico).",
-      durationMinutes: 30,
-      price: 80,
-      ...laceadoDeposit
-    }
-  });
 }
