@@ -6,7 +6,7 @@ Sistema integral para un salon de belleza: landing publica, reservas en linea, a
 
 - Next.js 15 (App Router) + TypeScript
 - PostgreSQL + Prisma
-- Clerk (autenticacion del panel administrativo)
+- Autenticacion propia por contraseña + cookie (`ADMIN_PASSWORD`)
 - Resend (emails transaccionales)
 - Tailwind CSS con sistema de tokens propio
 - Vitest para tests
@@ -45,30 +45,21 @@ npm run dev
 | Variable | Obligatoria | Descripcion |
 |----------|-------------|-------------|
 | `DATABASE_URL` | siempre | Cadena de conexion PostgreSQL. |
-| `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` | en produccion | Clave publica de Clerk. |
-| `CLERK_SECRET_KEY` | en produccion | Clave secreta de Clerk. |
-| `CLERK_WEBHOOK_SECRET` | en produccion | Secret del webhook Clerk para sincronizar usuarios con Staff. |
+| `ADMIN_PASSWORD` | en produccion | Contraseña del panel administrativo. En dev, si no esta definida, el panel queda abierto. |
 | `NEXT_PUBLIC_APP_URL` | en produccion | URL publica (https://...). Usada en links de emails y metadata SEO. |
 | `RESEND_API_KEY` | para emails | API key de Resend. |
 | `EMAIL_FROM` | para emails | Remitente de emails (formato: `"Nombre <correo@dominio>"`). |
-| `CRON_SECRET` | para cron | Token compartido para autorizar `/api/cron/reminders`. |
+| `ADMIN_EMAIL` | para emails | Correo de la administradora (recibe alertas de nuevas reservas y el respaldo diario). |
+| `CRON_SECRET` | para cron | Token compartido para autorizar `/api/cron/reminders` y `/api/cron/backup`. |
 
-## Clerk
+## Autenticacion del panel admin
 
-- En desarrollo, si Clerk no esta configurado, el panel admin queda accesible para facilitar la implementacion local (modo `local-dev`).
-- En produccion se requiere `CLERK_SECRET_KEY` y `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`.
+El panel usa autenticacion propia sin dependencias externas:
 
-### Webhook Clerk -> Staff
-
-El endpoint `/api/webhooks/clerk` sincroniza usuarios de Clerk con la tabla `Staff` automaticamente:
-
-1. En el dashboard de Clerk crea un webhook apuntando a `https://TU_DOMINIO/api/webhooks/clerk`.
-2. Suscribe los eventos `user.created`, `user.updated` y `user.deleted`.
-3. Copia el `Signing Secret` y guardalo como `CLERK_WEBHOOK_SECRET`.
-
-Por defecto los usuarios nuevos se crean con rol `RECEPTIONIST`. Para promoverlos a `ADMIN`/`STYLIST`, edita el campo `public_metadata.role` en Clerk con el valor (`ADMIN`, `STYLIST` o `RECEPTIONIST`) y actualiza el usuario; el webhook propaga el cambio.
-
-Para probar el webhook en local, expon el puerto con `cloudflared tunnel` o `ngrok` y registra esa URL temporalmente en Clerk.
+- **Contraseña**: se define en `ADMIN_PASSWORD`. Se guarda como hash SHA-256 en el servidor; nunca viaja en claro.
+- **Sesion**: al hacer login se emite una cookie `admin_session` (HttpOnly, Secure en produccion) con validez de 30 dias.
+- **Modo desarrollo**: si `ADMIN_PASSWORD` no esta definida y `NODE_ENV !== "production"`, el panel queda abierto sin login para facilitar el desarrollo local.
+- **Cambio de contraseña**: desde **Configuracion → Seguridad** en el propio panel, o redefiniendo `ADMIN_PASSWORD` en las variables de entorno y reiniciando.
 
 ## Roles
 
@@ -143,12 +134,11 @@ npm run start
 Variables minimas en Railway:
 
 - `DATABASE_URL`
-- `CLERK_SECRET_KEY`
-- `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`
-- `CLERK_WEBHOOK_SECRET`
+- `ADMIN_PASSWORD`
 - `NEXT_PUBLIC_APP_URL`
 - `RESEND_API_KEY`
 - `EMAIL_FROM`
+- `ADMIN_EMAIL`
 - `CRON_SECRET`
 
 Antes del primer deploy, conecta a la base con `prisma migrate deploy` (o agrega ese paso al script de build).
