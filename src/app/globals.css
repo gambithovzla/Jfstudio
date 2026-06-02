@@ -2487,6 +2487,36 @@ details[open] .faq-icon {
    REACT-BIG-CALENDAR — Admin / PWA
    ═══════════════════════════════════════ */
 
+.agenda-calendar-shell {
+  height: 650px;
+  min-height: 400px;
+  font-family: inherit;
+}
+
+.agenda-calendar-shell--agenda {
+  height: auto;
+  min-height: 280px;
+  overflow-x: auto;
+}
+
+.agenda-calendar-shell--agenda .rbc-calendar {
+  height: auto;
+  min-height: 280px;
+  overflow: visible;
+}
+
+.agenda-calendar-shell--agenda .rbc-agenda-view {
+  flex: 0 0 auto;
+  min-height: 220px;
+  overflow: visible;
+}
+
+.agenda-calendar-shell--agenda .rbc-agenda-empty {
+  min-height: 180px;
+  display: grid;
+  place-items: center;
+}
+
 .rbc-calendar {
   font-family: var(--font-sans, Inter, sans-serif);
   font-size: 0.85rem;

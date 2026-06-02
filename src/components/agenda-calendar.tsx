@@ -90,17 +90,18 @@ export function AgendaCalendar({
     window.location.href = `/admin/agenda/${event.id}`;
   }, []);
 
-  const [defaultView, setDefaultView] = useState<View>("week");
+  const [view, setView] = useState<View>("week");
   useEffect(() => {
-    if (window.innerWidth <= 860) setDefaultView("agenda");
+    if (window.innerWidth <= 860) setView("agenda");
   }, []);
 
   return (
-    <div style={{ height: defaultView === "agenda" ? "auto" : 650, minHeight: 400, fontFamily: "inherit" }}>
+    <div className={`agenda-calendar-shell agenda-calendar-shell--${view}`}>
       <Calendar
         localizer={localizer}
         events={events}
-        defaultView={defaultView}
+        view={view}
+        onView={setView}
         views={["month", "week", "day", "agenda"]}
         defaultDate={defaultDate}
         step={15}
