@@ -3,18 +3,18 @@
  */
 import { PrismaClient } from "@prisma/client";
 
-import { ensureLaceadoServiceVariants } from "../prisma/ensure-laceado-variants";
+import { ensureBotoxServiceVariants } from "../prisma/ensure-botox-variants";
 import { loadEnvFiles } from "./load-env";
 import { resolveDatabaseUrlForLocalScript } from "./resolve-database-url";
 
 loadEnvFiles();
-resolveDatabaseUrlForLocalScript("db:ensure-laceado");
+resolveDatabaseUrlForLocalScript("db:ensure-botox");
 
 const prisma = new PrismaClient();
 
 async function main() {
-  await ensureLaceadoServiceVariants(prisma);
-  console.log("Laceado: variantes listas.");
+  await ensureBotoxServiceVariants(prisma);
+  console.log("Botox: variantes por largo de cabello listas.");
 }
 
 main()
