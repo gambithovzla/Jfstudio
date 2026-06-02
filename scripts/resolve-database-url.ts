@@ -1,11 +1,14 @@
 /**
- * En Railway el build/run usa DATABASE_URL interna; desde tu PC hace falta la URL pública.
+ * En Railway la URL interna (.railway.internal) funciona en runtime.
+ * Desde tu PC hace falta DATABASE_PUBLIC_URL o la URL pública del Postgres.
  */
 export function resolveDatabaseUrlForLocalScript(scriptName: string): void {
   const internal = process.env.DATABASE_URL ?? "";
   const pub = process.env.DATABASE_PUBLIC_URL?.trim();
+  const onRailway = Boolean(process.env.RAILWAY_ENVIRONMENT?.trim());
 
   if (!internal.includes(".railway.internal")) return;
+  if (onRailway) return;
 
   if (pub) {
     process.env.DATABASE_URL = pub;

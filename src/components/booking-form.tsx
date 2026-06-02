@@ -7,6 +7,7 @@ import { ARRIVAL_TOLERANCE_MINUTES, isSaturdaySalon } from "@/lib/booking-rules"
 import { laceadoTierChoiceLabel, isStandaloneLaceadoOrganicName, partitionLaceadoServices } from "@/lib/laceado-services";
 import { botoxTierChoiceLabel, isStandaloneBotoxOrganicName, partitionBotoxServices } from "@/lib/botox-services";
 import { formatDesdeCurrency, polishServiceDescription, polishServiceTitle } from "@/lib/public-service-copy";
+import { LengthGuide } from "@/components/length-guide";
 
 type Service = {
   id: string;
@@ -363,6 +364,10 @@ export function BookingForm({
                   </option>
                 ))}
               </select>
+              <LengthGuide
+                src="/images/guia-largos-laceado.webp"
+                alt="Guía de largos de cabello: corto, medio, largo y extra largo"
+              />
             </div>
           ) : null}
           {botoxLengthTiers.length > 0 ? (
