@@ -96,7 +96,7 @@ export function AgendaCalendar({
   }, []);
 
   return (
-    <div style={{ height: view === "agenda" ? "auto" : 650, minHeight: 400, fontFamily: "inherit" }}>
+    <div className={`agenda-calendar-shell agenda-calendar-shell--${view}`}>
       <Calendar
         localizer={localizer}
         events={events}
