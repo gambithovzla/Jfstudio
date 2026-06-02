@@ -50,7 +50,7 @@ async function main() {
         create: {
           staffId: staff.id,
           dayOfWeek,
-          startTime: "09:00",
+          startTime: dayOfWeek === 6 ? "07:00" : "08:00",
           endTime: dayOfWeek === 6 ? "16:00" : "18:00",
           breakStart: "13:00",
           breakEnd: "14:00"
