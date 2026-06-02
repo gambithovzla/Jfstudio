@@ -51,7 +51,9 @@ npm run dev
 | `NEXT_PUBLIC_APP_URL` | en produccion | URL publica (https://...). Usada en links de emails y metadata SEO. |
 | `RESEND_API_KEY` | para emails | API key de Resend. |
 | `EMAIL_FROM` | para emails | Remitente de emails (formato: `"Nombre <correo@dominio>"`). |
-| `CRON_SECRET` | para cron | Token compartido para autorizar `/api/cron/reminders`. |
+| `CRON_SECRET` | para cron | Token compartido para autorizar `/api/cron/reminders` y `/api/cron/backup`. |
+| `ADMIN_EMAIL` | para emails | Correo de la duena; recibe nuevas reservas y el respaldo diario. |
+| `BACKUP_EMAIL` | opcional | Correo(s) extra que reciben solo el respaldo diario (ej. el del desarrollador). Admite varios separados por coma. |
 
 ## Clerk
 
@@ -101,9 +103,9 @@ Opciones recomendadas:
 Toda la informacion del negocio vive en la base PostgreSQL. El respaldo tiene varias capas
 para no depender solo de Railway:
 
-1. **Backups nativos de Railway** (recomendado activar): en el dashboard de Railway, servicio
-   Postgres → pestana **Backups**, habilita los snapshots automaticos. Es la primera linea,
-   pero vive dentro de Railway.
+1. **Backups nativos de Railway** (solo plan Pro): en el dashboard de Railway, servicio
+   Postgres → pestana **Backups**. Si tienes el plan Pro, activalos como primera linea adicional.
+   Ojo: viven dentro de Railway, por lo que no protegen ante fallos de la plataforma.
 
 2. **Respaldo automatico diario fuera de Railway** — endpoint `GET /api/cron/backup`,
    protegido con `Authorization: Bearer ${CRON_SECRET}` (mismo mecanismo que el cron de
@@ -150,6 +152,9 @@ Variables minimas en Railway:
 - `RESEND_API_KEY`
 - `EMAIL_FROM`
 - `CRON_SECRET`
+- `ADMIN_EMAIL`
+- `BACKUP_EMAIL` *(opcional — correo del desarrollador/proveedor para recibir el respaldo)*
+- `DEPOSIT_S3_BUCKET` + `DEPOSIT_S3_ACCESS_KEY_ID` + `DEPOSIT_S3_SECRET_ACCESS_KEY` *(comprobantes y respaldos en R2/S3)*
 
 Antes del primer deploy, conecta a la base con `prisma migrate deploy` (o agrega ese paso al script de build).
 
