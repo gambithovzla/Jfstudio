@@ -84,6 +84,32 @@ async function uploadPrivateSalonFile(params: {
   return { key };
 }
 
+/**
+ * Sube un objeto arbitrario al mismo bucket S3/R2 (usado para los respaldos diarios bajo
+ * el prefijo `backups/`). `key` debe incluir el prefijo completo, p. ej.
+ * `backups/2026/respaldo-jfstudio-2026-06-02.json.gz`.
+ */
+export async function uploadBackupObject(params: {
+  key: string;
+  body: Buffer;
+  contentType: string;
+}): Promise<{ bucket: string; key: string }> {
+  if (!isDepositStorageConfigured()) {
+    throw new Error("Almacenamiento no configurado. Define DEPOSIT_S3_BUCKET y credenciales S3 (o R2).");
+  }
+  const bucket = process.env.DEPOSIT_S3_BUCKET!.trim();
+  await getClient().send(
+    new PutObjectCommand({
+      Bucket: bucket,
+      Key: params.key,
+      Body: params.body,
+      ContentType: params.contentType,
+      ServerSideEncryption: "AES256"
+    })
+  );
+  return { bucket, key: params.key };
+}
+
 export async function getDepositVoucherBuffer(key: string): Promise<{ buffer: Buffer; contentType: string }> {
   if (!isDepositStorageConfigured()) {
     throw new Error("Almacenamiento de comprobantes no configurado.");

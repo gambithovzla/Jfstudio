@@ -4,6 +4,7 @@ import {
   Cake,
   ClipboardList,
   CreditCard,
+  DatabaseBackup,
   Images,
   LogOut,
   Package,
@@ -18,6 +19,7 @@ import Link from "next/link";
 
 import { prisma } from "@/lib/prisma";
 import { AdminMobileNav, type AdminNavLink } from "./admin-mobile-nav";
+import { BackupReminder } from "./backup-reminder";
 
 const iconMap: Record<string, LucideIcon> = {
   CalendarDays,
@@ -31,7 +33,8 @@ const iconMap: Record<string, LucideIcon> = {
   Upload,
   ClipboardList,
   Star,
-  Images
+  Images,
+  DatabaseBackup
 };
 
 const navLinks: AdminNavLink[] = [
@@ -45,6 +48,7 @@ const navLinks: AdminNavLink[] = [
   { href: "/admin/galeria", label: "Galería web", iconName: "Images" },
   { href: "/admin/configuracion", label: "Configuración", iconName: "Settings" },
   { href: "/admin/configuracion/bloqueos", label: "Bloqueos", iconName: "Ban" },
+  { href: "/admin/configuracion/respaldo", label: "Respaldo", iconName: "DatabaseBackup" },
   { href: "/admin/importar", label: "Importar Excel", iconName: "Upload" }
 ];
 
@@ -107,7 +111,10 @@ export async function AdminShell({ children }: { children: React.ReactNode }) {
           </button>
         </form>
       </aside>
-      <main className="page">{children}</main>
+      <main className="page">
+        <BackupReminder />
+        {children}
+      </main>
     </div>
   );
 }
