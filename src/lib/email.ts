@@ -506,3 +506,86 @@ export async function sendAdminRescheduleCancellationNotice(data: {
 </html>`
   });
 }
+
+/**
+ * Respaldo diario de la base de datos al correo de la dueña, con el JSON (.json.gz,
+ * restaurable) y el Excel legible adjuntos. Devuelve "skipped" si no hay ADMIN_EMAIL.
+ */
+/**
+ * Destinatarios del respaldo: la dueña (ADMIN_EMAIL) y, opcionalmente, el desarrollador /
+ * proveedor (BACKUP_EMAIL, admite varios separados por coma). Sin duplicados. Así el dev
+ * conserva una copia aunque la clienta no haga nada.
+ */
+function getBackupRecipients(): string[] {
+  const raw = [process.env.ADMIN_EMAIL, process.env.BACKUP_EMAIL]
+    .filter((v): v is string => Boolean(v && v.trim()))
+    .flatMap((v) => v.split(","))
+    .map((s) => s.trim())
+    .filter(Boolean);
+
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const email of raw) {
+    const key = email.toLowerCase();
+    if (!seen.has(key)) {
+      seen.add(key);
+      out.push(email);
+    }
+  }
+  return out;
+}
+
+export async function sendDatabaseBackupEmail(data: {
+  dateLabel: string;
+  stats: { clients: number; appointments: number; payments: number; totalRecords: number };
+  sizeLabel: string;
+  attachments: { filename: string; content: Buffer }[];
+}): Promise<"sent" | "skipped"> {
+  const recipients = getBackupRecipients();
+  if (recipients.length === 0) {
+    console.log("[email] Sin ADMIN_EMAIL ni BACKUP_EMAIL, omitiendo correo de respaldo.");
+    return "skipped";
+  }
+
+  const { clients, appointments, payments, totalRecords } = data.stats;
+  const html = `<!DOCTYPE html>
+<html lang="es">
+<head><meta charset="utf-8"><title>Respaldo de la base de datos</title></head>
+<body style="margin:0;padding:0;background:#fbfaf7;font-family:sans-serif;color:#1f2933;">
+  <table width="100%" cellpadding="0" cellspacing="0">
+    <tr><td align="center" style="padding:32px 16px;">
+      <table width="560" style="max-width:100%;background:#fff;border-radius:12px;border:1px solid #e5e7eb;padding:32px;">
+        <tr><td>
+          <p style="margin:0 0 8px;font-size:0.72rem;font-weight:800;text-transform:uppercase;color:#c4587a;letter-spacing:0.08em;">JF Studio · Respaldo automático</p>
+          <h1 style="margin:0 0 16px;font-size:1.4rem;color:#1a1a1a;">🛡️ Respaldo del ${data.dateLabel}</h1>
+          <p style="margin:0 0 14px;font-size:0.95rem;color:#374151;">Adjuntamos la copia de seguridad de hoy. Guárdala en un lugar seguro: con ella se puede recuperar todo el negocio aunque falle la plataforma.</p>
+          <table width="100%" style="margin:0 0 18px;background:#f5f2ed;border-radius:10px;padding:14px 18px;font-size:0.9rem;">
+            <tr><td style="padding:3px 0;"><strong>Clientes:</strong> ${clients}</td></tr>
+            <tr><td style="padding:3px 0;"><strong>Citas:</strong> ${appointments}</td></tr>
+            <tr><td style="padding:3px 0;"><strong>Pagos:</strong> ${payments}</td></tr>
+            <tr><td style="padding:8px 0 3px;border-top:1px solid #ddd6cc;"><strong>Total de registros:</strong> ${totalRecords} · <strong>Tamaño:</strong> ${data.sizeLabel}</td></tr>
+          </table>
+          <div style="background:#eef6f4;border-left:3px solid #0f766e;padding:10px 14px;border-radius:0 8px 8px 0;font-size:0.85rem;color:#155e54;">
+            <strong>Archivo de datos</strong> (.json.gz): copia para restaurar.<br/>
+            <strong>Excel</strong> (.xlsx): para consultar clientes, citas y pagos a ojo.
+          </div>
+          <p style="margin:18px 0 0;font-size:0.82rem;color:#9ca3af;">Este correo se envía automáticamente cada día. No hace falta que hagas nada.</p>
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`;
+
+  // Un envío por destinatario: cada uno recibe su copia y no ve los correos de los demás.
+  for (const to of recipients) {
+    await safeSend({
+      from: FROM,
+      to,
+      subject: `🛡️ Respaldo de JF Studio · ${data.dateLabel}`,
+      html,
+      attachments: data.attachments
+    });
+  }
+  return "sent";
+}

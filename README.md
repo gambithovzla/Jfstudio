@@ -96,6 +96,42 @@ Opciones recomendadas:
 - Servicio externo (cron-job.org) apuntando al endpoint.
 - Plataforma con cron nativo (Vercel Cron, Railway con plan que lo soporte).
 
+## Respaldo de la base de datos
+
+Toda la informacion del negocio vive en la base PostgreSQL. El respaldo tiene varias capas
+para no depender solo de Railway:
+
+1. **Backups nativos de Railway** (recomendado activar): en el dashboard de Railway, servicio
+   Postgres → pestana **Backups**, habilita los snapshots automaticos. Es la primera linea,
+   pero vive dentro de Railway.
+
+2. **Respaldo automatico diario fuera de Railway** — endpoint `GET /api/cron/backup`,
+   protegido con `Authorization: Bearer ${CRON_SECRET}` (mismo mecanismo que el cron de
+   recordatorios). Genera el respaldo y lo saca de Railway por dos vias independientes:
+   - **Correo** a `ADMIN_EMAIL` con el `.json.gz` (restaurable) y el `.xlsx` (legible) adjuntos.
+     Define ademas `BACKUP_EMAIL` (opcional, varios separados por coma) para que el respaldo
+     llegue tambien al desarrollador/proveedor, no solo a la duena.
+   - **Subida a S3/R2** bajo `backups/<año>/` (usa las mismas `DEPOSIT_S3_*` de los comprobantes).
+
+   Configura un disparo **diario** a ese endpoint con el mismo metodo que ya usas para
+   `/api/cron/reminders` (GitHub Actions / cron-job.org / cron nativo).
+
+3. **Descarga manual** desde el panel: **Configuracion → Respaldo**. Dos botones para bajar el
+   archivo de datos (`.json.gz`) o el Excel legible a la PC. La pagina muestra un recordatorio
+   diario y, en Chrome/Edge de escritorio, permite conectar una carpeta para guardado automatico.
+
+### Restaurar un respaldo
+
+Reconstruye el negocio en una base **nueva/vacia** (p. ej. otro proveedor de Postgres) a partir
+de un `.json` o `.json.gz`:
+
+```bash
+# apunta DATABASE_URL a la base nueva y ejecuta:
+npm run db:restore -- ruta/al/respaldo-jfstudio-2026-06-02.json.gz
+```
+
+Por seguridad se niega a escribir sobre una base que ya tiene datos; usa `--force` para forzar.
+
 ## Deploy en Railway
 
 ```bash
