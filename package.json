@@ -16,6 +16,7 @@
     "db:migrate": "prisma migrate dev",
     "db:deploy": "prisma migrate deploy",
     "db:seed": "tsx prisma/seed.ts",
+    "db:set-hours": "tsx scripts/set-working-hours.ts",
     "db:ensure-services": "tsx scripts/ensure-service-variants.ts",
     "db:ensure-laceado": "tsx scripts/ensure-laceado-services.ts",
     "db:ensure-botox": "tsx scripts/ensure-botox-services.ts"
