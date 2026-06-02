@@ -111,6 +111,43 @@ describe("scheduling", () => {
     expect(slots.map((slot) => slot.label)).toEqual(["07:00 - 09:00", "08:00 - 10:00", "09:00 - 11:00"]);
   });
 
+  it("on Sunday a 12-hour service starting at 07:00 generates a slot even if a block starts at 09:00", () => {
+    const slots = buildAvailabilitySlots({
+      date: "2026-05-03",
+      timeZone: "America/Lima",
+      durationMinutes: 720,
+      intervalMinutes: 60,
+      now: new Date("2026-05-01T00:00:00.000Z"),
+      staff: [
+        {
+          id: "staff-1",
+          name: "Johanna",
+          workingHours: [
+            {
+              dayOfWeek: 0,
+              startTime: "07:00",
+              endTime: "09:00",
+              isActive: true
+            }
+          ],
+          appointments: []
+        }
+      ],
+      // Bloque de horario de 09:00 a 18:00 (no debe impedir la cita de 07:00)
+      timeBlocks: [
+        {
+          staffId: "staff-1",
+          startAt: new Date("2026-05-03T14:00:00.000Z"), // 09:00 Lima
+          endAt: new Date("2026-05-03T23:00:00.000Z")   // 18:00 Lima
+        }
+      ]
+    });
+
+    // El slot de 07:00 debe existir; el servicio termina a las 19:00 pero el bloque post-ventana no lo impide
+    expect(slots.length).toBeGreaterThan(0);
+    expect(slots[0]?.label).toMatch(/^07:00/);
+  });
+
   it("on Sunday uses 07:00 web window even when DB working hours start at 09:00", () => {
     const slots = buildAvailabilitySlots({
       date: "2026-05-03",

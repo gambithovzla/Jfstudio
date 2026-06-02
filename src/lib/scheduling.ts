@@ -92,7 +92,11 @@ export function buildAvailabilitySlots(input: {
         ? null
         : zonedTimeToUtc(input.date, workingHour.breakEnd, input.timeZone);
 
-    /** Domingo: último inicio permitido es el cierre del turno; el servicio puede terminar después. */
+    /**
+     * Domingo: el inicio debe ser <= cierre de ventana (09:00) pero el servicio puede terminar después.
+     * Los bloqueos de horario solo se evalúan contra la ventana de inicio (no contra toda la duración):
+     * un bloque puesto después de las 09:00 no debe impedir una cita que empieza a las 07:00.
+     */
     const sundayStartOnlyThroughClose = salonSunday;
 
     for (
@@ -110,8 +114,12 @@ export function buildAvailabilitySlots(input: {
       const hitsAppointment = staffMember.appointments.some((appointment) =>
         overlaps(candidate, candidateEnd, appointment.startAt, appointment.endAt)
       );
+      // En domingo los bloqueos solo se comprueban dentro de la ventana de inicio (candidate→workEnd).
+      // Fuera de esa ventana el servicio sigue pero no acepta nuevas reservas, por lo que
+      // un bloque post-ventana no debe cancelar un cupo que ya comenzó dentro de ella.
+      const blockEnd = sundayStartOnlyThroughClose ? workEnd : candidateEnd;
       const hitsBlock = staffBlocks.some((block) =>
-        overlaps(candidate, candidateEnd, block.startAt, block.endAt)
+        overlaps(candidate, blockEnd, block.startAt, block.endAt)
       );
 
       if (candidate <= now || hitsBreak || hitsAppointment || hitsBlock) {
