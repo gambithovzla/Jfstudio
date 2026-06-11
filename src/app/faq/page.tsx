@@ -24,7 +24,7 @@ const FAQS = [
   },
   {
     q: "¿Qué métodos de pago aceptan?",
-    a: "Aceptamos efectivo, Yape, Plin y transferencia bancaria. Para servicios con depósito anticipado coordinamos el pago por transferencia o Yape."
+    a: "Aceptamos efectivo, Yape, Plin y transferencia bancaria. El adelanto de tu reserva (S/ 50) lo puedes yapear al 921 153 808, a nombre de Johanna Figueredo Studio E.I.R.L."
   },
   {
     q: "¿Puedo combinar varios servicios en una misma cita?",
