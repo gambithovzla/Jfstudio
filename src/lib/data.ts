@@ -472,19 +472,21 @@ export async function createBooking(input: {
         }
         staff = s;
 
-        const overlappingAppointment = await tx.appointment.findFirst({
-          where: {
-            staffId: staff.id,
-            status: { in: [AppointmentStatus.CONFIRMED, AppointmentStatus.COMPLETED] },
-            startAt: { lt: endAt },
-            endAt: { gt: input.startAt },
-            ...(input.excludeAppointmentId ? { id: { not: input.excludeAppointmentId } } : {})
-          },
-          select: { id: true }
-        });
+        if (isPublic) {
+          const overlappingAppointment = await tx.appointment.findFirst({
+            where: {
+              staffId: staff.id,
+              status: { in: [AppointmentStatus.CONFIRMED, AppointmentStatus.COMPLETED] },
+              startAt: { lt: endAt },
+              endAt: { gt: input.startAt },
+              ...(input.excludeAppointmentId ? { id: { not: input.excludeAppointmentId } } : {})
+            },
+            select: { id: true }
+          });
 
-        if (overlappingAppointment) {
-          throw new Error("Ese horario ya fue tomado.");
+          if (overlappingAppointment) {
+            throw new Error("Ese horario ya fue tomado.");
+          }
         }
       }
 

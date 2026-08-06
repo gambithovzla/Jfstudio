@@ -136,21 +136,6 @@ export async function updateAppointmentAction(formData: FormData) {
       const durationMinutes = services.reduce((t, s) => t + s.durationMinutes, 0);
       const endAt = addMinutes(startAt, durationMinutes);
 
-      const overlap = await tx.appointment.findFirst({
-        where: {
-          id: { not: appointmentId },
-          staffId,
-          status: { in: [AppointmentStatus.CONFIRMED, AppointmentStatus.COMPLETED] },
-          startAt: { lt: endAt },
-          endAt: { gt: startAt }
-        },
-        select: { id: true }
-      });
-
-      if (overlap) {
-        throw new Error("Ese horario ya esta ocupado.");
-      }
-
       const totalPrice = services.reduce((t, s) => t + Number(s.price), 0);
 
       await tx.appointmentService.deleteMany({ where: { appointmentId } });
