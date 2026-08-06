@@ -488,27 +488,28 @@ export async function createBooking(input: {
         }
       }
 
-      const earliestSlot = isPublic ? earliestPublicBookingInstant() : undefined;
-      const slots = buildAvailabilitySlots({
-        date: dateInSalon,
-        timeZone: settings.timezone,
-        durationMinutes,
-        intervalMinutes: settings.appointmentIntervalMinutes,
-        staff: [
-          {
-            id: staff.id,
-            name: staff.name,
-            workingHours: staff.workingHours,
-            appointments: []
-          }
-        ],
-        timeBlocks,
-        now: new Date(),
-        earliestStartUtc: earliestSlot
-      });
+      if (isPublic) {
+        const slots = buildAvailabilitySlots({
+          date: dateInSalon,
+          timeZone: settings.timezone,
+          durationMinutes,
+          intervalMinutes: settings.appointmentIntervalMinutes,
+          staff: [
+            {
+              id: staff.id,
+              name: staff.name,
+              workingHours: staff.workingHours,
+              appointments: []
+            }
+          ],
+          timeBlocks,
+          now: new Date(),
+          earliestStartUtc: earliestPublicBookingInstant()
+        });
 
-      if (!slots.some((slot) => slot.startAt === input.startAt.toISOString())) {
-        throw new Error("Ese horario esta fuera del horario laboral.");
+        if (!slots.some((slot) => slot.startAt === input.startAt.toISOString())) {
+          throw new Error("Ese horario esta fuera del horario laboral.");
+        }
       }
 
       const dni = input.client.documentNumber?.trim() || null;
