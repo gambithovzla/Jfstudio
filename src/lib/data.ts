@@ -472,43 +472,46 @@ export async function createBooking(input: {
         }
         staff = s;
 
-        const overlappingAppointment = await tx.appointment.findFirst({
-          where: {
-            staffId: staff.id,
-            status: { in: [AppointmentStatus.CONFIRMED, AppointmentStatus.COMPLETED] },
-            startAt: { lt: endAt },
-            endAt: { gt: input.startAt },
-            ...(input.excludeAppointmentId ? { id: { not: input.excludeAppointmentId } } : {})
-          },
-          select: { id: true }
-        });
+        if (isPublic) {
+          const overlappingAppointment = await tx.appointment.findFirst({
+            where: {
+              staffId: staff.id,
+              status: { in: [AppointmentStatus.CONFIRMED, AppointmentStatus.COMPLETED] },
+              startAt: { lt: endAt },
+              endAt: { gt: input.startAt },
+              ...(input.excludeAppointmentId ? { id: { not: input.excludeAppointmentId } } : {})
+            },
+            select: { id: true }
+          });
 
-        if (overlappingAppointment) {
-          throw new Error("Ese horario ya fue tomado.");
+          if (overlappingAppointment) {
+            throw new Error("Ese horario ya fue tomado.");
+          }
         }
       }
 
-      const earliestSlot = isPublic ? earliestPublicBookingInstant() : undefined;
-      const slots = buildAvailabilitySlots({
-        date: dateInSalon,
-        timeZone: settings.timezone,
-        durationMinutes,
-        intervalMinutes: settings.appointmentIntervalMinutes,
-        staff: [
-          {
-            id: staff.id,
-            name: staff.name,
-            workingHours: staff.workingHours,
-            appointments: []
-          }
-        ],
-        timeBlocks,
-        now: new Date(),
-        earliestStartUtc: earliestSlot
-      });
+      if (isPublic) {
+        const slots = buildAvailabilitySlots({
+          date: dateInSalon,
+          timeZone: settings.timezone,
+          durationMinutes,
+          intervalMinutes: settings.appointmentIntervalMinutes,
+          staff: [
+            {
+              id: staff.id,
+              name: staff.name,
+              workingHours: staff.workingHours,
+              appointments: []
+            }
+          ],
+          timeBlocks,
+          now: new Date(),
+          earliestStartUtc: earliestPublicBookingInstant()
+        });
 
-      if (!slots.some((slot) => slot.startAt === input.startAt.toISOString())) {
-        throw new Error("Ese horario esta fuera del horario laboral.");
+        if (!slots.some((slot) => slot.startAt === input.startAt.toISOString())) {
+          throw new Error("Ese horario esta fuera del horario laboral.");
+        }
       }
 
       const dni = input.client.documentNumber?.trim() || null;
