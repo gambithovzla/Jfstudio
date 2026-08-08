@@ -1,12 +1,13 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, MessageCircle, Pencil, RotateCcw, Save, Trash2, XCircle } from "lucide-react";
+import { ArrowLeft, MessageCircle, Pencil, Plus, RotateCcw, Save, Trash2, XCircle } from "lucide-react";
 
 import { ConfirmSubmitButton } from "@/components/confirm-submit-button";
 import { DeleteAppointmentButton } from "@/components/delete-appointment-button";
 import { FlashMessage } from "@/components/flash-message";
 import { StatusBadge } from "@/components/status-badge";
 import {
+  addPaymentAction,
   cancelAppointmentAction,
   cancelForceMajeureAction,
   completeAppointmentAction,
@@ -17,7 +18,7 @@ import {
 } from "@/lib/actions";
 import { getAppointmentForCheckout, getSalonSettings } from "@/lib/data";
 import { describePaymentAuditChange, paymentAuditActionLabel } from "@/lib/payment-audit";
-import { formatDateInZone, formatTimeInZone } from "@/lib/time";
+import { formatDateInZone, formatTimeInZone, todayInTimeZone } from "@/lib/time";
 import { formatCurrency, normalizePhone } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
@@ -86,6 +87,7 @@ export default async function AppointmentDetailPage({ params, searchParams }: Pa
     notFound();
   }
 
+  const today = todayInTimeZone(settings.timezone);
   const total = appointment.services.reduce((sum, service) => sum + Number(service.priceSnapshot), 0);
   const requiresDeposit = appointment.services.some((s) => s.service.requiresDeposit);
   const usage = new Map<
@@ -444,6 +446,54 @@ export default async function AppointmentDetailPage({ params, searchParams }: Pa
                 );
               })}
             </div>
+            <details style={{ marginBottom: 16 }}>
+              <summary className="small" style={{ cursor: "pointer", fontWeight: 600 }}>
+                Registrar cobro adicional
+              </summary>
+              <form className="form-grid" action={addPaymentAction} style={{ marginTop: 10 }}>
+                <input type="hidden" name="appointmentId" value={appointment.id} />
+                <p className="small muted" style={{ margin: 0 }}>
+                  Para plata que si entro y falta registrar: un saldo que la clienta pago despues o un cobro
+                  que se omitio. No lo uses para arreglar un monto mal tipeado — para eso corrige el cobro
+                  original arriba.
+                </p>
+                <div className="grid two">
+                  <div className="field">
+                    <label htmlFor="add-amount">Monto</label>
+                    <input className="input" id="add-amount" name="amount" type="number" step="0.01" min="0.01" required />
+                  </div>
+                  <div className="field">
+                    <label htmlFor="add-method">Metodo</label>
+                    <select className="select" id="add-method" name="method" required>
+                      {methods.map((method) => (
+                        <option value={method.name} key={method.id}>{method.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+                <div className="grid two">
+                  <div className="field">
+                    <label htmlFor="add-paidOn">Fecha del cobro</label>
+                    <input className="input" id="add-paidOn" name="paidOn" type="date" max={today} defaultValue={today} />
+                    <span className="small muted">
+                      Es el dia en que entro la plata: define en que fecha suma en caja.
+                    </span>
+                  </div>
+                  <div className="field">
+                    <label htmlFor="add-actor">Quien registra</label>
+                    <ActorSelect staff={staff} id="add-actor" label="Quien registra" full />
+                  </div>
+                </div>
+                <div className="field">
+                  <label htmlFor="add-note">Nota</label>
+                  <input className="input" id="add-note" name="note" placeholder="Ej: saldo pagado el viernes" />
+                </div>
+                <button className="btn secondary" type="submit" style={{ alignSelf: "flex-start" }}>
+                  <Plus size={16} aria-hidden />
+                  Registrar cobro
+                </button>
+              </form>
+            </details>
             <form className="form-grid" action={refundPaymentAction}>
               <input type="hidden" name="appointmentId" value={appointment.id} />
               <p className="small muted" style={{ margin: 0 }}>Registrar reembolso</p>

@@ -1,6 +1,7 @@
-export type PaymentAuditActionName = "UPDATE" | "DELETE" | "REFUND";
+export type PaymentAuditActionName = "CREATE" | "UPDATE" | "DELETE" | "REFUND";
 
 export const PAYMENT_AUDIT_ACTION_LABEL: Record<PaymentAuditActionName, string> = {
+  CREATE: "Cobro adicional",
   UPDATE: "Correccion",
   DELETE: "Eliminacion",
   REFUND: "Reembolso"

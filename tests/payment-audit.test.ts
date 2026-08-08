@@ -5,6 +5,7 @@ import {
   describePaymentAuditSide,
   paymentAuditActionLabel
 } from "../src/lib/payment-audit";
+import { endOfSalonDayUtc, formatDateInZone, startOfSalonDayUtc, zonedTimeToUtc } from "../src/lib/time";
 
 const soles = (value: number) => `S/ ${value.toFixed(2)}`;
 
@@ -45,9 +46,30 @@ describe("payment audit descriptions", () => {
   });
 
   it("translates action names and falls back to the raw value", () => {
+    expect(paymentAuditActionLabel("CREATE")).toBe("Cobro adicional");
     expect(paymentAuditActionLabel("UPDATE")).toBe("Correccion");
     expect(paymentAuditActionLabel("DELETE")).toBe("Eliminacion");
     expect(paymentAuditActionLabel("REFUND")).toBe("Reembolso");
     expect(paymentAuditActionLabel("OTRO")).toBe("OTRO");
+  });
+});
+
+describe("fecha de un cobro agregado a mano", () => {
+  const LIMA = "America/Lima";
+
+  it("deja el cobro en el dia elegido del salon, no en el dia UTC", () => {
+    // 23:30 en Lima es el dia siguiente en UTC: el cobro debe seguir contando
+    // en el 31 de julio, que es cuando la clienta pago.
+    const paidAt = zonedTimeToUtc("2026-07-31", "23:30", LIMA);
+
+    expect(formatDateInZone(paidAt, LIMA)).toContain("31");
+    expect(paidAt.toISOString()).toBe("2026-08-01T04:30:00.000Z");
+  });
+
+  it("mantiene el cobro dentro del rango del dia que reporta caja", () => {
+    const paidAt = zonedTimeToUtc("2026-07-31", "23:30", LIMA);
+
+    expect(paidAt.getTime()).toBeGreaterThanOrEqual(startOfSalonDayUtc("2026-07-31", LIMA).getTime());
+    expect(paidAt.getTime()).toBeLessThan(endOfSalonDayUtc("2026-07-31", LIMA).getTime());
   });
 });
