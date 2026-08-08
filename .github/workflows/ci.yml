@@ -27,8 +27,10 @@ jobs:
           POSTGRES_DB: jfstudio_ci
         ports:
           - 5432:5432
+        # Sin -U/-d, pg_isready asume el usuario del sistema (root) y el log se
+        # llena de 'role "root" does not exist' sin comprobar la base real.
         options: >-
-          --health-cmd pg_isready
+          --health-cmd "pg_isready -U postgres -d jfstudio_ci"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
@@ -37,9 +39,9 @@ jobs:
       DATABASE_URL: postgresql://postgres:postgres@localhost:5432/jfstudio_ci
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version: 22
           cache: npm
