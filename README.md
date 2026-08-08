@@ -141,7 +141,9 @@ Variables minimas en Railway:
 - `ADMIN_EMAIL`
 - `CRON_SECRET`
 
-Antes del primer deploy, conecta a la base con `prisma migrate deploy` (o agrega ese paso al script de build).
+Las migraciones corren solas: `npm run build` ejecuta `prisma migrate deploy` antes de compilar, asi
+que cada deploy deja la base al dia sin pasos manuales. Si el build falla ahi, es que `DATABASE_URL`
+no esta disponible en el entorno de build — revisa las variables antes de tocar el script.
 
 ## Tests
 
