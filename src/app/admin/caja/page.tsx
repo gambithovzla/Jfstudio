@@ -2,6 +2,7 @@ import { CreditCard, Download } from "lucide-react";
 import Link from "next/link";
 
 import { getCashReport } from "@/lib/data";
+import { describePaymentAuditChange, paymentAuditActionLabel } from "@/lib/payment-audit";
 import { formatDateInZone, formatTimeInZone } from "@/lib/time";
 import { formatCurrency } from "@/lib/utils";
 
@@ -11,10 +12,11 @@ type PageProps = {
   searchParams?: Promise<{ date?: string; from?: string; to?: string }>;
 };
 
+
 export default async function CashPage({ searchParams }: PageProps) {
   const params = searchParams ? await searchParams : {};
   const isRange = Boolean(params.from && params.to);
-  const { settings, selectedDate, payments, summary } = await getCashReport(
+  const { settings, selectedDate, payments, summary, auditLog } = await getCashReport(
     isRange ? { from: params.from, to: params.to } : { date: params.date }
   );
 
@@ -212,6 +214,44 @@ export default async function CashPage({ searchParams }: PageProps) {
             </table>
           )}
         </section>
+
+        {auditLog.length > 0 ? (
+          <section className="card">
+            <h2 className="card-title" style={{ marginBottom: 6 }}>Ajustes sobre cobros</h2>
+            <p className="small muted" style={{ marginTop: 0 }}>
+              Los totales de arriba ya reflejan estos cambios. Aqui queda quien los hizo y por que.
+            </p>
+            <table className="table">
+              <thead>
+                <tr>
+                  <th>Cuando</th>
+                  <th>Quien</th>
+                  <th>Accion</th>
+                  <th>Cliente</th>
+                  <th>Cambio</th>
+                  <th>Motivo</th>
+                </tr>
+              </thead>
+              <tbody>
+                {auditLog.map((log) => (
+                  <tr key={log.id}>
+                    <td style={{ fontSize: "0.82rem", color: "var(--muted)" }}>
+                      {formatDateInZone(log.createdAt, settings.timezone)}{" "}
+                      {formatTimeInZone(log.createdAt, settings.timezone)}
+                    </td>
+                    <td style={{ fontWeight: 600 }}>{log.actorName}</td>
+                    <td style={{ fontSize: "0.82rem" }}>{paymentAuditActionLabel(log.action)}</td>
+                    <td style={{ fontSize: "0.82rem" }}>{log.clientName ?? ""}</td>
+                    <td style={{ fontSize: "0.82rem" }}>
+                      {describePaymentAuditChange(log, (value) => formatCurrency(value, settings.currency))}
+                    </td>
+                    <td style={{ fontSize: "0.82rem", color: "var(--muted)" }}>{log.reason ?? ""}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </section>
+        ) : null}
       </div>
     </>
   );

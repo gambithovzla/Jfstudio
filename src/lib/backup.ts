@@ -37,7 +37,8 @@ const TABLE_READERS: Record<BackupTable, () => Promise<unknown[]>> = {
   appointmentService: () => prisma.appointmentService.findMany(),
   payment: () => prisma.payment.findMany(),
   inventoryMovement: () => prisma.inventoryMovement.findMany(),
-  timeBlock: () => prisma.timeBlock.findMany()
+  timeBlock: () => prisma.timeBlock.findMany(),
+  paymentAuditLog: () => prisma.paymentAuditLog.findMany()
 };
 
 export type BackupFile = {

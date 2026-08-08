@@ -714,7 +714,7 @@ export async function getAgendaRange(from: Date, to: Date) {
 }
 
 export async function getAppointmentForCheckout(id: string) {
-  const [appointment, methods] = await Promise.all([
+  const [appointment, methods, staff, paymentAuditLog] = await Promise.all([
     prisma.appointment.findUnique({
       where: { id },
       include: {
@@ -732,14 +732,19 @@ export async function getAppointmentForCheckout(id: string) {
             }
           }
         },
-        payments: true,
+        payments: { orderBy: { paidAt: "asc" } },
         inventoryMovements: { include: { product: true } }
       }
     }),
-    prisma.paymentMethodConfig.findMany({ where: { isActive: true }, orderBy: { sortOrder: "asc" } })
+    prisma.paymentMethodConfig.findMany({ where: { isActive: true }, orderBy: { sortOrder: "asc" } }),
+    prisma.staff.findMany({ where: { isActive: true }, orderBy: { name: "asc" }, select: { id: true, name: true } }),
+    prisma.paymentAuditLog.findMany({
+      where: { appointmentId: id },
+      orderBy: { createdAt: "desc" }
+    })
   ]);
 
-  return { appointment, methods };
+  return { appointment, methods, staff, paymentAuditLog };
 }
 
 export async function getAppointmentForEdit(id: string) {
@@ -942,10 +947,18 @@ export async function getCashReport(options?: { date?: string; from?: string; to
     }
   });
 
+  // Se filtra por paidAt (no por createdAt) para que la correccion aparezca en
+  // el periodo del cobro afectado, que es donde cambio el numero.
+  const auditLog = await prisma.paymentAuditLog.findMany({
+    where: { paidAt: dateRange },
+    orderBy: { createdAt: "desc" }
+  });
+
   return {
     settings,
     selectedDate,
     payments,
+    auditLog,
     summary: summarizePayments(payments.map((payment) => ({ amount: Number(payment.amount), method: payment.method })))
   };
 }

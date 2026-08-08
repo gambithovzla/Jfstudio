@@ -22,7 +22,9 @@ export const BACKUP_TABLES = [
   "appointmentService",
   "payment",
   "inventoryMovement",
-  "timeBlock"
+  "timeBlock",
+  // Sin llaves foraneas a proposito: la bitacora sobrevive al borrado del pago.
+  "paymentAuditLog"
 ] as const;
 
 export type BackupTable = (typeof BACKUP_TABLES)[number];
