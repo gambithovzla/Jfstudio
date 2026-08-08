@@ -34,7 +34,7 @@ import {
 } from "@/lib/gallery-upload";
 import { prisma } from "@/lib/prisma";
 import { isTestimonialRateLimited } from "@/lib/testimonial-rate-limit";
-import { addMinutes, formatDateInZone, formatTimeInZone } from "@/lib/time";
+import { addMinutes, formatDateInZone, formatTimeInZone, todayInTimeZone, zonedTimeToUtc } from "@/lib/time";
 import { normalizePhone } from "@/lib/utils";
 
 function requiredString(formData: FormData, key: string) {
@@ -1028,7 +1028,7 @@ async function resolvePaymentActor(formData: FormData): Promise<PaymentActor> {
 }
 
 async function recordPaymentAudit(entry: {
-  action: "UPDATE" | "DELETE" | "REFUND";
+  action: "CREATE" | "UPDATE" | "DELETE" | "REFUND";
   payment: { id: string; paidAt: Date };
   appointmentId: string;
   clientName: string | null;
@@ -1073,6 +1073,65 @@ export async function markDepositPaidAction(formData: FormData) {
 
   revalidatePath(`/admin/agenda/${appointmentId}`);
   revalidatePath("/admin/agenda");
+}
+
+export async function addPaymentAction(formData: FormData) {
+  await requireAdmin();
+
+  const appointmentId = requiredString(formData, "appointmentId");
+  const amount = decimalFromForm(formData, "amount");
+  const method = requiredString(formData, "method");
+  const note = optionalString(formData, "note");
+  const paidOn = optionalString(formData, "paidOn");
+
+  if (amount <= 0) {
+    throw new Error("El monto del cobro debe ser mayor a cero.");
+  }
+
+  const appointment = await prisma.appointment.findUnique({
+    where: { id: appointmentId },
+    select: { status: true, client: { select: { name: true } } }
+  });
+
+  if (!appointment) {
+    throw new Error("La cita ya no existe.");
+  }
+
+  if (appointment.status !== AppointmentStatus.COMPLETED) {
+    throw new Error("Para cobrar una cita pendiente usa 'Completar y cobrar'.");
+  }
+
+  const settings = await getSalonSettings();
+  const today = todayInTimeZone(settings.timezone);
+
+  if (paidOn && paidOn > today) {
+    throw new Error("La fecha del cobro no puede ser futura.");
+  }
+
+  const actor = await resolvePaymentActor(formData);
+
+  // Sin fecha explicita el cobro entra ahora (el caso normal: la clienta paga el
+  // saldo hoy). Con fecha, se respeta la hora actual del salon para que el cobro
+  // caiga en el dia que de verdad ocurrio y no mueva plata de un periodo a otro.
+  const paidAt = paidOn
+    ? zonedTimeToUtc(paidOn, formatTimeInZone(new Date(), settings.timezone), settings.timezone)
+    : new Date();
+
+  const payment = await prisma.payment.create({
+    data: { appointmentId, amount, method, note, paidAt }
+  });
+
+  await recordPaymentAudit({
+    action: "CREATE",
+    payment,
+    appointmentId,
+    clientName: appointment.client.name,
+    actor,
+    reason: optionalString(formData, "reason") ?? note,
+    after: { amount, method, note }
+  });
+
+  revalidatePaymentViews(appointmentId);
 }
 
 export async function refundPaymentAction(formData: FormData) {

@@ -38,6 +38,7 @@ enum DocumentType {
 }
 
 enum PaymentAuditAction {
+  CREATE
   UPDATE
   DELETE
   REFUND
