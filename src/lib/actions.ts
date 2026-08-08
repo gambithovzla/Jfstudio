@@ -971,7 +971,93 @@ export async function deleteTimeBlockAction(formData: FormData) {
   revalidatePath("/admin/configuracion/bloqueos");
 }
 
-// ─── Reembolsos ───────────────────────────────────────────────────────────────
+// ─── Auditoria de pagos ───────────────────────────────────────────────────────
+
+type PaymentActor = {
+  staffId: string | null;
+  name: string;
+  ipAddress: string | null;
+  userAgent: string | null;
+};
+
+type PaymentSnapshot = {
+  amount: number;
+  method: string;
+  note: string | null;
+};
+
+// El acceso al panel usa una sola contrasena compartida, asi que la sesion no
+// identifica a una persona. Quien corrige un cobro debe declararse en el
+// formulario; ademas guardamos IP y user-agent como respaldo tecnico.
+async function resolvePaymentActor(formData: FormData): Promise<PaymentActor> {
+  const actorStaffId = optionalString(formData, "actorStaffId");
+  const typedName = optionalString(formData, "actorName");
+
+  let staffId: string | null = null;
+  let name = typedName;
+
+  if (actorStaffId) {
+    const staff = await prisma.staff.findUnique({
+      where: { id: actorStaffId },
+      select: { id: true, name: true }
+    });
+
+    if (!staff) {
+      throw new Error("El responsable indicado ya no existe.");
+    }
+
+    staffId = staff.id;
+    name = staff.name;
+  }
+
+  if (!name) {
+    throw new Error("Indica quien realiza el cambio.");
+  }
+
+  const h = await headers();
+
+  return {
+    staffId,
+    name,
+    ipAddress:
+      h.get("x-forwarded-for")?.split(",")[0]?.trim() ??
+      h.get("x-real-ip")?.trim() ??
+      null,
+    userAgent: h.get("user-agent")
+  };
+}
+
+async function recordPaymentAudit(entry: {
+  action: "UPDATE" | "DELETE" | "REFUND";
+  payment: { id: string; paidAt: Date };
+  appointmentId: string;
+  clientName: string | null;
+  actor: PaymentActor;
+  reason: string | null;
+  before?: PaymentSnapshot;
+  after?: PaymentSnapshot;
+}) {
+  await prisma.paymentAuditLog.create({
+    data: {
+      action: entry.action,
+      paymentId: entry.payment.id,
+      appointmentId: entry.appointmentId,
+      clientName: entry.clientName,
+      actorStaffId: entry.actor.staffId,
+      actorName: entry.actor.name,
+      reason: entry.reason,
+      ipAddress: entry.actor.ipAddress,
+      userAgent: entry.actor.userAgent,
+      paidAt: entry.payment.paidAt,
+      beforeAmount: entry.before?.amount,
+      beforeMethod: entry.before?.method,
+      beforeNote: entry.before?.note,
+      afterAmount: entry.after?.amount,
+      afterMethod: entry.after?.method,
+      afterNote: entry.after?.note
+    }
+  });
+}
 
 // ─── Depositos ────────────────────────────────────────────────────────────────
 
@@ -1002,20 +1088,32 @@ export async function refundPaymentAction(formData: FormData) {
 
   const appointment = await prisma.appointment.findUnique({
     where: { id: appointmentId },
-    select: { status: true }
+    select: { status: true, client: { select: { name: true } } }
   });
 
   if (!appointment || appointment.status !== AppointmentStatus.COMPLETED) {
     throw new Error("Solo se pueden reembolsar citas completadas.");
   }
 
-  await prisma.payment.create({
+  const actor = await resolvePaymentActor(formData);
+
+  const payment = await prisma.payment.create({
     data: {
       appointmentId,
       amount: -amount,
       method,
       note: note ?? "Reembolso"
     }
+  });
+
+  await recordPaymentAudit({
+    action: "REFUND",
+    payment,
+    appointmentId,
+    clientName: appointment.client.name,
+    actor,
+    reason: note,
+    after: { amount: -amount, method, note: payment.note }
   });
 
   revalidatePath(`/admin/agenda/${appointmentId}`);
@@ -1041,6 +1139,7 @@ export async function updatePaymentAction(formData: FormData) {
   const amount = decimalFromForm(formData, "amount");
   const method = requiredString(formData, "method");
   const note = optionalString(formData, "note");
+  const reason = optionalString(formData, "reason");
 
   if (amount === 0) {
     throw new Error("El monto del pago no puede ser cero.");
@@ -1048,16 +1147,41 @@ export async function updatePaymentAction(formData: FormData) {
 
   const payment = await prisma.payment.findUnique({
     where: { id: paymentId },
-    select: { appointmentId: true }
+    include: { appointment: { select: { client: { select: { name: true } } } } }
   });
 
   if (!payment) {
     throw new Error("El pago ya no existe.");
   }
 
+  const before: PaymentSnapshot = {
+    amount: Number(payment.amount),
+    method: payment.method,
+    note: payment.note
+  };
+
+  if (before.amount === amount && before.method === method && before.note === note) {
+    return;
+  }
+
+  const actor = await resolvePaymentActor(formData);
+
+  // paidAt no se toca: el cobro debe seguir contando en el dia en que ocurrio,
+  // no en el dia en que se corrigio.
   await prisma.payment.update({
     where: { id: paymentId },
     data: { amount, method, note }
+  });
+
+  await recordPaymentAudit({
+    action: "UPDATE",
+    payment,
+    appointmentId: payment.appointmentId,
+    clientName: payment.appointment.client.name,
+    actor,
+    reason,
+    before,
+    after: { amount, method, note }
   });
 
   revalidatePaymentViews(payment.appointmentId);
@@ -1067,17 +1191,34 @@ export async function deletePaymentAction(formData: FormData) {
   await requireAdmin();
 
   const paymentId = requiredString(formData, "paymentId");
+  const reason = requiredString(formData, "reason");
 
   const payment = await prisma.payment.findUnique({
     where: { id: paymentId },
-    select: { appointmentId: true }
+    include: { appointment: { select: { client: { select: { name: true } } } } }
   });
 
   if (!payment) {
     throw new Error("El pago ya no existe.");
   }
 
+  const actor = await resolvePaymentActor(formData);
+
   await prisma.payment.delete({ where: { id: paymentId } });
+
+  await recordPaymentAudit({
+    action: "DELETE",
+    payment,
+    appointmentId: payment.appointmentId,
+    clientName: payment.appointment.client.name,
+    actor,
+    reason,
+    before: {
+      amount: Number(payment.amount),
+      method: payment.method,
+      note: payment.note
+    }
+  });
 
   revalidatePaymentViews(payment.appointmentId);
 }

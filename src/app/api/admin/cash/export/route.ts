@@ -3,6 +3,7 @@ import ExcelJS from "exceljs";
 
 import { requireAdmin } from "@/lib/auth";
 import { getCashReport } from "@/lib/data";
+import { describePaymentAuditSide, paymentAuditActionLabel } from "@/lib/payment-audit";
 import { salonAddressPlain } from "@/lib/salon-address";
 import { formatDateInZone, formatTimeInZone } from "@/lib/time";
 
@@ -31,7 +32,7 @@ export async function GET(request: NextRequest) {
   const to   = searchParams.get("to") ?? undefined;
 
   const isRange = Boolean(from && to);
-  const { payments, settings } = await getCashReport(isRange ? { from, to } : { date });
+  const { payments, settings, auditLog } = await getCashReport(isRange ? { from, to } : { date });
 
   const ruc         = process.env.SALON_RUC ?? "";
   const address     = process.env.SALON_ADDRESS ?? salonAddressPlain();
@@ -254,6 +255,79 @@ export async function GET(request: NextRequest) {
   totalRow.getCell(9).border = thinBorder();
   totalRow.getCell(9).alignment = { horizontal: "right" };
   totalRow.height = 18;
+
+  // ═══════════════════════════════════════════════════════════
+  // HOJA 3 — AJUSTES (solo si hubo correcciones en el periodo)
+  // ═══════════════════════════════════════════════════════════
+  if (auditLog.length > 0) {
+    const ws3 = wb.addWorksheet("Ajustes");
+    ws3.columns = [
+      { width: 5 },  // N°
+      { width: 17 }, // Fecha del cambio
+      { width: 13 }, // Fecha del cobro
+      { width: 20 }, // Responsable
+      { width: 13 }, // Accion
+      { width: 24 }, // Cliente
+      { width: 20 }, // Antes
+      { width: 20 }, // Despues
+      { width: 30 }  // Motivo
+    ];
+
+    const a1 = ws3.addRow([`${businessName.toUpperCase()} — AJUSTES SOBRE COBROS`]);
+    ws3.mergeCells(`A${a1.number}:I${a1.number}`);
+    a1.getCell(1).font = { bold: true, size: 13, color: { argb: WHITE } };
+    a1.getCell(1).fill = hFill(DARK);
+    a1.getCell(1).alignment = { horizontal: "center", vertical: "middle" };
+    a1.height = 24;
+
+    const a2 = ws3.addRow([
+      `Periodo: ${periodo}   |   ${auditLog.length} ajuste(s). Las cifras de las hojas Resumen y Detalle ya incluyen estos cambios; esta hoja explica quien los hizo y por que.`
+    ]);
+    ws3.mergeCells(`A${a2.number}:I${a2.number}`);
+    a2.getCell(1).font = { size: 9, color: { argb: "FF444444" } };
+    a2.getCell(1).fill = hFill(LGRAY);
+    a2.getCell(1).alignment = { horizontal: "center" };
+
+    ws3.addRow([]);
+
+    const aHeaders = [
+      "N°", "Fecha del cambio", "Fecha del cobro", "Responsable", "Accion",
+      "Cliente", "Antes", "Despues", "Motivo"
+    ];
+    const aHRow = ws3.addRow(aHeaders);
+    aHRow.eachCell((cell) => {
+      cell.font = { bold: true, color: { argb: WHITE }, size: 10 };
+      cell.fill = hFill(DARK);
+      cell.border = thinBorder();
+      cell.alignment = { horizontal: "center", vertical: "middle", wrapText: true };
+    });
+    aHRow.height = 18;
+
+    const describe = (amount: unknown, method: string | null) =>
+      describePaymentAuditSide({ amount, method }, (value) => `S/ ${value.toFixed(2)}`);
+
+    auditLog.forEach((log, i) => {
+      const isEven = i % 2 === 0;
+      const r = ws3.addRow([
+        i + 1,
+        `${formatDateInZone(log.createdAt, settings.timezone)} ${formatTimeInZone(log.createdAt, settings.timezone)}`,
+        log.paidAt ? formatDateInZone(log.paidAt, settings.timezone) : "",
+        log.actorName,
+        paymentAuditActionLabel(log.action),
+        log.clientName ?? "",
+        describe(log.beforeAmount, log.beforeMethod),
+        describe(log.afterAmount, log.afterMethod),
+        log.reason ?? ""
+      ]);
+      r.eachCell((cell, col) => {
+        cell.fill = hFill(isEven ? WHITE : LGRAY);
+        cell.border = thinBorder();
+        cell.font = { size: 9 };
+        if (col === 1) cell.alignment = { horizontal: "center" };
+        if (col === 9) cell.alignment = { wrapText: true };
+      });
+    });
+  }
 
   // ── Serializar y enviar ───────────────────────────────────────────────────
   const rawBuffer = await wb.xlsx.writeBuffer();
