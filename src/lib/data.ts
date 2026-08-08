@@ -732,7 +732,7 @@ export async function getAppointmentForCheckout(id: string) {
             }
           }
         },
-        payments: true,
+        payments: { orderBy: { paidAt: "asc" } },
         inventoryMovements: { include: { product: true } }
       }
     }),

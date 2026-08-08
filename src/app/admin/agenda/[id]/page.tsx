@@ -1,12 +1,20 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, MessageCircle, Pencil, RotateCcw, Save, XCircle } from "lucide-react";
+import { ArrowLeft, MessageCircle, Pencil, RotateCcw, Save, Trash2, XCircle } from "lucide-react";
 
 import { ConfirmSubmitButton } from "@/components/confirm-submit-button";
 import { DeleteAppointmentButton } from "@/components/delete-appointment-button";
 import { FlashMessage } from "@/components/flash-message";
 import { StatusBadge } from "@/components/status-badge";
-import { cancelAppointmentAction, cancelForceMajeureAction, completeAppointmentAction, markDepositPaidAction, refundPaymentAction } from "@/lib/actions";
+import {
+  cancelAppointmentAction,
+  cancelForceMajeureAction,
+  completeAppointmentAction,
+  deletePaymentAction,
+  markDepositPaidAction,
+  refundPaymentAction,
+  updatePaymentAction
+} from "@/lib/actions";
 import { getAppointmentForCheckout, getSalonSettings } from "@/lib/data";
 import { formatDateInZone, formatTimeInZone } from "@/lib/time";
 import { formatCurrency, normalizePhone } from "@/lib/utils";
@@ -299,24 +307,70 @@ export default async function AppointmentDetailPage({ params, searchParams }: Pa
                 </p>
               </div>
             </div>
-            <table className="table" style={{ marginBottom: 16 }}>
-              <thead>
-                <tr>
-                  <th>Metodo</th>
-                  <th>Monto</th>
-                  <th>Nota</th>
-                </tr>
-              </thead>
-              <tbody>
-                {appointment.payments.map((p) => (
-                  <tr key={p.id} style={{ color: Number(p.amount) < 0 ? "#b91c1c" : undefined }}>
-                    <td>{p.method}</td>
-                    <td>{formatCurrency(Number(p.amount), settings.currency)}</td>
-                    <td className="muted">{p.note ?? ""}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+            <p className="small muted" style={{ marginTop: 0 }}>
+              Corrige el monto, el metodo o la nota de un cobro mal registrado y guarda. Usa eliminar solo si el
+              cobro nunca debio existir; para devolver dinero a la clienta registra un reembolso.
+            </p>
+            <div className="form-grid" style={{ marginBottom: 16 }}>
+              {appointment.payments.map((p) => {
+                const isRefund = Number(p.amount) < 0;
+
+                return (
+                  <div key={p.id} className="card" style={{ boxShadow: "none", padding: "10px 14px" }}>
+                    <div className="button-row" style={{ justifyContent: "space-between", flexWrap: "wrap", gap: 8 }}>
+                      <form className="button-row" action={updatePaymentAction} style={{ flexWrap: "wrap", gap: 8 }}>
+                        <input type="hidden" name="paymentId" value={p.id} />
+                        <select className="select" name="method" defaultValue={p.method} required style={{ width: 150 }}>
+                          {methods.some((method) => method.name === p.method) ? null : (
+                            <option value={p.method}>{p.method}</option>
+                          )}
+                          {methods.map((method) => (
+                            <option value={method.name} key={method.id}>{method.name}</option>
+                          ))}
+                        </select>
+                        <input
+                          className="input"
+                          name="amount"
+                          type="number"
+                          step="0.01"
+                          defaultValue={Number(p.amount)}
+                          required
+                          aria-label="Monto"
+                          style={{ width: 110, color: isRefund ? "#b91c1c" : undefined }}
+                        />
+                        <input
+                          className="input"
+                          name="note"
+                          defaultValue={p.note ?? ""}
+                          placeholder="Nota"
+                          aria-label="Nota"
+                          style={{ width: 200 }}
+                        />
+                        <button className="btn secondary" type="submit" style={{ minHeight: 36, padding: "0 10px" }}>
+                          <Save size={15} aria-hidden />
+                          Guardar
+                        </button>
+                      </form>
+                      <form action={deletePaymentAction}>
+                        <input type="hidden" name="paymentId" value={p.id} />
+                        <ConfirmSubmitButton
+                          className="btn danger"
+                          type="submit"
+                          style={{ minHeight: 36, padding: "0 10px" }}
+                          message={`Eliminar el cobro de ${formatCurrency(Number(p.amount), settings.currency)} (${p.method})? Esta accion no se puede deshacer.`}
+                        >
+                          <Trash2 size={15} aria-hidden />
+                        </ConfirmSubmitButton>
+                      </form>
+                    </div>
+                    <p className="small muted" style={{ margin: "6px 0 0" }}>
+                      {isRefund ? "Reembolso" : "Cobro"} registrado el {formatDateInZone(p.paidAt, settings.timezone)}{" "}
+                      {formatTimeInZone(p.paidAt, settings.timezone)}
+                    </p>
+                  </div>
+                );
+              })}
+            </div>
             <form className="form-grid" action={refundPaymentAction}>
               <input type="hidden" name="appointmentId" value={appointment.id} />
               <p className="small muted" style={{ margin: 0 }}>Registrar reembolso</p>

@@ -1022,6 +1022,66 @@ export async function refundPaymentAction(formData: FormData) {
   revalidatePath("/admin/caja");
 }
 
+// ─── Correccion de pagos ──────────────────────────────────────────────────────
+
+const PAYMENT_REVALIDATE_PATHS = ["/admin/agenda", "/admin/caja", "/admin/clientes"];
+
+function revalidatePaymentViews(appointmentId: string) {
+  revalidatePath(`/admin/agenda/${appointmentId}`);
+
+  for (const path of PAYMENT_REVALIDATE_PATHS) {
+    revalidatePath(path);
+  }
+}
+
+export async function updatePaymentAction(formData: FormData) {
+  await requireAdmin();
+
+  const paymentId = requiredString(formData, "paymentId");
+  const amount = decimalFromForm(formData, "amount");
+  const method = requiredString(formData, "method");
+  const note = optionalString(formData, "note");
+
+  if (amount === 0) {
+    throw new Error("El monto del pago no puede ser cero.");
+  }
+
+  const payment = await prisma.payment.findUnique({
+    where: { id: paymentId },
+    select: { appointmentId: true }
+  });
+
+  if (!payment) {
+    throw new Error("El pago ya no existe.");
+  }
+
+  await prisma.payment.update({
+    where: { id: paymentId },
+    data: { amount, method, note }
+  });
+
+  revalidatePaymentViews(payment.appointmentId);
+}
+
+export async function deletePaymentAction(formData: FormData) {
+  await requireAdmin();
+
+  const paymentId = requiredString(formData, "paymentId");
+
+  const payment = await prisma.payment.findUnique({
+    where: { id: paymentId },
+    select: { appointmentId: true }
+  });
+
+  if (!payment) {
+    throw new Error("El pago ya no existe.");
+  }
+
+  await prisma.payment.delete({ where: { id: paymentId } });
+
+  revalidatePaymentViews(payment.appointmentId);
+}
+
 export async function deleteAppointmentAction(formData: FormData) {
   await requireAdmin();
   const appointmentId = requiredString(formData, "appointmentId");
