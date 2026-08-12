@@ -141,9 +141,14 @@ Variables minimas en Railway:
 - `ADMIN_EMAIL`
 - `CRON_SECRET`
 
-Las migraciones corren solas: `npm run build` ejecuta `prisma migrate deploy` antes de compilar, asi
-que cada deploy deja la base al dia sin pasos manuales. Si el build falla ahi, es que `DATABASE_URL`
-no esta disponible en el entorno de build — revisa las variables antes de tocar el script.
+Las migraciones corren solas, pero **no** en el build: `railway.json` define un pre-deploy con
+`npx prisma migrate deploy`, que se ejecuta despues de compilar y antes de levantar la version nueva.
+
+No las muevas al script de build. Durante el build, Railway todavia no conecta el contenedor a la red
+privada, asi que `postgres.railway.internal` no resuelve y `migrate deploy` falla con `P1001` aunque
+`DATABASE_URL` este bien configurada. En el pre-deploy la red ya esta disponible.
+
+Si una migracion falla ahi, el deploy se detiene y la version anterior sigue viva.
 
 ## Tests
 
