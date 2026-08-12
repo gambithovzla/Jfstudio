@@ -11,6 +11,7 @@ import { prisma } from "@/lib/prisma";
 import { formatDateInZone, formatTimeInZone } from "@/lib/time";
 import { formatCurrency } from "@/lib/utils";
 import { ARRIVAL_TOLERANCE_MINUTES, WEB_DEPOSIT_AMOUNT_PEN } from "@/lib/booking-rules";
+import { SALON_FLOOR_OFFICE, SALON_STREET_ADDRESS, salonMapsDirectionsUrl } from "@/lib/salon-address";
 
 export const dynamic = "force-dynamic";
 
@@ -118,6 +119,18 @@ export default async function PublicAppointmentPage({ params }: PageProps) {
                 <td className="muted">Servicios</td>
                 <td>{appointment.services.map((s) => s.serviceNameSnapshot).join(", ")}</td>
               </tr>
+              {appointment.status !== "CANCELED" ? (
+                <tr>
+                  <td className="muted">Dirección</td>
+                  <td>
+                    <a href={salonMapsDirectionsUrl()} target="_blank" rel="noopener noreferrer">
+                      {SALON_STREET_ADDRESS}
+                    </a>
+                    <br />
+                    <strong>{SALON_FLOOR_OFFICE}</strong>
+                  </td>
+                </tr>
+              ) : null}
               {appointment.status === "COMPLETED" && totalPaid > 0 ? (
                 <tr>
                   <td className="muted">Pagado</td>

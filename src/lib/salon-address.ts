@@ -1,6 +1,12 @@
 /** Dirección física del local (correos, políticas, landing). */
 export const SALON_STREET_ADDRESS = "Av. José Larco 345, Miraflores, Lima";
 export const SALON_FLOOR_OFFICE = "Piso 06 · Oficina 606";
+export const SALON_COORDINATES = { lat: -12.1259, lon: -77.0291 };
+
+/** Enlace de indicaciones en Google Maps hacia el local. */
+export function salonMapsDirectionsUrl(): string {
+  return `https://www.google.com/maps/dir/?api=1&destination=${SALON_COORDINATES.lat},${SALON_COORDINATES.lon}`;
+}
 
 export function salonAddressPlain(): string {
   return `${SALON_STREET_ADDRESS} — ${SALON_FLOOR_OFFICE}`;
