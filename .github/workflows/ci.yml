@@ -15,9 +15,9 @@ jobs:
     name: Typecheck, lint, tests y build
     runs-on: ubuntu-latest
 
-    # Base descartable. Sirve para que `npm run build` pueda correr
-    # `prisma migrate deploy` de verdad: si una migracion no aplica sobre una
-    # base limpia, el PR se pone rojo en vez de romper produccion.
+    # Base descartable. Sirve para correr `prisma migrate deploy` de verdad:
+    # si una migracion no aplica sobre una base limpia, el PR se pone rojo en
+    # vez de romper produccion.
     services:
       postgres:
         image: postgres:16
@@ -61,7 +61,11 @@ jobs:
       - name: Tests
         run: npm test
 
-      # Incluye `prisma migrate deploy`, asi que tambien valida la cadena
-      # completa de migraciones sobre una base vacia.
+      # En Railway esto corre como pre-deploy, no en el build (ver railway.json).
+      # Aca lo corremos aparte para validar la cadena completa de migraciones
+      # sobre una base vacia antes de mergear.
+      - name: Migraciones
+        run: npx prisma migrate deploy
+
       - name: Build
         run: npm run build
