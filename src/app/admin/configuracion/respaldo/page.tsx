@@ -45,9 +45,9 @@ export default function RespaldoPage() {
             <ShieldCheck size={20} aria-hidden />
           </div>
           <p className="small muted">
-            Cada día se genera un respaldo automático que se <strong>envía a tu correo</strong> y se guarda en la nube,
-            <strong> fuera de Railway</strong>. Así tu información queda protegida aunque la plataforma falle y aunque
-            olvides descargarla manualmente.
+            Cada día se genera un respaldo automático que se guarda <strong>cifrado en la nube, fuera de Railway</strong>.
+            Tu correo solo recibe un aviso de que salió bien (sin datos de clientas adjuntos) — así tu información
+            queda protegida aunque la plataforma falle, sin exponerla por email.
           </p>
         </section>
 
