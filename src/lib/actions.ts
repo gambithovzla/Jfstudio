@@ -34,7 +34,7 @@ import {
 } from "@/lib/gallery-upload";
 import { prisma } from "@/lib/prisma";
 import { isTestimonialRateLimited } from "@/lib/testimonial-rate-limit";
-import { addMinutes, formatDateInZone, formatTimeInZone } from "@/lib/time";
+import { addMinutes, formatDateInZone, formatTimeInZone, todayInTimeZone, zonedTimeToUtc } from "@/lib/time";
 import { normalizePhone } from "@/lib/utils";
 
 function requiredString(formData: FormData, key: string) {
@@ -135,21 +135,6 @@ export async function updateAppointmentAction(formData: FormData) {
       const startAt = localDateTimeToUtc(`${date}T${time}`, settings.timezone);
       const durationMinutes = services.reduce((t, s) => t + s.durationMinutes, 0);
       const endAt = addMinutes(startAt, durationMinutes);
-
-      const overlap = await tx.appointment.findFirst({
-        where: {
-          id: { not: appointmentId },
-          staffId,
-          status: { in: [AppointmentStatus.CONFIRMED, AppointmentStatus.COMPLETED] },
-          startAt: { lt: endAt },
-          endAt: { gt: startAt }
-        },
-        select: { id: true }
-      });
-
-      if (overlap) {
-        throw new Error("Ese horario ya esta ocupado.");
-      }
 
       const totalPrice = services.reduce((t, s) => t + Number(s.price), 0);
 
@@ -986,7 +971,93 @@ export async function deleteTimeBlockAction(formData: FormData) {
   revalidatePath("/admin/configuracion/bloqueos");
 }
 
-// ─── Reembolsos ───────────────────────────────────────────────────────────────
+// ─── Auditoria de pagos ───────────────────────────────────────────────────────
+
+type PaymentActor = {
+  staffId: string | null;
+  name: string;
+  ipAddress: string | null;
+  userAgent: string | null;
+};
+
+type PaymentSnapshot = {
+  amount: number;
+  method: string;
+  note: string | null;
+};
+
+// El acceso al panel usa una sola contrasena compartida, asi que la sesion no
+// identifica a una persona. Quien corrige un cobro debe declararse en el
+// formulario; ademas guardamos IP y user-agent como respaldo tecnico.
+async function resolvePaymentActor(formData: FormData): Promise<PaymentActor> {
+  const actorStaffId = optionalString(formData, "actorStaffId");
+  const typedName = optionalString(formData, "actorName");
+
+  let staffId: string | null = null;
+  let name = typedName;
+
+  if (actorStaffId) {
+    const staff = await prisma.staff.findUnique({
+      where: { id: actorStaffId },
+      select: { id: true, name: true }
+    });
+
+    if (!staff) {
+      throw new Error("El responsable indicado ya no existe.");
+    }
+
+    staffId = staff.id;
+    name = staff.name;
+  }
+
+  if (!name) {
+    throw new Error("Indica quien realiza el cambio.");
+  }
+
+  const h = await headers();
+
+  return {
+    staffId,
+    name,
+    ipAddress:
+      h.get("x-forwarded-for")?.split(",")[0]?.trim() ??
+      h.get("x-real-ip")?.trim() ??
+      null,
+    userAgent: h.get("user-agent")
+  };
+}
+
+async function recordPaymentAudit(entry: {
+  action: "CREATE" | "UPDATE" | "DELETE" | "REFUND";
+  payment: { id: string; paidAt: Date };
+  appointmentId: string;
+  clientName: string | null;
+  actor: PaymentActor;
+  reason: string | null;
+  before?: PaymentSnapshot;
+  after?: PaymentSnapshot;
+}) {
+  await prisma.paymentAuditLog.create({
+    data: {
+      action: entry.action,
+      paymentId: entry.payment.id,
+      appointmentId: entry.appointmentId,
+      clientName: entry.clientName,
+      actorStaffId: entry.actor.staffId,
+      actorName: entry.actor.name,
+      reason: entry.reason,
+      ipAddress: entry.actor.ipAddress,
+      userAgent: entry.actor.userAgent,
+      paidAt: entry.payment.paidAt,
+      beforeAmount: entry.before?.amount,
+      beforeMethod: entry.before?.method,
+      beforeNote: entry.before?.note,
+      afterAmount: entry.after?.amount,
+      afterMethod: entry.after?.method,
+      afterNote: entry.after?.note
+    }
+  });
+}
 
 // ─── Depositos ────────────────────────────────────────────────────────────────
 
@@ -1004,6 +1075,65 @@ export async function markDepositPaidAction(formData: FormData) {
   revalidatePath("/admin/agenda");
 }
 
+export async function addPaymentAction(formData: FormData) {
+  await requireAdmin();
+
+  const appointmentId = requiredString(formData, "appointmentId");
+  const amount = decimalFromForm(formData, "amount");
+  const method = requiredString(formData, "method");
+  const note = optionalString(formData, "note");
+  const paidOn = optionalString(formData, "paidOn");
+
+  if (amount <= 0) {
+    throw new Error("El monto del cobro debe ser mayor a cero.");
+  }
+
+  const appointment = await prisma.appointment.findUnique({
+    where: { id: appointmentId },
+    select: { status: true, client: { select: { name: true } } }
+  });
+
+  if (!appointment) {
+    throw new Error("La cita ya no existe.");
+  }
+
+  if (appointment.status !== AppointmentStatus.COMPLETED) {
+    throw new Error("Para cobrar una cita pendiente usa 'Completar y cobrar'.");
+  }
+
+  const settings = await getSalonSettings();
+  const today = todayInTimeZone(settings.timezone);
+
+  if (paidOn && paidOn > today) {
+    throw new Error("La fecha del cobro no puede ser futura.");
+  }
+
+  const actor = await resolvePaymentActor(formData);
+
+  // Sin fecha explicita el cobro entra ahora (el caso normal: la clienta paga el
+  // saldo hoy). Con fecha, se respeta la hora actual del salon para que el cobro
+  // caiga en el dia que de verdad ocurrio y no mueva plata de un periodo a otro.
+  const paidAt = paidOn
+    ? zonedTimeToUtc(paidOn, formatTimeInZone(new Date(), settings.timezone), settings.timezone)
+    : new Date();
+
+  const payment = await prisma.payment.create({
+    data: { appointmentId, amount, method, note, paidAt }
+  });
+
+  await recordPaymentAudit({
+    action: "CREATE",
+    payment,
+    appointmentId,
+    clientName: appointment.client.name,
+    actor,
+    reason: optionalString(formData, "reason") ?? note,
+    after: { amount, method, note }
+  });
+
+  revalidatePaymentViews(appointmentId);
+}
+
 export async function refundPaymentAction(formData: FormData) {
   await requireAdmin();
   const appointmentId = requiredString(formData, "appointmentId");
@@ -1017,14 +1147,16 @@ export async function refundPaymentAction(formData: FormData) {
 
   const appointment = await prisma.appointment.findUnique({
     where: { id: appointmentId },
-    select: { status: true }
+    select: { status: true, client: { select: { name: true } } }
   });
 
   if (!appointment || appointment.status !== AppointmentStatus.COMPLETED) {
     throw new Error("Solo se pueden reembolsar citas completadas.");
   }
 
-  await prisma.payment.create({
+  const actor = await resolvePaymentActor(formData);
+
+  const payment = await prisma.payment.create({
     data: {
       appointmentId,
       amount: -amount,
@@ -1033,8 +1165,121 @@ export async function refundPaymentAction(formData: FormData) {
     }
   });
 
+  await recordPaymentAudit({
+    action: "REFUND",
+    payment,
+    appointmentId,
+    clientName: appointment.client.name,
+    actor,
+    reason: note,
+    after: { amount: -amount, method, note: payment.note }
+  });
+
   revalidatePath(`/admin/agenda/${appointmentId}`);
   revalidatePath("/admin/caja");
+}
+
+// ─── Correccion de pagos ──────────────────────────────────────────────────────
+
+const PAYMENT_REVALIDATE_PATHS = ["/admin/agenda", "/admin/caja", "/admin/clientes"];
+
+function revalidatePaymentViews(appointmentId: string) {
+  revalidatePath(`/admin/agenda/${appointmentId}`);
+
+  for (const path of PAYMENT_REVALIDATE_PATHS) {
+    revalidatePath(path);
+  }
+}
+
+export async function updatePaymentAction(formData: FormData) {
+  await requireAdmin();
+
+  const paymentId = requiredString(formData, "paymentId");
+  const amount = decimalFromForm(formData, "amount");
+  const method = requiredString(formData, "method");
+  const note = optionalString(formData, "note");
+  const reason = optionalString(formData, "reason");
+
+  if (amount === 0) {
+    throw new Error("El monto del pago no puede ser cero.");
+  }
+
+  const payment = await prisma.payment.findUnique({
+    where: { id: paymentId },
+    include: { appointment: { select: { client: { select: { name: true } } } } }
+  });
+
+  if (!payment) {
+    throw new Error("El pago ya no existe.");
+  }
+
+  const before: PaymentSnapshot = {
+    amount: Number(payment.amount),
+    method: payment.method,
+    note: payment.note
+  };
+
+  if (before.amount === amount && before.method === method && before.note === note) {
+    return;
+  }
+
+  const actor = await resolvePaymentActor(formData);
+
+  // paidAt no se toca: el cobro debe seguir contando en el dia en que ocurrio,
+  // no en el dia en que se corrigio.
+  await prisma.payment.update({
+    where: { id: paymentId },
+    data: { amount, method, note }
+  });
+
+  await recordPaymentAudit({
+    action: "UPDATE",
+    payment,
+    appointmentId: payment.appointmentId,
+    clientName: payment.appointment.client.name,
+    actor,
+    reason,
+    before,
+    after: { amount, method, note }
+  });
+
+  revalidatePaymentViews(payment.appointmentId);
+}
+
+export async function deletePaymentAction(formData: FormData) {
+  await requireAdmin();
+
+  const paymentId = requiredString(formData, "paymentId");
+  const reason = requiredString(formData, "reason");
+
+  const payment = await prisma.payment.findUnique({
+    where: { id: paymentId },
+    include: { appointment: { select: { client: { select: { name: true } } } } }
+  });
+
+  if (!payment) {
+    throw new Error("El pago ya no existe.");
+  }
+
+  const actor = await resolvePaymentActor(formData);
+
+  await prisma.payment.delete({ where: { id: paymentId } });
+
+  await recordPaymentAudit({
+    action: "DELETE",
+    payment,
+    appointmentId: payment.appointmentId,
+    clientName: payment.appointment.client.name,
+    actor,
+    reason,
+    before: {
+      amount: Number(payment.amount),
+      method: payment.method,
+      note: payment.note
+    }
+  });
+
+  revalidatePaymentViews(payment.appointmentId);
 }
 
 export async function deleteAppointmentAction(formData: FormData) {

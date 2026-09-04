@@ -472,43 +472,46 @@ export async function createBooking(input: {
         }
         staff = s;
 
-        const overlappingAppointment = await tx.appointment.findFirst({
-          where: {
-            staffId: staff.id,
-            status: { in: [AppointmentStatus.CONFIRMED, AppointmentStatus.COMPLETED] },
-            startAt: { lt: endAt },
-            endAt: { gt: input.startAt },
-            ...(input.excludeAppointmentId ? { id: { not: input.excludeAppointmentId } } : {})
-          },
-          select: { id: true }
-        });
+        if (isPublic) {
+          const overlappingAppointment = await tx.appointment.findFirst({
+            where: {
+              staffId: staff.id,
+              status: { in: [AppointmentStatus.CONFIRMED, AppointmentStatus.COMPLETED] },
+              startAt: { lt: endAt },
+              endAt: { gt: input.startAt },
+              ...(input.excludeAppointmentId ? { id: { not: input.excludeAppointmentId } } : {})
+            },
+            select: { id: true }
+          });
 
-        if (overlappingAppointment) {
-          throw new Error("Ese horario ya fue tomado.");
+          if (overlappingAppointment) {
+            throw new Error("Ese horario ya fue tomado.");
+          }
         }
       }
 
-      const earliestSlot = isPublic ? earliestPublicBookingInstant() : undefined;
-      const slots = buildAvailabilitySlots({
-        date: dateInSalon,
-        timeZone: settings.timezone,
-        durationMinutes,
-        intervalMinutes: settings.appointmentIntervalMinutes,
-        staff: [
-          {
-            id: staff.id,
-            name: staff.name,
-            workingHours: staff.workingHours,
-            appointments: []
-          }
-        ],
-        timeBlocks,
-        now: new Date(),
-        earliestStartUtc: earliestSlot
-      });
+      if (isPublic) {
+        const slots = buildAvailabilitySlots({
+          date: dateInSalon,
+          timeZone: settings.timezone,
+          durationMinutes,
+          intervalMinutes: settings.appointmentIntervalMinutes,
+          staff: [
+            {
+              id: staff.id,
+              name: staff.name,
+              workingHours: staff.workingHours,
+              appointments: []
+            }
+          ],
+          timeBlocks,
+          now: new Date(),
+          earliestStartUtc: earliestPublicBookingInstant()
+        });
 
-      if (!slots.some((slot) => slot.startAt === input.startAt.toISOString())) {
-        throw new Error("Ese horario esta fuera del horario laboral.");
+        if (!slots.some((slot) => slot.startAt === input.startAt.toISOString())) {
+          throw new Error("Ese horario esta fuera del horario laboral.");
+        }
       }
 
       const dni = input.client.documentNumber?.trim() || null;
@@ -711,7 +714,7 @@ export async function getAgendaRange(from: Date, to: Date) {
 }
 
 export async function getAppointmentForCheckout(id: string) {
-  const [appointment, methods] = await Promise.all([
+  const [appointment, methods, staff, paymentAuditLog] = await Promise.all([
     prisma.appointment.findUnique({
       where: { id },
       include: {
@@ -729,14 +732,19 @@ export async function getAppointmentForCheckout(id: string) {
             }
           }
         },
-        payments: true,
+        payments: { orderBy: { paidAt: "asc" } },
         inventoryMovements: { include: { product: true } }
       }
     }),
-    prisma.paymentMethodConfig.findMany({ where: { isActive: true }, orderBy: { sortOrder: "asc" } })
+    prisma.paymentMethodConfig.findMany({ where: { isActive: true }, orderBy: { sortOrder: "asc" } }),
+    prisma.staff.findMany({ where: { isActive: true }, orderBy: { name: "asc" }, select: { id: true, name: true } }),
+    prisma.paymentAuditLog.findMany({
+      where: { appointmentId: id },
+      orderBy: { createdAt: "desc" }
+    })
   ]);
 
-  return { appointment, methods };
+  return { appointment, methods, staff, paymentAuditLog };
 }
 
 export async function getAppointmentForEdit(id: string) {
@@ -939,10 +947,18 @@ export async function getCashReport(options?: { date?: string; from?: string; to
     }
   });
 
+  // Se filtra por paidAt (no por createdAt) para que la correccion aparezca en
+  // el periodo del cobro afectado, que es donde cambio el numero.
+  const auditLog = await prisma.paymentAuditLog.findMany({
+    where: { paidAt: dateRange },
+    orderBy: { createdAt: "desc" }
+  });
+
   return {
     settings,
     selectedDate,
     payments,
+    auditLog,
     summary: summarizePayments(payments.map((payment) => ({ amount: Number(payment.amount), method: payment.method })))
   };
 }

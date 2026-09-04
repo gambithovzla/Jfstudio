@@ -37,6 +37,13 @@ enum DocumentType {
   PASSPORT
 }
 
+enum PaymentAuditAction {
+  CREATE
+  UPDATE
+  DELETE
+  REFUND
+}
+
 model SalonSettings {
   id                         String   @id @default("default")
   name                       String   @default("JF Studio")
@@ -219,6 +226,34 @@ model Payment {
 
   @@index([paidAt])
   @@index([method])
+}
+
+/// Bitacora de correcciones sobre pagos ya registrados. Las referencias a
+/// Payment/Appointment/Staff son IDs sueltos a proposito: el registro debe
+/// sobrevivir al borrado del pago, de la cita o del personal.
+model PaymentAuditLog {
+  id            String             @id @default(cuid())
+  action        PaymentAuditAction
+  paymentId     String?
+  appointmentId String?
+  clientName    String?
+  actorStaffId  String?
+  actorName     String
+  reason        String?
+  ipAddress     String?
+  userAgent     String?
+  paidAt        DateTime?
+  beforeAmount  Decimal?           @db.Decimal(10, 2)
+  beforeMethod  String?
+  beforeNote    String?
+  afterAmount   Decimal?           @db.Decimal(10, 2)
+  afterMethod   String?
+  afterNote     String?
+  createdAt     DateTime           @default(now())
+
+  @@index([createdAt])
+  @@index([appointmentId])
+  @@index([paidAt])
 }
 
 model PaymentMethodConfig {

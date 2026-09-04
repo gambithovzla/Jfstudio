@@ -609,9 +609,28 @@ export function BookingForm({
             <label htmlFor="voucher" style={{ fontWeight: 700 }}>
               Comprobante de adelanto (obligatorio) — S/ 50
             </label>
-            <p className="small muted" style={{ margin: "6px 0 6px" }}>
+            <p className="small muted" style={{ margin: "6px 0 10px" }}>
               Adjunta captura o PDF (Yape, Plin o transferencia). El comprobante se envia al equipo y queda guardado con tu reserva.
             </p>
+            <div
+              style={{
+                background: "#ffffff",
+                border: "1px solid #86efac",
+                borderRadius: 10,
+                padding: "12px 14px",
+                margin: "0 0 10px",
+                display: "grid",
+                gap: 4
+              }}
+            >
+              <span className="small muted" style={{ fontWeight: 600, color: "#15803d" }}>
+                Yapea tu adelanto a:
+              </span>
+              <strong style={{ fontSize: "1.15rem", letterSpacing: "0.5px", color: "#14532d" }}>
+                921 153 808
+              </strong>
+              <span className="small muted">Johanna Figueredo Studio E.I.R.L</span>
+            </div>
             <p className="small muted" style={{ margin: "0 0 10px" }}>
               Si cancelas tu cita, el adelanto no se reembolsa; si reagendas, se conserva. Llegada: {ARRIVAL_TOLERANCE_MINUTES} min de tolerancia desde la hora de la cita.
             </p>
