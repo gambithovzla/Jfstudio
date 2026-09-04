@@ -52,8 +52,7 @@ npm run dev
 | `RESEND_API_KEY` | para emails | API key de Resend. |
 | `EMAIL_FROM` | para emails | Remitente de emails (formato: `"Nombre <correo@dominio>"`). |
 | `CRON_SECRET` | para cron | Token compartido para autorizar `/api/cron/reminders` y `/api/cron/backup`. |
-| `ADMIN_EMAIL` | para emails | Correo de la duena; recibe nuevas reservas y el respaldo diario. |
-| `BACKUP_EMAIL` | opcional | Correo(s) extra que reciben solo el respaldo diario (ej. el del desarrollador). Admite varios separados por coma. |
+| `ADMIN_EMAIL` | para emails | Correo de la duena; recibe nuevas reservas y el AVISO de estado del respaldo diario (sin datos de clientas). |
 
 ## Clerk
 
@@ -109,11 +108,16 @@ para no depender solo de Railway:
 
 2. **Respaldo automatico diario fuera de Railway** — endpoint `GET /api/cron/backup`,
    protegido con `Authorization: Bearer ${CRON_SECRET}` (mismo mecanismo que el cron de
-   recordatorios). Genera el respaldo y lo saca de Railway por dos vias independientes:
-   - **Correo** a `ADMIN_EMAIL` con el `.json.gz` (restaurable) y el `.xlsx` (legible) adjuntos.
-     Define ademas `BACKUP_EMAIL` (opcional, varios separados por coma) para que el respaldo
-     llegue tambien al desarrollador/proveedor, no solo a la duena.
-   - **Subida a S3/R2** bajo `backups/<año>/` (usa las mismas `DEPOSIT_S3_*` de los comprobantes).
+   recordatorios). Genera el respaldo (`.json.gz` restaurable + `.xlsx` legible) y lo sube
+   **cifrado a S3/R2** bajo `backups/<año>/` (usa las mismas `DEPOSIT_S3_*` de los
+   comprobantes) — **`DEPOSIT_S3_*` es obligatorio** para que el respaldo automatico exista.
+
+   El correo a `ADMIN_EMAIL` es solo un **aviso de estado** (ok/error, conteos, tamaño):
+   nunca lleva el archivo adjunto ni datos de clientas. Los respaldos completos (nombres,
+   telefonos, DNI de clientas) ya **no se envian por correo** — un adjunto sin cifrar en
+   Gmail es una exposicion de datos personales bajo la Ley 29733. Si el desarrollador o
+   proveedor necesita una copia, se le da acceso de lectura al bucket S3/R2, no una copia
+   por email.
 
    Configura un disparo **diario** a ese endpoint con el mismo metodo que ya usas para
    `/api/cron/reminders` (GitHub Actions / cron-job.org / cron nativo).
@@ -153,8 +157,7 @@ Variables minimas en Railway:
 - `EMAIL_FROM`
 - `CRON_SECRET`
 - `ADMIN_EMAIL`
-- `BACKUP_EMAIL` *(opcional — correo del desarrollador/proveedor para recibir el respaldo)*
-- `DEPOSIT_S3_BUCKET` + `DEPOSIT_S3_ACCESS_KEY_ID` + `DEPOSIT_S3_SECRET_ACCESS_KEY` *(comprobantes y respaldos en R2/S3)*
+- `DEPOSIT_S3_BUCKET` + `DEPOSIT_S3_ACCESS_KEY_ID` + `DEPOSIT_S3_SECRET_ACCESS_KEY` *(comprobantes y respaldos en R2/S3 — obligatorio para que el respaldo automatico funcione)*
 
 Antes del primer deploy, conecta a la base con `prisma migrate deploy` (o agrega ese paso al script de build).
 

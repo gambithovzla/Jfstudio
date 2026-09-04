@@ -8,7 +8,7 @@ import {
   gzipBackup
 } from "@/lib/backup";
 import { isDepositStorageConfigured, uploadBackupObject } from "@/lib/deposit-storage";
-import { sendDatabaseBackupEmail } from "@/lib/email";
+import { sendBackupStatusEmail } from "@/lib/email";
 
 export const dynamic = "force-dynamic";
 
@@ -18,10 +18,10 @@ const XLSX_MIME = "application/vnd.openxmlformats-officedocument.spreadsheetml.s
  * Respaldo automático diario. Debe llamarse una vez al día con
  * `Authorization: Bearer ${CRON_SECRET}` (mismo mecanismo que /api/cron/reminders).
  *
- * Genera el respaldo y lo saca de Railway por dos vías independientes:
- *   1) correo a ADMIN_EMAIL con el .json.gz y el .xlsx adjuntos (Resend);
- *   2) subida al bucket S3/R2 bajo backups/<año>/.
- * Si una vía falla, la otra se intenta igual.
+ * El archivo con datos reales (nombres, telefonos, DNI) SOLO se sube cifrado al bucket
+ * S3/R2 bajo backups/<año>/ — nunca sale por correo (exposicion de datos personales bajo
+ * Ley 29733: un adjunto sin cifrar quedaria indefinidamente en bandejas de Gmail). El correo
+ * es solo una notificacion de estado (sent/error), sin adjuntos ni datos de clientas.
  */
 export async function GET(request: NextRequest) {
   const secret = process.env.CRON_SECRET;
@@ -42,26 +42,8 @@ export async function GET(request: NextRequest) {
   const dateLabel = new Date().toLocaleDateString("es-PE", { year: "numeric", month: "long", day: "numeric" });
   const sizeLabel = `${(gz.length / 1024).toFixed(0)} KB`;
 
-  let email: "sent" | "skipped" | "error" = "skipped";
-  let storage: "uploaded" | "skipped" | "error" = "skipped";
+  let storage: "uploaded" | "error" | "not_configured" = "not_configured";
 
-  // 1) Correo
-  try {
-    email = await sendDatabaseBackupEmail({
-      dateLabel,
-      stats,
-      sizeLabel,
-      attachments: [
-        { filename: jsonName, content: gz },
-        { filename: xlsxName, content: xlsx }
-      ]
-    });
-  } catch (err) {
-    console.error("[cron] backup: fallo al enviar correo:", err);
-    email = "error";
-  }
-
-  // 2) Almacenamiento S3/R2
   if (isDepositStorageConfigured()) {
     try {
       const year = new Date().getUTCFullYear();
@@ -72,9 +54,19 @@ export async function GET(request: NextRequest) {
       console.error("[cron] backup: fallo al subir a S3/R2:", err);
       storage = "error";
     }
+  } else {
+    console.error("[cron] backup: DEPOSIT_S3_* no configurado, no se pudo guardar el respaldo del dia.");
   }
 
-  const ok = email !== "error" && storage !== "error";
+  let email: "sent" | "skipped" | "error" = "skipped";
+  try {
+    email = await sendBackupStatusEmail({ dateLabel, stats, sizeLabel, storage });
+  } catch (err) {
+    console.error("[cron] backup: fallo al enviar notificacion:", err);
+    email = "error";
+  }
+
+  const ok = storage === "uploaded";
   return NextResponse.json(
     { ok, email, storage, sizeBytes: gz.length, ...stats },
     { status: ok ? 200 : 500 }
