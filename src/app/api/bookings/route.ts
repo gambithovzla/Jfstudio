@@ -291,6 +291,10 @@ export async function POST(request: NextRequest) {
       console.error("[email] notificacion admin fallo:", err);
     }
 
+    const subtotal = appointment.services.reduce((sum, service) => sum + Number(service.priceSnapshot), 0);
+    const totalPrice = Number(appointment.totalPrice ?? subtotal);
+    const discountPercent = subtotal > 0 ? Math.round((1 - totalPrice / subtotal) * 100) : 0;
+
     return NextResponse.json({
       appointment: {
         id: appointment.id,
@@ -299,7 +303,9 @@ export async function POST(request: NextRequest) {
         endAt: appointment.endAt,
         clientName: appointment.client.name,
         staffName: appointment.staff.name,
-        services: appointment.services.map((service) => service.serviceNameSnapshot)
+        services: appointment.services.map((service) => service.serviceNameSnapshot),
+        totalPrice,
+        discountPercent
       }
     });
   } catch (error) {
