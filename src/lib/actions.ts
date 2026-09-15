@@ -589,21 +589,34 @@ export async function createClientAction(formData: FormData) {
   const dni = optionalString(formData, "dni");
   const documentType = dni ? documentTypeFromForm(formData) ?? DocumentType.DNI : null;
 
-  await prisma.client.create({
-    data: {
-      name: requiredString(formData, "name"),
-      phone,
-      email: optionalString(formData, "email"),
-      dni,
-      documentType,
-      source: optionalString(formData, "source"),
-      notes: optionalString(formData, "notes"),
-      birthday: birthdayFromForm(formData)
+  const data = {
+    name: requiredString(formData, "name"),
+    phone,
+    email: optionalString(formData, "email"),
+    dni,
+    documentType,
+    source: optionalString(formData, "source"),
+    notes: optionalString(formData, "notes"),
+    birthday: birthdayFromForm(formData)
+  };
+
+  try {
+    await prisma.client.create({ data });
+  } catch (error) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
+      const existing = phone
+        ? await prisma.client.findUnique({ where: { phone }, select: { id: true } })
+        : null;
+      if (existing) {
+        revalidatePath("/admin/clientes");
+        redirect("/admin/clientes?msg=clienta_existe");
+      }
     }
-  });
+    throw error;
+  }
 
   revalidatePath("/admin/clientes");
-  redirect("/admin/clientes");
+  redirect("/admin/clientes?msg=creado");
 }
 
 export async function updateClientAction(formData: FormData) {

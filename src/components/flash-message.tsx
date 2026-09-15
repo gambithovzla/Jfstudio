@@ -32,6 +32,10 @@ const MESSAGES: Record<string, { text: string; type: "success" | "error" }> = {
   bonos_guardado: { text: "✓ Bono actualizado correctamente.", type: "success" },
   bonos_eliminado: { text: "✓ Bono eliminado correctamente.", type: "success" },
   error_bono_canjeado: { text: "✗ El bono ya fue canjeado y no se puede eliminar.", type: "error" },
+  clienta_existe: {
+    text: "✓ Ese teléfono ya estaba registrado: se muestran los datos de la clienta existente.",
+    type: "success"
+  },
   error_galeria: { text: "✗ No se pudo completar la acción de galería (revisa formato o permisos de disco).", type: "error" },
   error_galeria_archivo: { text: "✗ Debes elegir un archivo de imagen válido.", type: "error" },
   error_galeria_ruta: { text: "✗ Ruta no válida. Usa /images/... o /uploads/gallery/...", type: "error" },
