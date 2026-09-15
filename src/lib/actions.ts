@@ -609,7 +609,8 @@ export async function createClientAction(formData: FormData) {
         : null;
       if (existing) {
         revalidatePath("/admin/clientes");
-        redirect("/admin/clientes?msg=clienta_existe");
+        revalidatePath(`/admin/clientes/${existing.id}`);
+        redirect(`/admin/clientes/${existing.id}?msg=clienta_existe`);
       }
     }
     throw error;
