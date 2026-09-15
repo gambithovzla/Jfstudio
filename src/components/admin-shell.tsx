@@ -11,6 +11,7 @@ import {
   Scissors,
   Settings,
   Star,
+  Tag,
   Upload,
   Users,
   type LucideIcon
@@ -34,6 +35,7 @@ const iconMap: Record<string, LucideIcon> = {
   ClipboardList,
   Star,
   Images,
+  Tag,
   DatabaseBackup
 };
 
@@ -41,6 +43,7 @@ const navLinks: AdminNavLink[] = [
   { href: "/admin/agenda", label: "Agenda", iconName: "CalendarDays" },
   { href: "/admin/clientes", label: "Clientes", iconName: "Users" },
   { href: "/admin/cumpleanos", label: "Cumpleaños", iconName: "Cake" },
+  { href: "/admin/bonos", label: "Bonos", iconName: "Tag" },
   { href: "/admin/servicios", label: "Servicios", iconName: "Scissors" },
   { href: "/admin/productos", label: "Productos", iconName: "Package" },
   { href: "/admin/caja", label: "Caja", iconName: "CreditCard" },

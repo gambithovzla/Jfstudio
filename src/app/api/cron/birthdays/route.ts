@@ -1,21 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { sendBirthdayBonus } from "@/lib/email";
+import { createUniqueBirthdayBonusCode } from "@/lib/birthday-bonus";
 import { getBirthdayBonusesForToday, getBirthdayBonusSettings } from "@/lib/data";
 import { prisma } from "@/lib/prisma";
 import { formatDateInZone } from "@/lib/time";
 import { isWhatsappCloudConfigured, sendBirthdayMessageViaCloud } from "@/lib/whatsapp";
 
 export const dynamic = "force-dynamic";
-
-function generateCode(year: number) {
-  const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-  let suffix = "";
-  for (let i = 0; i < 6; i++) {
-    suffix += alphabet[Math.floor(Math.random() * alphabet.length)];
-  }
-  return `JF-${year}-${suffix}`;
-}
 
 export async function GET(request: NextRequest) {
   const secret = process.env.CRON_SECRET;
@@ -49,14 +41,7 @@ export async function GET(request: NextRequest) {
   for (const client of candidates) {
     if (client.birthdayBonuses.length > 0) continue;
 
-    let code = generateCode(year);
-    let attempts = 0;
-    while (attempts < 5) {
-      const exists = await prisma.birthdayBonus.findUnique({ where: { code } });
-      if (!exists) break;
-      code = generateCode(year);
-      attempts++;
-    }
+    const code = await createUniqueBirthdayBonusCode(year);
 
     let bonus;
     try {

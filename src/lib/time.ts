@@ -87,3 +87,21 @@ export function localDateTimeToUtc(dateTime: string, timeZone: string) {
   const [date, time] = dateTime.split("T");
   return zonedTimeToUtc(date, time, timeZone);
 }
+
+export function formatDateTimeLocalInZone(date: Date, timeZone: string) {
+  const formatter = new Intl.DateTimeFormat("en-US", {
+    timeZone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false
+  });
+
+  const parts = formatter.formatToParts(date);
+  const values = Object.fromEntries(parts.map((part) => [part.type, part.value]));
+  const hour = values.hour === "24" ? "00" : (values.hour ?? "00").padStart(2, "0");
+
+  return `${values.year}-${values.month}-${values.day}T${hour}:${values.minute}`;
+}
