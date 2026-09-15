@@ -13,6 +13,7 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 
 import { requireAdmin } from "@/lib/auth";
+import { createUniqueBirthdayBonusCode } from "@/lib/birthday-bonus";
 import { createBookingFromLocalTime, getSalonSettings } from "@/lib/data";
 import {
   assertAllowedVoucherMime,
@@ -34,7 +35,7 @@ import {
 } from "@/lib/gallery-upload";
 import { prisma } from "@/lib/prisma";
 import { isTestimonialRateLimited } from "@/lib/testimonial-rate-limit";
-import { addMinutes, formatDateInZone, formatTimeInZone, todayInTimeZone, zonedTimeToUtc } from "@/lib/time";
+import { addMinutes, formatDateInZone, formatTimeInZone, localDateTimeToUtc, todayInTimeZone, zonedTimeToUtc } from "@/lib/time";
 import { normalizePhone } from "@/lib/utils";
 
 function requiredString(formData: FormData, key: string) {
@@ -730,6 +731,93 @@ export async function markBirthdayBonusWhatsappSentAction(formData: FormData) {
   });
 
   revalidatePath("/admin/cumpleanos");
+}
+
+export async function createBirthdayBonusAction(formData: FormData) {
+  await requireAdmin();
+
+  const clientId = requiredString(formData, "clientId");
+
+  const client = await prisma.client.findUnique({ where: { id: clientId }, select: { id: true } });
+  if (!client) {
+    throw new Error("Clienta no encontrada.");
+  }
+
+  const discountPercent = Math.min(100, Math.max(1, Math.round(decimalFromForm(formData, "discountPercent"))));
+  const validityDays = Math.min(365, Math.max(1, Math.round(decimalFromForm(formData, "validityDays"))));
+
+  const now = new Date();
+  const expiresAt = new Date(now.getTime() + validityDays * 24 * 60 * 60 * 1000);
+  const code = await createUniqueBirthdayBonusCode(now.getUTCFullYear());
+
+  await prisma.birthdayBonus.create({
+    data: {
+      clientId,
+      code,
+      discountPercent,
+      expiresAt
+    }
+  });
+
+  revalidatePath("/admin/bonos");
+  revalidatePath("/admin/cumpleanos");
+  redirect("/admin/bonos?msg=bonos_creado");
+}
+
+export async function updateBirthdayBonusAction(formData: FormData) {
+  await requireAdmin();
+
+  const bonusId = requiredString(formData, "bonusId");
+
+  const bonus = await prisma.birthdayBonus.findUnique({ where: { id: bonusId }, select: { id: true } });
+  if (!bonus) {
+    throw new Error("Bono no encontrado.");
+  }
+
+  const discountPercent = Math.min(100, Math.max(1, Math.round(decimalFromForm(formData, "discountPercent"))));
+  const expiresLabel = requiredString(formData, "expiresAt");
+
+  const settings = await getSalonSettings();
+  const expiresAt =
+    expiresLabel.length === 10 ? localDateTimeToUtc(`${expiresLabel}T23:59`, settings.timezone) : localDateTimeToUtc(expiresLabel, settings.timezone);
+
+  if (isNaN(expiresAt.getTime())) {
+    throw new Error("Fecha de vencimiento inválida.");
+  }
+
+  await prisma.birthdayBonus.update({
+    where: { id: bonusId },
+    data: { discountPercent, expiresAt }
+  });
+
+  revalidatePath("/admin/bonos");
+  revalidatePath("/admin/cumpleanos");
+  redirect("/admin/bonos?msg=bonos_guardado");
+}
+
+export async function deleteBirthdayBonusAction(formData: FormData) {
+  await requireAdmin();
+
+  const bonusId = requiredString(formData, "bonusId");
+
+  const bonus = await prisma.birthdayBonus.findUnique({
+    where: { id: bonusId },
+    select: { redeemedAt: true }
+  });
+
+  if (!bonus) {
+    throw new Error("Bono no encontrado.");
+  }
+
+  if (bonus.redeemedAt) {
+    redirect("/admin/bonos?msg=error_bono_canjeado");
+  }
+
+  await prisma.birthdayBonus.delete({ where: { id: bonusId } });
+
+  revalidatePath("/admin/bonos");
+  revalidatePath("/admin/cumpleanos");
+  redirect("/admin/bonos?msg=bonos_eliminado");
 }
 
 // ─── Staff & Horarios ─────────────────────────────────────────────────────────
