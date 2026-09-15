@@ -12,7 +12,13 @@ import { revalidatePath } from "next/cache";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 
-import { requireAdmin } from "@/lib/auth";
+import {
+  generateResetToken,
+  getAdminResetToken,
+  hashPassword,
+  requireAdmin,
+  RESET_TOKEN_TTL_MS
+} from "@/lib/auth";
 import { createUniqueBirthdayBonusCode } from "@/lib/birthday-bonus";
 import { createBookingFromLocalTime, getSalonSettings } from "@/lib/data";
 import {
@@ -25,6 +31,7 @@ import {
   sendBookingCancellation,
   sendForceMajeureCancellation,
   sendLowStockAlert,
+  sendPasswordResetEmail,
   sendPostVisitCareEmail
 } from "@/lib/email";
 import {
@@ -1446,6 +1453,65 @@ export async function changeAdminPasswordAction(formData: FormData) {
 
   revalidatePath("/admin/configuracion");
   redirect("/admin/configuracion?msg=guardado");
+}
+
+// ─── Recuperación de contraseña (sin sesión) ─────────────────────────────────
+
+export async function requestAdminPasswordResetAction(formData: FormData) {
+  const email = (optionalString(formData, "email") ?? "").trim().toLowerCase();
+  const adminEmail = (process.env.ADMIN_EMAIL ?? "").trim().toLowerCase();
+
+  if (!adminEmail) {
+    redirect("/admin/forgot?msg=error_no_email");
+  }
+
+  if (email && email === adminEmail) {
+    const { token, tokenHash } = generateResetToken();
+    await prisma.adminResetToken.create({
+      data: { tokenHash, expiresAt: new Date(Date.now() + RESET_TOKEN_TTL_MS) }
+    });
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
+    await sendPasswordResetEmail({
+      to: adminEmail,
+      resetUrl: `${baseUrl}/admin/reset?token=${encodeURIComponent(token)}`
+    });
+  }
+
+  redirect("/admin/forgot?msg=enviado");
+}
+
+export async function resetAdminPasswordAction(formData: FormData) {
+  const token = requiredString(formData, "token");
+  const newPassword = requiredString(formData, "newPassword");
+  const confirmPassword = requiredString(formData, "confirmPassword");
+
+  if (newPassword !== confirmPassword) {
+    redirect(`/admin/reset?token=${encodeURIComponent(token)}&msg=error_mismatch`);
+  }
+  if (newPassword.length < 6) {
+    redirect(`/admin/reset?token=${encodeURIComponent(token)}&msg=error_corta`);
+  }
+
+  const record = await getAdminResetToken(token);
+  if (!record || record.usedAt !== null || record.expiresAt < new Date()) {
+    redirect("/admin/reset?msg=error_token");
+  }
+
+  const newHash = hashPassword(newPassword);
+
+  await prisma.$transaction([
+    prisma.salonSettings.upsert({
+      where: { id: "default" },
+      create: { id: "default", adminPasswordHash: newHash },
+      update: { adminPasswordHash: newHash }
+    }),
+    prisma.adminResetToken.update({
+      where: { id: record.id },
+      data: { usedAt: new Date() }
+    })
+  ]);
+
+  redirect("/admin/login?msg=reseteada");
 }
 
 // ─── Testimonios (público + admin) ───────────────────────────────────────────

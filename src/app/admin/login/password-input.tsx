@@ -3,18 +3,26 @@
 import { Eye, EyeOff } from "lucide-react";
 import { useState } from "react";
 
-export function PasswordInput() {
+export function PasswordInput({
+  id = "password",
+  name = "password",
+  autoFocus = true
+}: {
+  id?: string;
+  name?: string;
+  autoFocus?: boolean;
+}) {
   const [visible, setVisible] = useState(false);
 
   return (
     <div style={{ position: "relative" }}>
       <input
         className="input"
-        id="password"
-        name="password"
+        id={id}
+        name={name}
         type={visible ? "text" : "password"}
         required
-        autoFocus
+        autoFocus={autoFocus}
         style={{ paddingRight: 44 }}
       />
       <button

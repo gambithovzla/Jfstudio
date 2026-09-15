@@ -1,10 +1,11 @@
-import { createHash } from "crypto";
+import { createHash, randomBytes } from "crypto";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
 import { prisma } from "./prisma";
 
 export const COOKIE_NAME = "admin_session";
+export const RESET_TOKEN_TTL_MS = 60 * 60 * 1000; // 1 hora
 
 function hashPassword(password: string): string {
   return createHash("sha256").update(`${password}:jfstudio-admin`).digest("hex");
@@ -57,6 +58,16 @@ export async function isAuthenticated(): Promise<boolean> {
 export async function requireAdmin() {
   const ok = await isAuthenticated();
   if (!ok) redirect("/admin/login");
+}
+
+export function generateResetToken(): { token: string; tokenHash: string } {
+  const token = randomBytes(32).toString("base64url");
+  return { token, tokenHash: hashPassword(token) };
+}
+
+export async function getAdminResetToken(token: string) {
+  const tokenHash = hashPassword(token);
+  return prisma.adminResetToken.findUnique({ where: { tokenHash } });
 }
 
 export { hashPassword };

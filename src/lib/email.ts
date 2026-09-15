@@ -569,3 +569,29 @@ export async function sendBackupStatusEmail(data: {
   await safeSend({ from: FROM, to, subject, html });
   return "sent";
 }
+
+export async function sendPasswordResetEmail(data: { to: string; resetUrl: string }) {
+  const link = escapeEmailText(data.resetUrl);
+  const html = `<!DOCTYPE html>
+<html lang="es">
+<head><meta charset="utf-8"><title>Restablecer contraseña</title></head>
+<body style="margin:0;padding:0;background:#fbfaf7;font-family:sans-serif;color:#1f2933;">
+  <table width="100%" cellpadding="0" cellspacing="0">
+    <tr><td align="center" style="padding:32px 16px;">
+      <table width="560" style="max-width:100%;background:#fff;border-radius:12px;border:1px solid #e5e7eb;padding:32px;">
+        <tr><td>
+          <p style="margin:0 0 8px;font-size:0.72rem;font-weight:800;text-transform:uppercase;color:#c4587a;letter-spacing:0.08em;">JF Studio · Panel admin</p>
+          <h1 style="margin:0 0 16px;font-size:1.4rem;color:#1a1a1a;">Restablecer contraseña</h1>
+          <p style="margin:0 0 16px;font-size:0.95rem;line-height:1.5;">Recibimos una solicitud para restablecer la contraseña del panel de administración. Este enlace es de un solo uso y vence en <strong>1 hora</strong>.</p>
+          <table width="100%"><tr><td align="center">
+            <a href="${link}" style="display:inline-block;background:#c4587a;color:#fff;text-decoration:none;font-weight:700;padding:12px 26px;border-radius:999px;font-size:0.95rem;">Restablecer contraseña</a>
+          </td></tr></table>
+          <p style="margin:18px 0 0;font-size:0.82rem;color:#9ca3af;">Si no pediste este cambio, ignora este correo; tu contraseña seguirá igual.</p>
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`;
+  await safeSend({ from: FROM, to: data.to, subject: "Restablecer contraseña del panel · JF Studio", html });
+}

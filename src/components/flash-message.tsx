@@ -39,7 +39,21 @@ const MESSAGES: Record<string, { text: string; type: "success" | "error" }> = {
   error_galeria: { text: "✗ No se pudo completar la acción de galería (revisa formato o permisos de disco).", type: "error" },
   error_galeria_archivo: { text: "✗ Debes elegir un archivo de imagen válido.", type: "error" },
   error_galeria_ruta: { text: "✗ Ruta no válida. Usa /images/... o /uploads/gallery/...", type: "error" },
-  error_galeria_import: { text: "✗ La importación solo está disponible cuando la galería CMS está vacía.", type: "error" }
+  error_galeria_import: { text: "✗ La importación solo está disponible cuando la galería CMS está vacía.", type: "error" },
+  enviado: {
+    text: "✓ Si el correo coincide con el configurado, te llegará un enlace para restablecer la contraseña (vence en 1 hora).",
+    type: "success"
+  },
+  error_no_email: {
+    text: "✗ No hay un correo de administración configurado (ADMIN_EMAIL). Pide a tu técnico que acceda a la base de datos o configure el correo.",
+    type: "error"
+  },
+  error_token: {
+    text: "✗ El enlace no es válido o ya venció. Solicita uno nuevo desde el acceso.",
+    type: "error"
+  },
+  error_corta: { text: "✗ La contraseña debe tener al menos 6 caracteres.", type: "error" },
+  reseteada: { text: "✓ Contraseña actualizada. Inicia sesión con tu nueva contraseña.", type: "success" }
 };
 
 export function FlashMessage({ msg }: { msg: string | null | undefined }) {

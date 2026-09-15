@@ -7,6 +7,7 @@
  */
 export const BACKUP_TABLES = [
   "salonSettings",
+  "adminResetToken",
   "birthdayBonusSettings",
   "paymentMethodConfig",
   "clientTestimonial",
