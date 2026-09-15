@@ -1,6 +1,6 @@
 "use client";
 
-import { Calendar, CheckCircle2, Loader2, Scissors } from "lucide-react";
+import { Calendar, CheckCircle2, Gift, Loader2, Scissors } from "lucide-react";
 import { FormEvent, useEffect, useMemo, useState } from "react";
 
 import { ARRIVAL_TOLERANCE_MINUTES, isSaturdaySalon } from "@/lib/booking-rules";
@@ -578,17 +578,29 @@ export function BookingForm({
             </div>
           </div>
         )}
-        <div className="field">
-          <label htmlFor="bonusCode">Código de cumpleaños (opcional)</label>
+        <div
+          className="field"
+          style={{
+            background: "#fff7ed",
+            border: "1px solid #fdba74",
+            borderRadius: 10,
+            padding: "12px 14px",
+            marginTop: 4
+          }}
+        >
+          <label htmlFor="bonusCode" style={{ display: "flex", alignItems: "center", gap: 6, color: "#9a3412", fontWeight: 700 }}>
+            <Gift size={17} aria-hidden />
+            ¿Tienes un código de descuento?
+          </label>
           <input
             className="input"
             id="bonusCode"
             name="bonusCode"
             placeholder="Ej: JF-2026-AB12CD"
-            style={{ textTransform: "uppercase" }}
+            style={{ textTransform: "uppercase", marginTop: 6, borderColor: "#fdba74" }}
           />
-          <p className="small muted" style={{ marginTop: 4 }}>
-            Si recibiste un bono de cumpleaños, ingresa tu código para aplicar el descuento.
+          <p className="small muted" style={{ marginTop: 6 }}>
+            Si recibiste un código por WhatsApp, ingrésalo aquí para aplicar tu descuento automáticamente.
           </p>
         </div>
         <div className="field">

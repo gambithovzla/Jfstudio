@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowLeft, BadgePercent, Plus, Search } from "lucide-react";
+import { ArrowLeft, BadgePercent, MessageCircle, Plus, Search } from "lucide-react";
 
 import {
   createBirthdayBonusAction,
@@ -9,7 +9,9 @@ import {
 import { getBirthdayBonusSettings, getSalonSettings } from "@/lib/data";
 import { prisma } from "@/lib/prisma";
 import { formatDateInZone, formatDateTimeLocalInZone } from "@/lib/time";
+import { buildWhatsappLink, renderBirthdayMessage } from "@/lib/whatsapp";
 import { ConfirmDeleteBonus } from "@/components/confirm-delete-bonus";
+import { CopyCodeButton } from "@/components/copy-code-button";
 import { FlashMessage } from "@/components/flash-message";
 
 export const dynamic = "force-dynamic";
@@ -58,7 +60,7 @@ export default async function DiscountCodesPage({ searchParams }: { searchParams
             Códigos de descuento
           </h1>
           <p className="subtitle">
-            Crea o edita bonos manualmente. El código se genera automáticamente y solo puede usarlo la clienta asignada.
+            Crea bonos manualmente. El código se genera automáticamente, pero <strong>no se envía solo</strong>: usa Copiar o Enviar WhatsApp para entregárselo a la clienta.
           </p>
         </div>
         <div className="button-row">
@@ -187,6 +189,30 @@ export default async function DiscountCodesPage({ searchParams }: { searchParams
                           {bonus.emailSentAt ? "📧 email" : null}
                           {bonus.emailSentAt && bonus.whatsappSentAt ? " · " : null}
                           {bonus.whatsappSentAt ? "💬 WhatsApp" : null}
+                        </span>
+                        <span className="button-row" style={{ marginTop: 6 }}>
+                          <CopyCodeButton code={bonus.code} />
+                          {bonus.client.phone ? (
+                            <a
+                              className="btn secondary"
+                              href={buildWhatsappLink(
+                                bonus.client.phone,
+                                renderBirthdayMessage({
+                                  template: bonusSettings.messageTemplate,
+                                  clientName: bonus.client.name,
+                                  discountPercent: bonus.discountPercent,
+                                  code: bonus.code,
+                                  expiresLabel: formatDateInZone(bonus.expiresAt, settings.timezone)
+                                })
+                              )}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              style={{ padding: "4px 10px", fontSize: "0.78rem" }}
+                            >
+                              <MessageCircle size={14} aria-hidden />
+                              Enviar WhatsApp
+                            </a>
+                          ) : null}
                         </span>
                       </td>
                       <td data-label="Descuento">{bonus.discountPercent}%</td>
