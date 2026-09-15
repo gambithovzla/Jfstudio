@@ -3,6 +3,7 @@ import Link from "next/link";
 import { ArrowLeft, CalendarPlus, Pencil } from "lucide-react";
 
 import { StatusBadge } from "@/components/status-badge";
+import { FlashMessage } from "@/components/flash-message";
 import { getClientById } from "@/lib/data";
 import { formatDateInZone, formatTimeInZone } from "@/lib/time";
 import { formatCurrency } from "@/lib/utils";
@@ -16,7 +17,7 @@ type PageProps = {
 export default async function ClientDetailPage({
   params,
   searchParams
-}: PageProps & { searchParams?: Promise<{ ok?: string }> }) {
+}: PageProps & { searchParams?: Promise<{ ok?: string; msg?: string }> }) {
   const { id } = await params;
   const sp = searchParams ? await searchParams : {};
   const saved = sp.ok === "1";
@@ -43,6 +44,7 @@ export default async function ClientDetailPage({
           ✓ Cambios guardados correctamente.
         </div>
       ) : null}
+      <FlashMessage msg={sp.msg} />
       <div className="page-header">
         <div>
           <p className="eyebrow">Cliente</p>
