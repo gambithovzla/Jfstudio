@@ -22,6 +22,7 @@ export const BACKUP_FORMAT_VERSION = 1;
 /** Lectores por tabla (type-safe; obliga a registrar cada modelo nuevo aquí). */
 const TABLE_READERS: Record<BackupTable, () => Promise<unknown[]>> = {
   salonSettings: () => prisma.salonSettings.findMany(),
+  adminResetToken: () => prisma.adminResetToken.findMany(),
   birthdayBonusSettings: () => prisma.birthdayBonusSettings.findMany(),
   paymentMethodConfig: () => prisma.paymentMethodConfig.findMany(),
   clientTestimonial: () => prisma.clientTestimonial.findMany(),

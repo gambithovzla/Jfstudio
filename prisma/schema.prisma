@@ -56,6 +56,16 @@ model SalonSettings {
   updatedAt                  DateTime @updatedAt
 }
 
+model AdminResetToken {
+  id        String    @id @default(cuid())
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([expiresAt])
+}
+
 model Staff {
   id                 String              @id @default(cuid())
   clerkUserId        String?             @unique
@@ -149,35 +159,35 @@ model ServiceProduct {
 }
 
 model Appointment {
-  id                 String               @id @default(cuid())
-  clientId           String
-  staffId            String
-  startAt            DateTime
-  endAt              DateTime
-  status             AppointmentStatus    @default(CONFIRMED)
-  notes              String?
-  totalPrice         Decimal?             @db.Decimal(10, 2)
-  completedAt        DateTime?
-  accessToken        String               @unique @default(cuid())
-  reminderSentAt     DateTime?
-  depositPaid        Boolean              @default(false)
-  depositAmountPen   Decimal?             @db.Decimal(10, 2)
-  depositVoucherKey  String?
-  depositVoucherFilename String?
-  depositVoucherMime String?
-  postVisitCareNote          String?
-  postVisitAttachmentKey     String?
+  id                          String               @id @default(cuid())
+  clientId                    String
+  staffId                     String
+  startAt                     DateTime
+  endAt                       DateTime
+  status                      AppointmentStatus    @default(CONFIRMED)
+  notes                       String?
+  totalPrice                  Decimal?             @db.Decimal(10, 2)
+  completedAt                 DateTime?
+  accessToken                 String               @unique @default(cuid())
+  reminderSentAt              DateTime?
+  depositPaid                 Boolean              @default(false)
+  depositAmountPen            Decimal?             @db.Decimal(10, 2)
+  depositVoucherKey           String?
+  depositVoucherFilename      String?
+  depositVoucherMime          String?
+  postVisitCareNote           String?
+  postVisitAttachmentKey      String?
   postVisitAttachmentFilename String?
-  postVisitAttachmentMime    String?
-  birthdayBonusId    String?              @unique
-  birthdayBonus      BirthdayBonus?       @relation("AppointmentBonus", fields: [birthdayBonusId], references: [id], onDelete: SetNull)
-  createdAt          DateTime             @default(now())
-  updatedAt          DateTime             @updatedAt
-  client             Client               @relation(fields: [clientId], references: [id], onDelete: Restrict)
-  staff              Staff                @relation(fields: [staffId], references: [id], onDelete: Restrict)
-  services           AppointmentService[]
-  payments           Payment[]
-  inventoryMovements InventoryMovement[]
+  postVisitAttachmentMime     String?
+  birthdayBonusId             String?              @unique
+  birthdayBonus               BirthdayBonus?       @relation("AppointmentBonus", fields: [birthdayBonusId], references: [id], onDelete: SetNull)
+  createdAt                   DateTime             @default(now())
+  updatedAt                   DateTime             @updatedAt
+  client                      Client               @relation(fields: [clientId], references: [id], onDelete: Restrict)
+  staff                       Staff                @relation(fields: [staffId], references: [id], onDelete: Restrict)
+  services                    AppointmentService[]
+  payments                    Payment[]
+  inventoryMovements          InventoryMovement[]
 
   @@index([staffId, startAt, endAt])
   @@index([status, startAt])
