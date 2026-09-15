@@ -76,6 +76,9 @@ export default async function PublicAppointmentPage({ params }: PageProps) {
   const isPast = appointment.startAt < now;
 
   const totalPaid = appointment.payments.reduce((sum, p) => sum + Number(p.amount), 0);
+  const subtotal = appointment.services.reduce((sum, s) => sum + Number(s.priceSnapshot), 0);
+  const totalPrice = appointment.totalPrice ? Number(appointment.totalPrice) : null;
+  const discount = totalPrice !== null ? Math.round((subtotal - totalPrice) * 100) / 100 : 0;
 
   const cancelAction = cancelByToken.bind(null, token);
 
@@ -119,6 +122,30 @@ export default async function PublicAppointmentPage({ params }: PageProps) {
                 <td className="muted">Servicios</td>
                 <td>{appointment.services.map((s) => s.serviceNameSnapshot).join(", ")}</td>
               </tr>
+              {totalPrice !== null ? (
+                <>
+                  {discount > 0 ? (
+                    <tr>
+                      <td className="muted">Total servicios</td>
+                      <td>{formatCurrency(subtotal, settings.currency)}</td>
+                    </tr>
+                  ) : null}
+                  {discount > 0 ? (
+                    <tr>
+                      <td className="muted">Descuento bono</td>
+                      <td style={{ color: "#166534", fontWeight: 600 }}>
+                        -{formatCurrency(discount, settings.currency)}
+                      </td>
+                    </tr>
+                  ) : null}
+                  <tr>
+                    <td className="muted">Total a pagar</td>
+                    <td>
+                      <strong>{formatCurrency(totalPrice, settings.currency)}</strong>
+                    </td>
+                  </tr>
+                </>
+              ) : null}
               {appointment.status !== "CANCELED" ? (
                 <tr>
                   <td className="muted">Dirección</td>

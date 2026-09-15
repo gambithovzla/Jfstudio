@@ -7,6 +7,7 @@ import { ARRIVAL_TOLERANCE_MINUTES, isSaturdaySalon } from "@/lib/booking-rules"
 import { laceadoTierChoiceLabel, isStandaloneLaceadoOrganicName, partitionLaceadoServices } from "@/lib/laceado-services";
 import { botoxTierChoiceLabel, isStandaloneBotoxOrganicName, partitionBotoxServices } from "@/lib/botox-services";
 import { formatDesdeCurrency, polishServiceDescription, polishServiceTitle } from "@/lib/public-service-copy";
+import { formatCurrency } from "@/lib/utils";
 import { LengthGuide } from "@/components/length-guide";
 
 type Service = {
@@ -40,6 +41,8 @@ type BookingResult = {
   clientName: string;
   staffName: string;
   services: string[];
+  totalPrice?: number;
+  discountPercent?: number;
 };
 
 function initialSelectedOthers(services: Service[], initialServiceIds?: string[]) {
@@ -105,6 +108,13 @@ export function BookingForm({
   const [birthdayStatus, setBirthdayStatus] = useState<"unknown" | "new" | "missing_birthday" | "has_birthday">("unknown");
   const [birthday, setBirthday] = useState("");
   const [documentType, setDocumentType] = useState<"DNI" | "CE" | "PASSPORT">("DNI");
+  const [phone, setPhone] = useState("");
+  const [bonusCode, setBonusCode] = useState("");
+  const [bonusState, setBonusState] = useState<{
+    status: "idle" | "checking" | "valid" | "invalid";
+    message?: string;
+    discountPercent?: number;
+  }>({ status: "idle" });
 
   const isSaturdayDate = useMemo(() => isSaturdaySalon(date, salonTimezone), [date, salonTimezone]);
 
@@ -126,6 +136,9 @@ export function BookingForm({
   );
 
   const total = selectedServiceRows.reduce((sum, service) => sum + service.price, 0);
+  const discountPercent = bonusState.status === "valid" ? (bonusState.discountPercent ?? 0) : 0;
+  const discountAmount = Math.round((total * discountPercent) / 100 * 100) / 100;
+  const totalToPay = Math.round(total * (1 - discountPercent / 100) * 100) / 100;
   const duration = selectedServiceRows.reduce((sum, service) => sum + service.durationMinutes, 0);
   const selectedSlot = slots.find((slot) => `${slot.staffId}:${slot.startAt}` === selectedSlotKey);
 
@@ -194,6 +207,42 @@ export function BookingForm({
       current.includes(serviceId) ? current.filter((id) => id !== serviceId) : [...current, serviceId]
     );
   }
+
+  useEffect(() => {
+    const code = bonusCode.trim().toUpperCase();
+
+    if (!code || phone.length < 6) {
+      setBonusState({ status: "idle" });
+      return;
+    }
+
+    const controller = new AbortController();
+    setBonusState({ status: "checking" });
+
+    const timer = setTimeout(async () => {
+      try {
+        const res = await fetch(
+          `/api/clients/bonus-check?phone=${encodeURIComponent(phone)}&code=${encodeURIComponent(code)}`,
+          { signal: controller.signal }
+        );
+        const data = await res.json();
+        if (data.valid) {
+          setBonusState({ status: "valid", discountPercent: data.discountPercent });
+        } else {
+          setBonusState({ status: "invalid", message: data.message ?? "Código inválido." });
+        }
+      } catch {
+        if (!controller.signal.aborted) {
+          setBonusState({ status: "invalid", message: "No se pudo validar el código." });
+        }
+      }
+    }, 400);
+
+    return () => {
+      clearTimeout(timer);
+      controller.abort();
+    };
+  }, [bonusCode, phone]);
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -284,6 +333,9 @@ export function BookingForm({
       setLaceadoLengthId("");
       setBotoxLengthId("");
       setSlots([]);
+      setPhone("");
+      setBonusCode("");
+      setBonusState({ status: "idle" });
       event.currentTarget.reset();
     } catch (submitError) {
       setError(submitError instanceof Error ? submitError.message : "No se pudo reservar.");
@@ -302,6 +354,16 @@ export function BookingForm({
             <p className="subtitle">
               {result.services.join(", ")} con {result.staffName}
             </p>
+            {typeof result.totalPrice === "number" && result.totalPrice > 0 ? (
+              <p style={{ margin: "10px 0 0", fontSize: "0.95rem", fontWeight: 700 }}>
+                Total a pagar: {formatCurrency(result.totalPrice, currency)}
+              </p>
+            ) : null}
+            {result.discountPercent && result.discountPercent > 0 ? (
+              <p className="small" style={{ margin: "4px 0 0", color: "#166534", fontWeight: 700 }}>
+                ✓ Código de descuento aplicado: {result.discountPercent}%
+              </p>
+            ) : null}
           </div>
           <CheckCircle2 color="var(--brand)" size={34} aria-hidden />
         </div>
@@ -463,8 +525,20 @@ export function BookingForm({
 
         <div className="card" style={{ background: "var(--surface-soft)" }}>
           <div className="button-row" style={{ justifyContent: "space-between" }}>
-            <span className="small muted">Total estimado</span>
+            <span className="small muted">Servicios</span>
             <strong>{formatDesdeCurrency(total, currency)}</strong>
+          </div>
+          {discountPercent > 0 ? (
+            <div className="button-row" style={{ justifyContent: "space-between", marginTop: 6 }}>
+              <span className="small" style={{ color: "#166534", fontWeight: 600 }}>
+                Descuento bono ({discountPercent}%)
+              </span>
+              <strong style={{ color: "#166534" }}>-{formatDesdeCurrency(discountAmount, currency)}</strong>
+            </div>
+          ) : null}
+          <div className="button-row" style={{ justifyContent: "space-between", marginTop: 6 }}>
+            <span className="small muted">Total a pagar</span>
+            <strong>{formatDesdeCurrency(totalToPay, currency)}</strong>
           </div>
           <div className="button-row" style={{ justifyContent: "space-between", marginTop: 6 }}>
             <span className="small muted">Duracion</span>
@@ -519,6 +593,8 @@ export function BookingForm({
               name="phone"
               required
               minLength={6}
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
               onBlur={(e) => checkBirthday(e.target.value)}
             />
           </div>
@@ -597,8 +673,23 @@ export function BookingForm({
             id="bonusCode"
             name="bonusCode"
             placeholder="Ej: JF-2026-AB12CD"
+            value={bonusCode}
+            onChange={(e) => setBonusCode(e.target.value)}
             style={{ textTransform: "uppercase", marginTop: 6, borderColor: "#fdba74" }}
           />
+          {bonusState.status === "checking" ? (
+            <p className="small muted" style={{ marginTop: 6 }}>Validando código...</p>
+          ) : null}
+          {bonusState.status === "valid" ? (
+            <p className="small" style={{ marginTop: 6, color: "#166534", fontWeight: 700 }}>
+              ✓ Código válido: se aplica {bonusState.discountPercent}% de descuento.
+            </p>
+          ) : null}
+          {bonusState.status === "invalid" ? (
+            <p className="small" style={{ marginTop: 6, color: "#991b1b", fontWeight: 600 }}>
+              ✗ {bonusState.message}
+            </p>
+          ) : null}
           <p className="small muted" style={{ marginTop: 6 }}>
             Si recibiste un código por WhatsApp, ingrésalo aquí para aplicar tu descuento automáticamente.
           </p>
