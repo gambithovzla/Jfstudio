@@ -88,7 +88,9 @@ export default async function AppointmentDetailPage({ params, searchParams }: Pa
   }
 
   const today = todayInTimeZone(settings.timezone);
-  const total = appointment.services.reduce((sum, service) => sum + Number(service.priceSnapshot), 0);
+  const subtotal = appointment.services.reduce((sum, service) => sum + Number(service.priceSnapshot), 0);
+  const total = appointment.totalPrice !== null ? Number(appointment.totalPrice) : subtotal;
+  const discount = Math.round((subtotal - total) * 100) / 100;
   const requiresDeposit = appointment.services.some((s) => s.service.requiresDeposit);
   const usage = new Map<
     string,
@@ -222,9 +224,23 @@ export default async function AppointmentDetailPage({ params, searchParams }: Pa
               ))}
             </tbody>
           </table>
-          <div className="button-row" style={{ justifyContent: "space-between", marginTop: 14 }}>
-            <span className="muted">Total sugerido</span>
-            <strong>{formatCurrency(total, settings.currency)}</strong>
+          <div style={{ marginTop: 14 }}>
+            {discount > 0 ? (
+              <>
+                <div className="button-row" style={{ justifyContent: "space-between" }}>
+                  <span className="muted">Subtotal</span>
+                  <span>{formatCurrency(subtotal, settings.currency)}</span>
+                </div>
+                <div className="button-row" style={{ justifyContent: "space-between", marginTop: 4 }}>
+                  <span style={{ color: "#166534", fontWeight: 600 }}>Descuento bono</span>
+                  <strong style={{ color: "#166534" }}>-{formatCurrency(discount, settings.currency)}</strong>
+                </div>
+              </>
+            ) : null}
+            <div className="button-row" style={{ justifyContent: "space-between", marginTop: 6 }}>
+              <span className="muted">Total a cobrar</span>
+              <strong>{formatCurrency(total, settings.currency)}</strong>
+            </div>
           </div>
         </section>
 

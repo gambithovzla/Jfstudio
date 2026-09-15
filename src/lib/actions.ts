@@ -108,7 +108,7 @@ export async function updateAppointmentAction(formData: FormData) {
     async (tx) => {
       const existing = await tx.appointment.findUnique({
         where: { id: appointmentId },
-        select: { status: true }
+        select: { status: true, birthdayBonusId: true }
       });
 
       if (!existing || existing.status !== AppointmentStatus.CONFIRMED) {
@@ -137,7 +137,17 @@ export async function updateAppointmentAction(formData: FormData) {
       const durationMinutes = services.reduce((t, s) => t + s.durationMinutes, 0);
       const endAt = addMinutes(startAt, durationMinutes);
 
-      const totalPrice = services.reduce((t, s) => t + Number(s.price), 0);
+      const subtotal = services.reduce((t, s) => t + Number(s.price), 0);
+      let totalPrice = subtotal;
+      if (existing.birthdayBonusId) {
+        const bonus = await tx.birthdayBonus.findUnique({
+          where: { id: existing.birthdayBonusId },
+          select: { discountPercent: true }
+        });
+        if (bonus) {
+          totalPrice = Math.round(subtotal * (1 - bonus.discountPercent / 100) * 100) / 100;
+        }
+      }
 
       await tx.appointmentService.deleteMany({ where: { appointmentId } });
 
