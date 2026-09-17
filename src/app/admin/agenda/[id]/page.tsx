@@ -237,13 +237,13 @@ export default async function AppointmentDetailPage({ params, searchParams }: Pa
                 </div>
                 <div className="button-row" style={{ justifyContent: "space-between", marginTop: 4 }}>
                   <span style={{ color: "#166534", fontWeight: 600 }}>
-                    Descuento bono cumpleanos ({appointment.birthdayBonus?.discountPercent}%)
+                    Descuento bono cumpleaños ({appointment.birthdayBonus?.discountPercent}%)
                   </span>
                   <strong style={{ color: "#166534" }}>-{formatCurrency(discount, settings.currency)}</strong>
                 </div>
                 {appointment.birthdayBonus ? (
                   <p className="small muted" style={{ margin: "2px 0 0" }}>
-                    Codigo {appointment.birthdayBonus.code}
+                    Código {appointment.birthdayBonus.code}
                   </p>
                 ) : null}
               </>
