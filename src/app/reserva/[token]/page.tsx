@@ -10,6 +10,7 @@ import { getAppointmentByToken, getSalonSettings } from "@/lib/data";
 import { prisma } from "@/lib/prisma";
 import { formatDateInZone, formatTimeInZone } from "@/lib/time";
 import { formatCurrency } from "@/lib/utils";
+import { computeAppointmentPricing, sumServicePrices } from "@/lib/appointment-pricing";
 import { ARRIVAL_TOLERANCE_MINUTES, WEB_DEPOSIT_AMOUNT_PEN } from "@/lib/booking-rules";
 import { SALON_FLOOR_OFFICE, SALON_STREET_ADDRESS, salonMapsDirectionsUrl } from "@/lib/salon-address";
 
@@ -76,9 +77,10 @@ export default async function PublicAppointmentPage({ params }: PageProps) {
   const isPast = appointment.startAt < now;
 
   const totalPaid = appointment.payments.reduce((sum, p) => sum + Number(p.amount), 0);
-  const subtotal = appointment.services.reduce((sum, s) => sum + Number(s.priceSnapshot), 0);
-  const totalPrice = appointment.totalPrice ? Number(appointment.totalPrice) : null;
-  const discount = totalPrice !== null ? Math.round((subtotal - totalPrice) * 100) / 100 : 0;
+  const { subtotal, discount, total: totalPrice } = computeAppointmentPricing(
+    sumServicePrices(appointment.services),
+    appointment.birthdayBonus?.discountPercent
+  );
 
   const cancelAction = cancelByToken.bind(null, token);
 
@@ -122,30 +124,28 @@ export default async function PublicAppointmentPage({ params }: PageProps) {
                 <td className="muted">Servicios</td>
                 <td>{appointment.services.map((s) => s.serviceNameSnapshot).join(", ")}</td>
               </tr>
-              {totalPrice !== null ? (
+              {discount > 0 ? (
                 <>
-                  {discount > 0 ? (
-                    <tr>
-                      <td className="muted">Total servicios</td>
-                      <td>{formatCurrency(subtotal, settings.currency)}</td>
-                    </tr>
-                  ) : null}
-                  {discount > 0 ? (
-                    <tr>
-                      <td className="muted">Descuento bono</td>
-                      <td style={{ color: "#166534", fontWeight: 600 }}>
-                        -{formatCurrency(discount, settings.currency)}
-                      </td>
-                    </tr>
-                  ) : null}
                   <tr>
-                    <td className="muted">Total a pagar</td>
-                    <td>
-                      <strong>{formatCurrency(totalPrice, settings.currency)}</strong>
+                    <td className="muted">Total servicios</td>
+                    <td>{formatCurrency(subtotal, settings.currency)}</td>
+                  </tr>
+                  <tr>
+                    <td className="muted">
+                      Descuento bono cumpleaños ({appointment.birthdayBonus?.discountPercent}%)
+                    </td>
+                    <td style={{ color: "#166534", fontWeight: 600 }}>
+                      -{formatCurrency(discount, settings.currency)}
                     </td>
                   </tr>
                 </>
               ) : null}
+              <tr>
+                <td className="muted">Total a pagar</td>
+                <td>
+                  <strong>{formatCurrency(totalPrice, settings.currency)}</strong>
+                </td>
+              </tr>
               {appointment.status !== "CANCELED" ? (
                 <tr>
                   <td className="muted">Dirección</td>

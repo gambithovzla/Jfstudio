@@ -1,5 +1,6 @@
 import { AppointmentStatus, Prisma, TestimonialStatus } from "@prisma/client";
 
+import { computeAppointmentPricing, sumServicePrices } from "@/lib/appointment-pricing";
 import {
   earliestPublicBookingInstant,
   isPublicBookingStartInDayWindow,
@@ -535,10 +536,9 @@ export async function createBooking(input: {
         }
       });
 
-      const subtotal = services.reduce((total, service) => total + Number(service.price), 0);
+      const subtotal = sumServicePrices(services.map((service) => ({ priceSnapshot: service.price })));
 
       let bonusToRedeem: { id: string; discountPercent: number } | null = null;
-      let totalPrice = subtotal;
 
       if (bonusCodeInput) {
         const bonus = await tx.birthdayBonus.findUnique({
@@ -563,8 +563,9 @@ export async function createBooking(input: {
         }
 
         bonusToRedeem = { id: bonus.id, discountPercent: bonus.discountPercent };
-        totalPrice = Math.round(subtotal * (1 - bonus.discountPercent / 100) * 100) / 100;
       }
+
+      const { total: totalPrice } = computeAppointmentPricing(subtotal, bonusToRedeem?.discountPercent);
 
       const wd = input.webDeposit;
 
@@ -733,7 +734,8 @@ export async function getAppointmentForCheckout(id: string) {
           }
         },
         payments: { orderBy: { paidAt: "asc" } },
-        inventoryMovements: { include: { product: true } }
+        inventoryMovements: { include: { product: true } },
+        birthdayBonus: { select: { code: true, discountPercent: true } }
       }
     }),
     prisma.paymentMethodConfig.findMany({ where: { isActive: true }, orderBy: { sortOrder: "asc" } }),
@@ -990,7 +992,8 @@ export async function getAppointmentByToken(token: string) {
       client: true,
       staff: true,
       services: { select: { id: true, serviceId: true, serviceNameSnapshot: true, durationMinutesSnapshot: true, priceSnapshot: true } },
-      payments: { select: { id: true, amount: true, method: true } }
+      payments: { select: { id: true, amount: true, method: true } },
+      birthdayBonus: { select: { code: true, discountPercent: true } }
     }
   });
 }

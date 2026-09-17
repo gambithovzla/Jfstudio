@@ -20,7 +20,8 @@
     "db:set-hours": "tsx scripts/set-working-hours.ts",
     "db:ensure-services": "tsx scripts/ensure-service-variants.ts",
     "db:ensure-laceado": "tsx scripts/ensure-laceado-services.ts",
-    "db:ensure-botox": "tsx scripts/ensure-botox-services.ts"
+    "db:ensure-botox": "tsx scripts/ensure-botox-services.ts",
+    "db:fix-totales": "tsx scripts/fix-appointment-totals.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1046.0",
