@@ -16,6 +16,7 @@ import {
   refundPaymentAction,
   updatePaymentAction
 } from "@/lib/actions";
+import { computeAppointmentPricing, sumServicePrices } from "@/lib/appointment-pricing";
 import { getAppointmentForCheckout, getSalonSettings } from "@/lib/data";
 import { describePaymentAuditChange, paymentAuditActionLabel } from "@/lib/payment-audit";
 import { formatDateInZone, formatTimeInZone, todayInTimeZone } from "@/lib/time";
@@ -88,9 +89,12 @@ export default async function AppointmentDetailPage({ params, searchParams }: Pa
   }
 
   const today = todayInTimeZone(settings.timezone);
-  const subtotal = appointment.services.reduce((sum, service) => sum + Number(service.priceSnapshot), 0);
-  const total = appointment.totalPrice !== null ? Number(appointment.totalPrice) : subtotal;
-  const discount = Math.round((subtotal - total) * 100) / 100;
+  const { subtotal, discount, total } = computeAppointmentPricing(
+    sumServicePrices(appointment.services),
+    appointment.birthdayBonus?.discountPercent
+  );
+  const paidSoFar = Math.round(appointment.payments.reduce((sum, p) => sum + Number(p.amount), 0) * 100) / 100;
+  const pending = Math.round((total - paidSoFar) * 100) / 100;
   const requiresDeposit = appointment.services.some((s) => s.service.requiresDeposit);
   const usage = new Map<
     string,
@@ -232,15 +236,34 @@ export default async function AppointmentDetailPage({ params, searchParams }: Pa
                   <span>{formatCurrency(subtotal, settings.currency)}</span>
                 </div>
                 <div className="button-row" style={{ justifyContent: "space-between", marginTop: 4 }}>
-                  <span style={{ color: "#166534", fontWeight: 600 }}>Descuento bono</span>
+                  <span style={{ color: "#166534", fontWeight: 600 }}>
+                    Descuento bono cumpleaños ({appointment.birthdayBonus?.discountPercent}%)
+                  </span>
                   <strong style={{ color: "#166534" }}>-{formatCurrency(discount, settings.currency)}</strong>
                 </div>
+                {appointment.birthdayBonus ? (
+                  <p className="small muted" style={{ margin: "2px 0 0" }}>
+                    Código {appointment.birthdayBonus.code}
+                  </p>
+                ) : null}
               </>
             ) : null}
             <div className="button-row" style={{ justifyContent: "space-between", marginTop: 6 }}>
-              <span className="muted">Total a cobrar</span>
+              <span className="muted">Precio de la cita</span>
               <strong>{formatCurrency(total, settings.currency)}</strong>
             </div>
+            {paidSoFar > 0 ? (
+              <>
+                <div className="button-row" style={{ justifyContent: "space-between", marginTop: 4 }}>
+                  <span className="muted">Ya pagado</span>
+                  <span>-{formatCurrency(paidSoFar, settings.currency)}</span>
+                </div>
+                <div className="button-row" style={{ justifyContent: "space-between", marginTop: 4 }}>
+                  <span className="muted">{pending < 0 ? "A favor de la clienta" : "Saldo pendiente"}</span>
+                  <strong>{formatCurrency(Math.abs(pending), settings.currency)}</strong>
+                </div>
+              </>
+            ) : null}
           </div>
         </section>
 
@@ -295,8 +318,21 @@ export default async function AppointmentDetailPage({ params, searchParams }: Pa
               <input type="hidden" name="appointmentId" value={appointment.id} />
               <div className="grid two">
                 <div className="field">
-                  <label htmlFor="amount">Monto final</label>
-                  <input className="input" id="amount" name="amount" type="number" step="0.01" defaultValue={total} required />
+                  <label htmlFor="amount">Monto a cobrar ahora</label>
+                  <input
+                    className="input"
+                    id="amount"
+                    name="amount"
+                    type="number"
+                    step="0.01"
+                    defaultValue={Math.max(pending, 0)}
+                    required
+                  />
+                  <p className="small muted" style={{ margin: "4px 0 0" }}>
+                    {paidSoFar > 0
+                      ? `Precio ${formatCurrency(total, settings.currency)} menos ${formatCurrency(paidSoFar, settings.currency)} ya pagados.`
+                      : "Solo lo que se cobra en esta operacion; el adelanto ya registrado no se vuelve a sumar."}
+                  </p>
                 </div>
                 <div className="field">
                   <label htmlFor="method">Metodo</label>

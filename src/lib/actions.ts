@@ -27,6 +27,7 @@ import {
   uploadPostVisitCareFile
 } from "@/lib/deposit-storage";
 import { MAX_POST_VISIT_ATTACHMENT_BYTES } from "@/lib/appointment-care";
+import { computeAppointmentPricing, sumServicePrices } from "@/lib/appointment-pricing";
 import {
   sendBookingCancellation,
   sendForceMajeureCancellation,
@@ -144,17 +145,16 @@ export async function updateAppointmentAction(formData: FormData) {
       const durationMinutes = services.reduce((t, s) => t + s.durationMinutes, 0);
       const endAt = addMinutes(startAt, durationMinutes);
 
-      const subtotal = services.reduce((t, s) => t + Number(s.price), 0);
-      let totalPrice = subtotal;
-      if (existing.birthdayBonusId) {
-        const bonus = await tx.birthdayBonus.findUnique({
-          where: { id: existing.birthdayBonusId },
-          select: { discountPercent: true }
-        });
-        if (bonus) {
-          totalPrice = Math.round(subtotal * (1 - bonus.discountPercent / 100) * 100) / 100;
-        }
-      }
+      const bonus = existing.birthdayBonusId
+        ? await tx.birthdayBonus.findUnique({
+            where: { id: existing.birthdayBonusId },
+            select: { discountPercent: true }
+          })
+        : null;
+      const { total: totalPrice } = computeAppointmentPricing(
+        sumServicePrices(services.map((s) => ({ priceSnapshot: s.price }))),
+        bonus?.discountPercent
+      );
 
       await tx.appointmentService.deleteMany({ where: { appointmentId } });
 
@@ -334,7 +334,9 @@ export async function completeAppointmentAction(formData: FormData) {
       where: { id: appointmentId },
       data: {
         status: AppointmentStatus.COMPLETED,
-        totalPrice: amount,
+        // `totalPrice` es el precio pactado de la cita (subtotal menos el bono, si lo hay).
+        // No se pisa con lo que entra en caja: si hubo adelanto solo se cobra el saldo y
+        // guardarlo aqui haria aparecer la diferencia como un descuento que nunca existio.
         completedAt: new Date(),
         postVisitCareNote: careNote?.trim() ? careNote.trim() : null,
         postVisitAttachmentKey: uploadedKey,
