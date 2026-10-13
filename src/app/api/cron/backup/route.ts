@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
+import { rejectUnauthorizedCron } from "@/lib/cron-auth";
 import {
   backupFilename,
   backupStats,
@@ -24,13 +25,8 @@ const XLSX_MIME = "application/vnd.openxmlformats-officedocument.spreadsheetml.s
  * es solo una notificacion de estado (sent/error), sin adjuntos ni datos de clientas.
  */
 export async function GET(request: NextRequest) {
-  const secret = process.env.CRON_SECRET;
-  if (secret) {
-    const auth = request.headers.get("authorization");
-    if (auth !== `Bearer ${secret}`) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-  }
+  const unauthorized = rejectUnauthorizedCron(request);
+  if (unauthorized) return unauthorized;
 
   const backup = await generateBackupData();
   const gz = gzipBackup(backup);

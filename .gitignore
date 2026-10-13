@@ -15,3 +15,6 @@ dev-server.err.log
 
 public/uploads/gallery/*
 !public/uploads/gallery/.gitkeep
+
+playwright-report/
+test-results/
