@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
+import { rejectUnauthorizedCron } from "@/lib/cron-auth";
 import { sendBookingReminder } from "@/lib/email";
 import { prisma } from "@/lib/prisma";
 import { formatDateInZone, formatTimeInZone } from "@/lib/time";
@@ -7,13 +8,8 @@ import { formatDateInZone, formatTimeInZone } from "@/lib/time";
 export const dynamic = "force-dynamic";
 
 export async function GET(request: NextRequest) {
-  const secret = process.env.CRON_SECRET;
-  if (secret) {
-    const auth = request.headers.get("authorization");
-    if (auth !== `Bearer ${secret}`) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-  }
+  const unauthorized = rejectUnauthorizedCron(request);
+  if (unauthorized) return unauthorized;
 
   const settings = await prisma.salonSettings.findUnique({ where: { id: "default" } });
   const timezone = settings?.timezone ?? "America/Lima";
